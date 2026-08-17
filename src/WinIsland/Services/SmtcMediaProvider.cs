@@ -19,6 +19,10 @@ public sealed class SmtcMediaProvider : IDisposable
     private MediaSnapshot? _lastSnapshot;
     private CancellationTokenSource _cts = new();
     private bool _disposed;
+    private readonly string? _preferredAppId;
+
+    /// <param name="preferredAppId">优先跟随的媒体应用标识（如 "Cider"），防止被其它活跃会话抢走。</param>
+    public SmtcMediaProvider(string? preferredAppId = null) => _preferredAppId = preferredAppId;
 
     public bool IsAvailable { get; private set; }
 
@@ -79,6 +83,14 @@ public sealed class SmtcMediaProvider : IDisposable
         {
             var current = _manager.GetCurrentSession();
             var sessions = _manager.GetSessions().ToList();
+
+            // 优先跟随指定应用（如 Cider）的会话，防止被 GetCurrentSession() 指向的其它活跃会话（如 Bilibili）抢走
+            if (_preferredAppId is not null)
+            {
+                var pref = sessions.FirstOrDefault(s =>
+                    s.SourceAppUserModelId.IndexOf(_preferredAppId, StringComparison.OrdinalIgnoreCase) >= 0 && IsActive(s));
+                if (pref is not null) { Attach(pref); return; }
+            }
 
             // Prefer the system's "current" session when it is actually active.
             if (current is not null && IsActive(current))

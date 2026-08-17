@@ -42,6 +42,8 @@ public sealed class CiderClient
 
     private readonly HttpClient _http;
     private string _token;
+    private double _lastCiderPosition = -1;   // 上次 Cider 上报位置（用于按移动判定播放/暂停）
+    private string? _lastCiderTrackKey;
 
     public CiderClient(string token = "")
     {
@@ -181,7 +183,10 @@ public sealed class CiderClient
                 if (resp.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.NoContent) return null;
                 if (!resp.IsSuccessStatusCode) return null;
                 var json = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-                return ParseV3NowPlaying(json);
+                var snap = ParseV3NowPlaying(json, out var statusExplicit);
+                if (snap is not null && !statusExplicit)
+                    snap = await InferPlaybackStatusByMovementAsync(snap, ct).ConfigureAwait(false);
+                return snap;
             }
             else
             {
@@ -200,8 +205,54 @@ public sealed class CiderClient
         }
     }
 
-    internal MediaSnapshot? ParseV3NowPlaying(string json)
+    /// <summary>
+    /// Cider 无显式 isPlaying/status 字段时，用「位置是否在移动」判断播放/暂停：
+    /// 暂停时 currentPlaybackTime 冻结，播放时随时间前进。首次采样做一次快速二次采样。
+    /// </summary>
+    private async Task<MediaSnapshot> InferPlaybackStatusByMovementAsync(MediaSnapshot snap, CancellationToken ct)
     {
+        var trackKey = $"{snap.Track.Artist}\u0001{snap.Track.Title}";
+        if (!string.Equals(trackKey, _lastCiderTrackKey, StringComparison.Ordinal))
+        {
+            _lastCiderTrackKey = trackKey;
+            _lastCiderPosition = -1; // 换曲后重新判定
+        }
+
+        if (_lastCiderPosition < 0)
+        {
+            // 首次/换曲后：等 ~350ms 再采一次样，比较位置是否前进
+            try
+            {
+                await Task.Delay(350, ct).ConfigureAwait(false);
+                using var req = Build(HttpMethod.Get, "/api/v1/playback/now-playing");
+                using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+                if (resp.IsSuccessStatusCode)
+                {
+                    var json2 = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                    var snap2 = ParseV3NowPlaying(json2);
+                    if (snap2 is not null)
+                    {
+                        var playing = snap2.PositionSeconds > snap.PositionSeconds + 0.2;
+                        _lastCiderPosition = snap2.PositionSeconds;
+                        return snap with { Status = playing ? PlaybackStatus.Playing : PlaybackStatus.Paused };
+                    }
+                }
+            }
+            catch { /* 采样失败走保守处理 */ }
+            _lastCiderPosition = snap.PositionSeconds;
+            return snap with { Status = PlaybackStatus.Paused };
+        }
+
+        // 后续轮询：位置前进超过 0.4s（跨 1s+ 轮询间隔）视为播放中，冻结视为暂停
+        var moved = snap.PositionSeconds > _lastCiderPosition + 0.4;
+        _lastCiderPosition = snap.PositionSeconds;
+        return snap with { Status = moved ? PlaybackStatus.Playing : PlaybackStatus.Paused };
+    }
+    internal MediaSnapshot? ParseV3NowPlaying(string json) => ParseV3NowPlaying(json, out _);
+
+    internal MediaSnapshot? ParseV3NowPlaying(string json, out bool statusExplicit)
+    {
+        statusExplicit = false;
         try
         {
             using var doc = JsonDocument.Parse(json);
@@ -224,8 +275,23 @@ public sealed class CiderClient
             var artUrl = ArtworkUrl(info, 320);
             var durationMs = Num(info, "durationInMillis", 0);
             var positionSec = Num(info, "currentPlaybackTime", 0);
-            var isPlaying = Bool(info, "isPlaying") || Str(info, "status") == "playing"
-                            || Num(info, "remainingTime", -1) > 0.5; // 无显式状态时按剩余时间推断
+
+            // 显式状态优先：isPlaying / status 字段
+            var isPlaying = false;
+            if (info.TryGetProperty("isPlaying", out var ipEl))
+            {
+                if (ipEl.ValueKind == JsonValueKind.True) isPlaying = true;
+                else if (ipEl.ValueKind == JsonValueKind.Number) isPlaying = ipEl.GetDouble() != 0;
+                statusExplicit = true;
+            }
+            var statusStr = Str(info, "status");
+            if (statusStr.Length > 0)
+            {
+                isPlaying = statusStr.Equals("playing", StringComparison.OrdinalIgnoreCase);
+                statusExplicit = true;
+            }
+            // 注意：不能用 remainingTime 推断播放状态——暂停中的歌 remainingTime 也 > 0，
+            // 否则暂停会被误判为播放、歌词继续往前走。无显式状态时由位置移动判定。
             var status = isPlaying ? PlaybackStatus.Playing : PlaybackStatus.Paused;
             var hasLyrics = Bool(info, "hasLyrics") || Bool(info, "hasTimeSyncedLyrics");
 
