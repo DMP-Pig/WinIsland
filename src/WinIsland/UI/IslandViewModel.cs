@@ -39,7 +39,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _settings = settings;
         _lyricsService = lyricsService;
 
-        PlayPauseCommand = new AsyncRelayCommand(_ => _coordinator.TogglePlayPauseAsync());
+        PlayPauseCommand = new AsyncRelayCommand(_ => TogglePlayPauseLocalAsync());
         NextCommand = new AsyncRelayCommand(_ => _coordinator.NextAsync());
         PreviousCommand = new AsyncRelayCommand(_ => _coordinator.PreviousAsync());
         OpenSettingsCommand = new RelayCommand(_ => OpenSettingsRequested?.Invoke(this, EventArgs.Empty));
@@ -148,7 +148,12 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             var old = _lyricIndex;
             _lyricIndex = value;
             if (old >= 0 && old < LyricLines.Count) LyricLines[old].IsCurrent = false;
-            if (value >= 0 && value < LyricLines.Count) LyricLines[value].IsCurrent = true;
+            if (value >= 0 && value < LyricLines.Count)
+            {
+                LyricLines[value].IsCurrent = true;
+                LyricLines[value].HighlightFraction = 0; // 新句从 0 开始，第一个字先不亮
+            }
+            CompactHighlightFraction = 0; // 紧凑态同步从 0 开始
             CurrentLyricText = LyricLines.Count > 0
                 ? LyricLines[Math.Clamp(value, 0, LyricLines.Count - 1)].Text
                 : string.Empty;
@@ -364,6 +369,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private void UpdateKaraokeHighlight()
     {
         if (LyricIndex < 0 || LyricIndex >= _lyrics.Document.Lines.Count) return;
+        // 非播放状态冻结高亮，保持暂停时刻的样子，不随位置校正跳动
+        if (Status != PlaybackStatus.Playing) return;
         var lines = _lyrics.Document.Lines;
         var cur = lines[LyricIndex];
         var nextStart = (LyricIndex + 1 < lines.Count) ? lines[LyricIndex + 1].Time.TotalSeconds : cur.Time.TotalSeconds + 5.0;
@@ -520,6 +527,25 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         await _coordinator.SeekAsync(target);
     }
 
+    /// <summary>
+    /// 乐观播放/暂停：点击按钮后立即切换本地状态，避免快照状态延迟期间
+    /// 本地进度继续推进，导致暂停后歌词高亮/进度条“跳回”暂停点。
+    /// </summary>
+    private async Task TogglePlayPauseLocalAsync()
+    {
+        if (Status == PlaybackStatus.Playing) SetStatusLocal(PlaybackStatus.Paused);
+        else if (Status == PlaybackStatus.Paused) SetStatusLocal(PlaybackStatus.Playing);
+        await _coordinator.TogglePlayPauseAsync();
+    }
+
+    private void SetStatusLocal(PlaybackStatus value)
+    {
+        if (Status == value) return;
+        Status = value;
+        OnPropertyChanged(nameof(IsPlaying));
+        OnPropertyChanged(nameof(IsPaused));
+        OnPropertyChanged(nameof(PlayPauseGlyph));
+    }
     public void Dispose()
     {
         _progressTimer.Stop();
