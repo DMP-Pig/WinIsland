@@ -245,7 +245,7 @@
                         <Slider x:Name="ProgressSlider" Style="{StaticResource ThinSlider}" Minimum="0" Maximum="1"
                                 Value="{Binding Progress, Mode=OneWay}" IsEnabled="{Binding CanSeek}"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Position}" FontSize="10"
+                            <TextBlock Text="{Binding PositionText}" FontSize="10"
                                        Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                             <TextBlock Text=" / " FontSize="10" Opacity="0.5"
                                        Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
