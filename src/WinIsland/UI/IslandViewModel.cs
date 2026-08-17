@@ -24,6 +24,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private DateTime _lastPositionTime;
     private double _interpolatedPosition;
     private int _lyricIndex = -1;
+    private DateTime? _positionStaleSinceUtc; // 上报位置明显回退的起始时刻（防瞬间 0/过期位置打回开头）
     private bool _expanded;
     private bool _visible;
     private bool _userHidden;
@@ -190,7 +191,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     // ── Coordinator events ─────────────────────────────────────
     private void OnSnapshotChanged(object? sender, MediaSnapshot snapshot)
     {
-        var trackChanged = _snapshot is null || _snapshot.Track != snapshot.Track;
+        // 用「歌手+歌名+专辑」判断换曲，而不是整条 TrackInfo 结构相等：
+        // 封面 URL 等字段抖动不应触发换曲（否则会重置进度并把歌词打回开头）。
+        var trackChanged = _snapshot is null ||
+            LyricsService.TrackKey(_snapshot.Track) != LyricsService.TrackKey(snapshot.Track);
         _snapshot = snapshot;
 
         Title = snapshot.Track.Title;
@@ -202,17 +206,39 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         DurationSeconds = snapshot.DurationSeconds;
         OnPropertyChanged(nameof(DurationText));
         var hasRealPosition = snapshot.DurationSeconds > 0 || snapshot.PositionSeconds > 0;
+        var reported = Math.Max(0, snapshot.PositionSeconds);
+        if (snapshot.DurationSeconds > 0) reported = Math.Min(reported, snapshot.DurationSeconds); // 防御：上报值不越界
         if (trackChanged)
         {
             _useFreeClock = !hasRealPosition;
-            _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(Math.Max(0, snapshot.PositionSeconds));
-            _interpolatedPosition = Math.Max(0, snapshot.PositionSeconds);
+            _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(reported);
+            _interpolatedPosition = reported;
+            _positionStaleSinceUtc = null;
         }
         else if (hasRealPosition)
         {
-            _useFreeClock = false;
-            _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(Math.Max(0, snapshot.PositionSeconds));
-            _interpolatedPosition = Math.Max(0, snapshot.PositionSeconds);
+            var current = _interpolatedPosition;
+            var seeking = _suppressSeek > 0; // 用户正在拖拽进度条
+            if (ShouldAdoptReportedPosition(reported, current, seeking))
+            {
+                _useFreeClock = false;
+                _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(reported);
+                _interpolatedPosition = reported;
+                _positionStaleSinceUtc = null;
+            }
+            else
+            {
+                // 忽略瞬间回退，保持当前插值进度继续推进，避免歌词/进度条突然跳回开头；
+                // 若明显回退持续超过 ~4 秒（真正的重播或播放器端 seek），再采纳并回跳。
+                if (_positionStaleSinceUtc is null) _positionStaleSinceUtc = DateTime.UtcNow;
+                else if ((DateTime.UtcNow - _positionStaleSinceUtc.Value).TotalSeconds >= 4.0)
+                {
+                    _useFreeClock = false;
+                    _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(reported);
+                    _interpolatedPosition = reported;
+                    _positionStaleSinceUtc = null;
+                }
+            }
         }
         // 无真实进度且非新曲目：保持自由时钟继续推进（不重置）
         _lastPositionTime = DateTime.UtcNow;
@@ -241,6 +267,18 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         UpdateVisibility();
     }
 
+    /// <summary>
+    /// 判断是否应立即采用播放器上报的位置（秒）。
+    /// 仅当位置前进 / 轻微回退（≤2s）/ 用户正在拖拽进度条时才立即采用；
+    /// 播放到中途时瞬间上报 ~0 视为过期读数（如 Cider/SMTC 偶发返回 0），
+    /// 返回 false，由调用方保持当前插值进度继续推进，避免歌词/进度条突然跳回开头。
+    /// </summary>
+    internal static bool ShouldAdoptReportedPosition(double reported, double current, bool seeking)
+    {
+        var sane = seeking || reported >= current - 2.0;
+        var staleZero = !seeking && reported < 1.0 && current > 10.0;
+        return sane && !staleZero;
+    }
     private void OnMediaEnded(object? sender, EventArgs e)
     {
         _snapshot = null;
@@ -253,6 +291,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         Position = TimeSpan.Zero;
         Progress = 0;
         _interpolatedPosition = 0;
+        _positionStaleSinceUtc = null;
         LyricLines = Array.Empty<LyricLineViewModel>();
         _lyrics = LyricsResult.Empty;
         LyricIndex = -1;
