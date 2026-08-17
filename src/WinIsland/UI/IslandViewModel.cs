@@ -31,6 +31,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private bool _suppressVolume;
     private int _suppressSeek;
     private string _lyricsKey = string.Empty;
+    private string? _restoredTrackKey;       // 上次退出时保存的曲目（用于启动恢复位置）
+    private double _restoredPosition;        // 上次退出时保存的位置（秒）
+    private bool _karaokeFrozen;             // 暂停时高亮是否已冻结（避免位置校正导致跳动）
 
 
     public IslandViewModel(MediaCoordinator coordinator, SettingsService settings, LyricsService lyricsService)
@@ -38,6 +41,14 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _coordinator = coordinator;
         _settings = settings;
         _lyricsService = lyricsService;
+
+        // 启动时恢复上次退出的播放位置（暂停后重启不跳回开头）
+        var restored = PlaybackStateStore.Load();
+        if (restored is not null)
+        {
+            _restoredTrackKey = restored.TrackKey;
+            _restoredPosition = restored.PositionSeconds;
+        }
 
         PlayPauseCommand = new AsyncRelayCommand(_ => TogglePlayPauseLocalAsync());
         NextCommand = new AsyncRelayCommand(_ => _coordinator.NextAsync());
@@ -148,12 +159,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             var old = _lyricIndex;
             _lyricIndex = value;
             if (old >= 0 && old < LyricLines.Count) LyricLines[old].IsCurrent = false;
-            if (value >= 0 && value < LyricLines.Count)
-            {
-                LyricLines[value].IsCurrent = true;
-                LyricLines[value].HighlightFraction = 0; // 新句从 0 开始，第一个字先不亮
-            }
-            CompactHighlightFraction = 0; // 紧凑态同步从 0 开始
+            if (value >= 0 && value < LyricLines.Count) LyricLines[value].IsCurrent = true;
+            // 换句时解除暂停冻结，让 UpdateKaraokeHighlight 按当前（正确）位置重算一次
+            _karaokeFrozen = false;
             CurrentLyricText = LyricLines.Count > 0
                 ? LyricLines[Math.Clamp(value, 0, LyricLines.Count - 1)].Text
                 : string.Empty;
@@ -207,18 +215,39 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         Album = snapshot.Track.Album;
         SourceLabel = snapshot.SourceLabel;
         SourceDetail = snapshot.Track.SourceAppName;
+        var prevStatus = Status;
         Status = snapshot.Status;
         DurationSeconds = snapshot.DurationSeconds;
+        // 暂停时保存一次位置（崩溃/退出后可恢复）
+        if (Status == PlaybackStatus.Paused && prevStatus != PlaybackStatus.Paused) SavePlaybackState();
         OnPropertyChanged(nameof(DurationText));
         var hasRealPosition = snapshot.DurationSeconds > 0 || snapshot.PositionSeconds > 0;
         var reported = Math.Max(0, snapshot.PositionSeconds);
         if (snapshot.DurationSeconds > 0) reported = Math.Min(reported, snapshot.DurationSeconds); // 防御：上报值不越界
         if (trackChanged)
         {
-            _useFreeClock = !hasRealPosition;
-            _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(reported);
-            _interpolatedPosition = reported;
+            // 启动恢复：Cider/SMTC 尚未返回真实位置时，用上次保存的位置作为初始值，
+            // 避免暂停后重启先显示第 0 行、等真实位置到了再“跳”到暂停句。
+            var restored = _restoredTrackKey is not null
+                && LyricsService.TrackKey(snapshot.Track) == _restoredTrackKey
+                && !hasRealPosition
+                && _restoredPosition > 0;
+            if (restored)
+            {
+                _interpolatedPosition = _restoredPosition;
+                if (snapshot.DurationSeconds > 0) _interpolatedPosition = Math.Min(_interpolatedPosition, snapshot.DurationSeconds);
+                _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(_interpolatedPosition);
+            }
+            else
+            {
+                _useFreeClock = !hasRealPosition;
+                _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(reported);
+                _interpolatedPosition = reported;
+            }
+            _restoredTrackKey = null; // 只恢复一次
             _positionStaleSinceUtc = null;
+            _karaokeFrozen = false;
+            SavePlaybackState();
         }
         else if (hasRealPosition)
         {
@@ -369,25 +398,57 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private void UpdateKaraokeHighlight()
     {
         if (LyricIndex < 0 || LyricIndex >= _lyrics.Document.Lines.Count) return;
-        // 非播放状态冻结高亮，保持暂停时刻的样子，不随位置校正跳动
-        if (Status != PlaybackStatus.Playing) return;
         var lines = _lyrics.Document.Lines;
         var cur = lines[LyricIndex];
         var nextStart = (LyricIndex + 1 < lines.Count) ? lines[LyricIndex + 1].Time.TotalSeconds : cur.Time.TotalSeconds + 5.0;
         var duration = Math.Max(0.1, nextStart - cur.Time.TotalSeconds);
         var frac = Math.Clamp((Position.TotalSeconds - cur.Time.TotalSeconds) / duration, 0, 1);
 
-        // 连续比例（0..1），供控件 60fps 缓动平滑过渡，避免整数跳字造成的停顿感。
+        if (Status == PlaybackStatus.Playing)
+        {
+            // 播放中：实时推进（连续比例 0..1，供控件 60fps 缓动）
+            _karaokeFrozen = false;
+            SetHighlightFraction(frac);
+        }
+        else if (!_karaokeFrozen)
+        {
+            // 暂停：用当前（已正确恢复的）位置设置一次高亮，然后冻结，
+            // 之后任何位置校正都不再改动高亮 → 稳定在暂停时刻的样子。
+            SetHighlightFraction(frac);
+            _karaokeFrozen = true;
+        }
+        // 已冻结：保持不动
+
+    }
+
+    private void SetHighlightFraction(double frac)
+    {
         if (LyricLines.Count > LyricIndex)
         {
             var lvm = LyricLines[LyricIndex];
             if (Math.Abs(lvm.HighlightFraction - frac) > 0.0005) lvm.HighlightFraction = frac;
         }
-
         if (Math.Abs(CompactHighlightFraction - frac) > 0.0005) CompactHighlightFraction = frac;
-
     }
 
+    /// <summary>保存当前播放位置（退出/暂停/切歌时调用，供下次启动恢复）。</summary>
+    public void SavePlaybackState()
+    {
+        try
+        {
+            if (_snapshot is null) return;
+            new PlaybackStateStore
+            {
+                TrackKey = LyricsService.TrackKey(_snapshot.Track),
+                PositionSeconds = Math.Max(0, _interpolatedPosition),
+                Status = Status.ToString(),
+            }.Save();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"SavePlaybackState failed: {ex.Message}");
+        }
+    }
     // ── Visibility ─────────────────────────────────────────────
     public void UpdateVisibility()
     {
@@ -545,6 +606,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsPlaying));
         OnPropertyChanged(nameof(IsPaused));
         OnPropertyChanged(nameof(PlayPauseGlyph));
+        if (value == PlaybackStatus.Paused) SavePlaybackState(); // 暂停即保存，退出/崩溃后可恢复
     }
     public void Dispose()
     {

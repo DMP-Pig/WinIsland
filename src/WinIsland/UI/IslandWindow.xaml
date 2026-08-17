@@ -178,6 +178,7 @@
                         <karaoke:KaraokeTextBlock
                             KaraokeText="{Binding CurrentLyricText}"
                             HighlightFraction="{Binding CompactHighlightFraction}"
+                            IsPlaying="{Binding IsPlaying}"
                             HighlightBrush="White"
                             BaseBrush="#80FFFFFF"
                             FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"/>
@@ -291,6 +292,7 @@
                                         <karaoke:KaraokeTextBlock
                                             KaraokeText="{Binding Text}"
                                             HighlightFraction="{Binding HighlightFraction}"
+                                            IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=False}"
                                             HighlightBrush="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
                                             BaseBrush="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                             Style="{StaticResource LyricLineText}"/>

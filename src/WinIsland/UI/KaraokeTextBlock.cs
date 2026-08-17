@@ -34,6 +34,11 @@ public class KaraokeTextBlock : TextBlock
         DependencyProperty.Register(nameof(BaseBrush), typeof(Brush), typeof(KaraokeTextBlock),
             new FrameworkPropertyMetadata(Brushes.Gray, OnRenderPropsChanged));
 
+    /// <summary>是否正在播放：播放中换行从 0 点亮；暂停/启动恢复换行直接显示目标高亮。</summary>
+    public static readonly DependencyProperty IsPlayingProperty =
+        DependencyProperty.Register(nameof(IsPlaying), typeof(bool), typeof(KaraokeTextBlock),
+            new FrameworkPropertyMetadata(false, OnRenderPropsChanged));
+
     private readonly DispatcherTimer _animTimer;
     private double _currentFraction;   // 当前已点亮比例（0..1，平滑推进）
     private double _targetFraction;    // 目标比例（0..1，来自 HighlightFraction）
@@ -74,6 +79,12 @@ public class KaraokeTextBlock : TextBlock
         set => SetValue(BaseBrushProperty, value);
     }
 
+    public bool IsPlaying
+    {
+        get => (bool)GetValue(IsPlayingProperty);
+        set => SetValue(IsPlayingProperty, value);
+    }
+
     private static void OnRenderPropsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((KaraokeTextBlock)d).RefreshTarget();
 
@@ -86,9 +97,19 @@ public class KaraokeTextBlock : TextBlock
         if (!string.Equals(text, _lastText, StringComparison.Ordinal))
         {
             _lastText = text;
-            _currentFraction = 0;
-            Render(); // 立即显示新句（全未点亮），再随进度平滑点亮
-            _animTimer.Start();
+            if (IsPlaying)
+            {
+                // 播放中换句：从 0 开始，第一个字先不亮，随进度平滑点亮
+                _currentFraction = 0;
+                _animTimer.Start();
+            }
+            else
+            {
+                // 暂停/启动恢复换行：直接显示目标高亮（即暂停时刻的样子），不跳 0
+                _currentFraction = _targetFraction;
+                _animTimer.Stop();
+            }
+            Render();
             return;
         }
 
@@ -105,8 +126,8 @@ public class KaraokeTextBlock : TextBlock
 
     private void TickAnimation()
     {
-        // 缓动逼近：差距大时走得快、接近时变慢，产生自然的加速/减速（iOS 式平滑填充）。
-        _currentFraction += (_targetFraction - _currentFraction) * 0.22;
+        // 缓动逼近：差距大时走得快、接近时变慢（0.35 让高亮更快跟上音乐进度，又不失平滑）。
+        _currentFraction += (_targetFraction - _currentFraction) * 0.35;
         if (Math.Abs(_currentFraction - _targetFraction) < 0.002)
         {
             _currentFraction = _targetFraction;

@@ -234,6 +234,7 @@ public partial class App : Application
         try
         {
             _settings?.Save();
+            _vm?.SavePlaybackState(); // 退出前保存播放位置，重启后恢复（暂停时不再跳回开头）
             _vm?.Dispose();
             _coordinator?.Dispose();
             _tray?.Dispose();
