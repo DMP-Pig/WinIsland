@@ -179,6 +179,19 @@ public sealed class MediaCoordinator : IDisposable
         return false;
     }
 
+    public async Task<bool> PlayAsync()
+    {
+        if (Current?.Source == MediaSourceKind.Cider) return await _cider.PlayAsync();
+        if (Current?.Source == MediaSourceKind.Smtc) return await _smtc.PlayAsync();
+        return false;
+    }
+
+    public async Task<bool> PauseAsync()
+    {
+        if (Current?.Source == MediaSourceKind.Cider) return await _cider.PauseAsync();
+        if (Current?.Source == MediaSourceKind.Smtc) return await _smtc.PauseAsync();
+        return false;
+    }
     public async Task<bool> NextAsync()
     {
         if (Current?.Source == MediaSourceKind.Cider) return await _cider.NextAsync();
