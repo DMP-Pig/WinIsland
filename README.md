@@ -117,7 +117,7 @@ build/
 
 ## 快速开始
 
-> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.1beta2/win-x64/WinIsland.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x86 / win-arm64 及 Windows 安装包）。
+> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.1/win-x64/WinIsland.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x86 / win-arm64 及 Windows 安装包）。
 ## 快速开始
 
 ### 环境要求
@@ -212,7 +212,7 @@ Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已�
 
 > ⚠️ Cider 2.x 新版默认**所有 API 请求都需要 Token**（无 Token 会返回 `403 UNAUTHORIZED_APP_TOKEN`）。若诊断日志提示需要 Token，请按上述步骤填入；否则 Cider 歌词/控制不可用（曲目仍可通过 SMTC 显示）。
 
-> ⚠️ 若日志反复出现 HttpClient.Timeout（原 2s），多为本机安全软件/代理拦截回环 HTTP 所致（Cider 实际响应约 30ms）。1.0.1beta12 起数据读取超时放宽到 5s；仍超时请检查杀毒软件对 WinIsland 的联网拦截。
+> ⚠️ 若日志反复出现 HttpClient.Timeout（原 2s），多为本机安全软件/代理拦截回环 HTTP 所致（Cider 实际响应约 30ms）。自 1.0.1 起数据读取超时放宽到 5s；仍超时请检查杀毒软件对 WinIsland 的联网拦截。
 
 **已实现的 API 能力**（依据 Cider 社区文档 / `cider-api` crate 实测整理，2026 年版本）：
 - `GET /api/v1/playback/active`、`GET /now-playing`（曲目/封面/进度/状态）

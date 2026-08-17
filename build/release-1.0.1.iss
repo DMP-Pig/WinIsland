@@ -1,9 +1,9 @@
-﻿; WinIsland - Inno Setup installer for the 1.0.1beta1 release
+﻿; WinIsland - Inno Setup installer for the 1.0.1 stable release
 #define MyAppName "WinIsland"
 #define MyAppVersion "1.0.1"
 #define MyAppPublisher "WinIsland"
 #define MyAppExeName "WinIsland.exe"
-#define SourceDir "..\..\releases\1.0.1beta1\win-x64"
+#define SourceDir "..\..\releases\1.0.1\win-x64"
 
 [Setup]
 AppId={{D8E63E7C-4B2A-4F5E-9C4A-2F6B0C1D9E3A}
@@ -13,7 +13,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
-OutputDir=..\..\releases\1.0.1beta1
+OutputDir=..\..\releases\1.0.1
 OutputBaseFilename=WinIsland-Setup-{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes
