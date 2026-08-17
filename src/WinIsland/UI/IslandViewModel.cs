@@ -39,6 +39,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private bool _statusOverrideActive;         // 乐观状态保护期：期间不被快照打回
     private PlaybackStatus _optimisticStatus;   // 乐观目标状态（等待快照确认）
     private DateTime _statusOverrideUntilUtc;   // 保护期截止时间
+    private bool _pauseLock;                       // 暂停锁定：期间不随快照恢复播放、不推进歌词
+    private PlaybackStatus _restoredStatus = PlaybackStatus.Closed; // 上次退出的状态（用于启动恢复）
 
 
     public IslandViewModel(MediaCoordinator coordinator, SettingsService settings, LyricsService lyricsService)
@@ -53,6 +55,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         {
             _restoredTrackKey = restored.TrackKey;
             _restoredPosition = restored.PositionSeconds;
+            _restoredStatus = string.Equals(restored.Status, "Paused", StringComparison.OrdinalIgnoreCase)
+                ? PlaybackStatus.Paused : PlaybackStatus.Playing;
         }
 
         PlayPauseCommand = new AsyncRelayCommand(_ => TogglePlayPauseLocalAsync());
@@ -241,13 +245,24 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         SourceLabel = snapshot.SourceLabel;
         SourceDetail = snapshot.Track.SourceAppName;
         var prevStatus = Status;
-        if (trackChanged) _statusOverrideActive = false; // 换曲后上一按钮保护期作废
+        if (trackChanged) { _statusOverrideActive = false; _pauseLock = false; } // 换曲后上一状态锁定作废
         if (_statusOverrideActive)
         {
             // 乐观状态保护期：直到快照确认目标状态或超时，否则保持按钮状态，不被快照打回
             if (snapshot.Status == _optimisticStatus || DateTime.UtcNow > _statusOverrideUntilUtc)
             {
                 _statusOverrideActive = false;
+                Status = snapshot.Status;
+            }
+        }
+        else if (_pauseLock)
+        {
+            // 暂停锁定：用户点击暂停 / 重启恢复的是暂停 —— 忽略快照误报的 Playing
+            // （Cider SMTC 在暂停时常仍报 Playing），保持暂停、不推进歌词；
+            // 直到快照确认暂停/停止（解除锁定）或用户点击播放。
+            if (snapshot.Status is PlaybackStatus.Paused or PlaybackStatus.Closed or PlaybackStatus.Stopped)
+            {
+                _pauseLock = false;
                 Status = snapshot.Status;
             }
         }
@@ -276,6 +291,12 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             {
                 _restoredMode = true; // 信任恢复位置，直到收到真实前进位置/换曲/seek
                 _interpolatedPosition = _restoredPosition;
+                if (_restoredStatus == PlaybackStatus.Paused)
+                {
+                    // 上次是暂停：锁定为暂停，重启后歌词保持不动（Cider SMTC 常误报 Playing）
+                    _pauseLock = true;
+                    SetStatusLocal(PlaybackStatus.Paused);
+                }
                 if (snapshot.DurationSeconds > 0) _interpolatedPosition = Math.Min(_interpolatedPosition, snapshot.DurationSeconds);
                 _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(_interpolatedPosition);
             }
@@ -289,6 +310,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             _positionStaleSinceUtc = null;
             _karaokeFrozen = false;
             SavePlaybackState();
+        }
+        else if (_pauseLock)
+        {
+            // 暂停锁定期间：位置保持冻结，不采纳快照位置（避免歌词/进度在暂停时继续走）
         }
         else if (hasRealPosition)
         {
@@ -364,6 +389,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _snapshot = null;
         _restoredMode = false;
         _statusOverrideActive = false;
+        _pauseLock = false;
         Title = string.Empty;
         Artist = string.Empty;
         Album = string.Empty;
@@ -659,6 +685,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         var target = Status == PlaybackStatus.Playing ? PlaybackStatus.Paused : PlaybackStatus.Playing;
         try
         {
+            _pauseLock = target == PlaybackStatus.Paused; // 暂停则锁定，播放则解除
             SetStatusLocal(target); // 立即切换按钮状态，避免延迟感
             _optimisticStatus = target;
             _statusOverrideActive = true;
