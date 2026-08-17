@@ -1,0 +1,16 @@
+﻿# Build outputs
+bin/
+obj/
+publish/
+*.user
+
+# NuGet / tool caches (kept out of VCS)
+.nuget/
+.dotnet-cli/
+
+# Runtime data
+*.log
+
+# Visual Studio
+.vs/
+*.suo
