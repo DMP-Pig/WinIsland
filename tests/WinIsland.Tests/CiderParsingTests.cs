@@ -42,6 +42,33 @@ public class CiderParsingTests
     }
 
     [Fact]
+    public void Does_Not_Infer_Playing_From_RemainingTime()
+    {
+        var client = new CiderClient();
+        var json = """
+        {
+          "status": "ok",
+          "data": {
+            "info": {
+              "name": "Paused Song",
+              "artistName": "Artist",
+              "albumName": "Album",
+              "durationInMillis": 200000,
+              "currentPlaybackTime": 100.0,
+              "remainingTime": 100.0
+            }
+          }
+        }
+        """;
+
+        var snap = client.ParseV3NowPlaying(json, out var statusExplicit);
+
+        Assert.NotNull(snap);
+        Assert.False(statusExplicit); // 无显式 isPlaying/status 字段
+        // 暂停中的歌 remainingTime 也 > 0，绝不能因此误判为播放
+        Assert.Equal(PlaybackStatus.Paused, snap!.Status);
+    }
+    [Fact]
     public void Parses_Empty_Now_Playing_As_Null()
     {
         var client = new CiderClient();

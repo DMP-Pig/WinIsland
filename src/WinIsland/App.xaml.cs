@@ -69,7 +69,7 @@ public partial class App : Application
         Localization.CurrentLanguage = _settings.Current.Language;
 
         _cider = new CiderMediaProvider(_settings);
-        var smtc = new SmtcMediaProvider();
+        var smtc = new SmtcMediaProvider(preferredAppId: "Cider"); // Cider session priority, avoid other active sessions
         var title = new WindowTitleMediaProvider();
         _coordinator = new MediaCoordinator(_settings, smtc, _cider, title, Dispatcher);
         _lyrics = new LyricsService(_settings, _cider);
