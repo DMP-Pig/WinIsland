@@ -34,6 +34,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private string? _restoredTrackKey;       // 上次退出时保存的曲目（用于启动恢复位置）
     private double _restoredPosition;        // 上次退出时保存的位置（秒）
     private bool _karaokeFrozen;             // 暂停时高亮是否已冻结（避免位置校正导致跳动）
+    private bool _restoredMode;                // 启动恢复后信任恢复位置：暂不采纳回退/过期位置
 
 
     public IslandViewModel(MediaCoordinator coordinator, SettingsService settings, LyricsService lyricsService)
@@ -226,14 +227,17 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         if (snapshot.DurationSeconds > 0) reported = Math.Min(reported, snapshot.DurationSeconds); // 防御：上报值不越界
         if (trackChanged)
         {
+            _restoredMode = false;
             // 启动恢复：Cider/SMTC 尚未返回真实位置时，用上次保存的位置作为初始值，
             // 避免暂停后重启先显示第 0 行、等真实位置到了再“跳”到暂停句。
+            // 只要曲目匹配且有上次位置就恢复（即使第一帧带了时长但位置为 0，也以恢复位置为准，
+            // 之后位置守卫会按真实上报值平滑校正，避免先显示第 0 行再跳）
             var restored = _restoredTrackKey is not null
                 && LyricsService.TrackKey(snapshot.Track) == _restoredTrackKey
-                && !hasRealPosition
                 && _restoredPosition > 0;
             if (restored)
             {
+                _restoredMode = true; // 信任恢复位置，直到收到真实前进位置/换曲/seek
                 _interpolatedPosition = _restoredPosition;
                 if (snapshot.DurationSeconds > 0) _interpolatedPosition = Math.Min(_interpolatedPosition, snapshot.DurationSeconds);
                 _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(_interpolatedPosition);
@@ -255,10 +259,15 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             var seeking = _suppressSeek > 0; // 用户正在拖拽进度条
             if (ShouldAdoptReportedPosition(reported, current, seeking))
             {
+                _restoredMode = false; // 已收到真实前进位置，恢复正常守卫
                 _useFreeClock = false;
                 _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(reported);
                 _interpolatedPosition = reported;
                 _positionStaleSinceUtc = null;
+            }
+            else if (_restoredMode)
+            {
+                // 启动恢复信任期：持续报 0/过期位置（如 Cider SMTC）也保持恢复的位置，不触发回跳
             }
             else
             {
@@ -316,6 +325,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private void OnMediaEnded(object? sender, EventArgs e)
     {
         _snapshot = null;
+        _restoredMode = false;
         Title = string.Empty;
         Artist = string.Empty;
         Album = string.Empty;
@@ -347,8 +357,18 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         if (_lyricsKey != key) return; // track changed while loading
         _lyrics = result;
         LyricLines = result.Document.Lines.Select(l => new LyricLineViewModel(l)).ToList();
-        LyricIndex = -1;
-        CurrentLyricText = LyricLines.Count > 0 ? LyricLines[0].Text : string.Empty;
+        if (LyricLines.Count > 0)
+        {
+            // 直接按当前（已恢复的）位置定位当前句，避免启动瞬间先显示第 0 行再跳
+            var idx = result.Document.IndexAt(TimeSpan.FromSeconds(Math.Max(0, _interpolatedPosition)));
+            LyricIndex = idx < 0 ? -1 : idx;
+            CurrentLyricText = LyricLines[Math.Clamp(idx, 0, LyricLines.Count - 1)].Text;
+        }
+        else
+        {
+            LyricIndex = -1;
+            CurrentLyricText = string.Empty;
+        }
 
 
         LyricsStatus = result.Source switch
@@ -583,6 +603,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _suppressSeek--;
         if (_snapshot is null || _snapshot.DurationSeconds <= 0) return;
         var target = Math.Clamp(fraction, 0, 1) * _snapshot.DurationSeconds;
+        _restoredMode = false; // 用户 seek 后以新位置为准
         _interpolatedPosition = target;
         _lastPositionTime = DateTime.UtcNow;
         await _coordinator.SeekAsync(target);
