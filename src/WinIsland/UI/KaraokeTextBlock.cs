@@ -126,8 +126,8 @@ public class KaraokeTextBlock : TextBlock
 
     private void TickAnimation()
     {
-        // 缓动逼近：差距大时走得快、接近时变慢（0.35 让高亮更快跟上音乐进度，又不失平滑）。
-        _currentFraction += (_targetFraction - _currentFraction) * 0.35;
+        // 缓动逼近：差距大时走得快、接近时变慢（0.5 让高亮更跟拍，同时保持平滑）。
+        _currentFraction += (_targetFraction - _currentFraction) * 0.5;
         if (Math.Abs(_currentFraction - _targetFraction) < 0.002)
         {
             _currentFraction = _targetFraction;
