@@ -391,6 +391,21 @@ public sealed class SmtcMediaProvider : IDisposable
         catch (Exception ex) { AppLogger.Warn($"SMTC toggle failed: {ex.Message}"); return false; }
     }
 
+    public async Task<bool> PlayAsync()
+    {
+        var s = _session;
+        if (s is null) return false;
+        try { return await s.TryPlayAsync().AsTask(); }
+        catch (Exception ex) { AppLogger.Warn($"SMTC play failed: {ex.Message}"); return false; }
+    }
+
+    public async Task<bool> PauseAsync()
+    {
+        var s = _session;
+        if (s is null) return false;
+        try { return await s.TryPauseAsync().AsTask(); }
+        catch (Exception ex) { AppLogger.Warn($"SMTC pause failed: {ex.Message}"); return false; }
+    }
     public async Task<bool> NextAsync()
     {
         var s = _session;

@@ -35,6 +35,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private double _restoredPosition;        // 上次退出时保存的位置（秒）
     private bool _karaokeFrozen;             // 暂停时高亮是否已冻结（避免位置校正导致跳动）
     private bool _restoredMode;                // 启动恢复后信任恢复位置：暂不采纳回退/过期位置
+    private bool _toggleInFlight;               // 播放/暂停命令在途（防连点重复触发）
+    private bool _statusOverrideActive;         // 乐观状态保护期：期间不被快照打回
+    private PlaybackStatus _optimisticStatus;   // 乐观目标状态（等待快照确认）
+    private DateTime _statusOverrideUntilUtc;   // 保护期截止时间
 
 
     public IslandViewModel(MediaCoordinator coordinator, SettingsService settings, LyricsService lyricsService)
@@ -237,7 +241,20 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         SourceLabel = snapshot.SourceLabel;
         SourceDetail = snapshot.Track.SourceAppName;
         var prevStatus = Status;
-        Status = snapshot.Status;
+        if (trackChanged) _statusOverrideActive = false; // 换曲后上一按钮保护期作废
+        if (_statusOverrideActive)
+        {
+            // 乐观状态保护期：直到快照确认目标状态或超时，否则保持按钮状态，不被快照打回
+            if (snapshot.Status == _optimisticStatus || DateTime.UtcNow > _statusOverrideUntilUtc)
+            {
+                _statusOverrideActive = false;
+                Status = snapshot.Status;
+            }
+        }
+        else
+        {
+            Status = snapshot.Status;
+        }
         DurationSeconds = snapshot.DurationSeconds;
         // 暂停时保存一次位置（崩溃/退出后可恢复）
         if (Status == PlaybackStatus.Paused && prevStatus != PlaybackStatus.Paused) SavePlaybackState();
@@ -346,6 +363,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     {
         _snapshot = null;
         _restoredMode = false;
+        _statusOverrideActive = false;
         Title = string.Empty;
         Artist = string.Empty;
         Album = string.Empty;
@@ -635,9 +653,31 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     /// </summary>
     private async Task TogglePlayPauseLocalAsync()
     {
-        if (Status == PlaybackStatus.Playing) SetStatusLocal(PlaybackStatus.Paused);
-        else if (Status == PlaybackStatus.Paused) SetStatusLocal(PlaybackStatus.Playing);
-        await _coordinator.TogglePlayPauseAsync();
+        if (_toggleInFlight) return; // 防连点：命令在途时忽略再次点击
+        if (Status != PlaybackStatus.Playing && Status != PlaybackStatus.Paused) return;
+        _toggleInFlight = true;
+        var target = Status == PlaybackStatus.Playing ? PlaybackStatus.Paused : PlaybackStatus.Playing;
+        try
+        {
+            SetStatusLocal(target); // 立即切换按钮状态，避免延迟感
+            _optimisticStatus = target;
+            _statusOverrideActive = true;
+            _statusOverrideUntilUtc = DateTime.UtcNow + TimeSpan.FromSeconds(8);
+            var ok = await _coordinator.TogglePlayPauseAsync();
+            if (!ok)
+            {
+                // 部分播放器/Cider 版本不支持 playpause 端点：回退到明确的 play/pause
+                ok = target == PlaybackStatus.Paused
+                    ? await _coordinator.PauseAsync()
+                    : await _coordinator.PlayAsync();
+            }
+            if (!ok) AppLogger.Warn("Play/pause command returned failure; waiting for player state to settle.");
+        }
+        finally
+        {
+            _toggleInFlight = false;
+        }
+        // 保护期不在此结束：等快照确认目标状态或超时后再恢复快照驱动，防止按钮被打回
     }
 
     private void SetStatusLocal(PlaybackStatus value)

@@ -64,6 +64,8 @@ public sealed class CiderMediaProvider : IDisposable
     }
 
     public Task<bool> TogglePlayPauseAsync() => Client.TogglePlayPauseAsync(_cts.Token);
+    public Task<bool> PlayAsync() => Client.PlayAsync(_cts.Token);
+    public Task<bool> PauseAsync() => Client.PauseAsync(_cts.Token);
     public Task<bool> NextAsync() => Client.NextAsync(_cts.Token);
     public Task<bool> PreviousAsync() => Client.PreviousAsync(_cts.Token);
     public Task<bool> SeekAsync(double seconds) => Client.SeekAsync(seconds, _cts.Token);
