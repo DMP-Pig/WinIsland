@@ -16,6 +16,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private readonly SettingsService _settings;
     private readonly LyricsService _lyricsService;
     private readonly DispatcherTimer _progressTimer;
+    private DateTime _trackStartTime = DateTime.UtcNow;
+    private bool _useFreeClock;   // 播放器不报 SMTC 进度（如 Cider）时用本地时钟推进卡拉OK
 
     private MediaSnapshot? _snapshot;
     private LyricsResult _lyrics = LyricsResult.Empty;
@@ -28,6 +30,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private bool _suppressVolume;
     private int _suppressSeek;
     private string _lyricsKey = string.Empty;
+
 
     public IslandViewModel(MediaCoordinator coordinator, SettingsService settings, LyricsService lyricsService)
     {
@@ -45,7 +48,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _coordinator.MediaEnded += OnMediaEnded;
         Localization.LanguageChanged += (_, _) => RaiseAllText();
 
-        _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _progressTimer.Tick += (_, _) => AdvanceProgress();
         _progressTimer.Start();
     }
@@ -159,6 +162,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private string _currentLyricText = string.Empty;
     public string CurrentLyricText { get => _currentLyricText; private set => Set(ref _currentLyricText, value); }
 
+    /// <summary>紧凑态逐字卡拉OK已点亮字符数。</summary>
+    private int _compactHighlightCount;
+    public int CompactHighlightCount { get => _compactHighlightCount; private set => Set(ref _compactHighlightCount, value); }
+
     // ── Visibility / expansion ─────────────────────────────────
     public bool IsExpanded
     {
@@ -194,7 +201,20 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         Status = snapshot.Status;
         DurationSeconds = snapshot.DurationSeconds;
         OnPropertyChanged(nameof(DurationText));
-        _interpolatedPosition = snapshot.PositionSeconds;
+        var hasRealPosition = snapshot.DurationSeconds > 0 || snapshot.PositionSeconds > 0;
+        if (trackChanged)
+        {
+            _useFreeClock = !hasRealPosition;
+            _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(Math.Max(0, snapshot.PositionSeconds));
+            _interpolatedPosition = Math.Max(0, snapshot.PositionSeconds);
+        }
+        else if (hasRealPosition)
+        {
+            _useFreeClock = false;
+            _trackStartTime = DateTime.UtcNow - TimeSpan.FromSeconds(Math.Max(0, snapshot.PositionSeconds));
+            _interpolatedPosition = Math.Max(0, snapshot.PositionSeconds);
+        }
+        // 无真实进度且非新曲目：保持自由时钟继续推进（不重置）
         _lastPositionTime = DateTime.UtcNow;
         CanPlayPause = snapshot.CanPlayPause;
         CanNext = snapshot.CanNext;
@@ -256,6 +276,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         LyricLines = result.Document.Lines.Select(l => new LyricLineViewModel(l)).ToList();
         LyricIndex = -1;
         CurrentLyricText = LyricLines.Count > 0 ? LyricLines[0].Text : string.Empty;
+
+
         LyricsStatus = result.Source switch
         {
             LyricsSourceKind.LocalFile => Localization.Get("Lyrics_Local"),
@@ -274,21 +296,50 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         if (Status == PlaybackStatus.Playing)
         {
             var now = DateTime.UtcNow;
-            _interpolatedPosition += (now - _lastPositionTime).TotalSeconds;
+            if (_useFreeClock)
+            {
+                // 播放器不报 SMTC 进度（如 Cider）：用本地时钟从曲目开始推进卡拉OK
+                _interpolatedPosition = (now - _trackStartTime).TotalSeconds;
+            }
+            else
+            {
+                _interpolatedPosition += (now - _lastPositionTime).TotalSeconds;
+            }
             _lastPositionTime = now;
         }
 
-        var duration = DurationSeconds > 0 ? DurationSeconds : _snapshot?.DurationSeconds ?? 0;
-        if (duration <= 0) return;
-
-        Position = TimeSpan.FromSeconds(Math.Clamp(_interpolatedPosition, 0, duration));
+        // 时长不可用（Cider）时用兜底时长，保证进度/卡拉OK仍推进
+        var duration = DurationSeconds > 0 ? DurationSeconds : 300.0;
+        Position = TimeSpan.FromSeconds(Math.Max(0, _interpolatedPosition));
         Progress = Math.Clamp(_interpolatedPosition / duration, 0, 1);
 
         if (HasLyrics)
         {
             var idx = _lyrics.Document.IndexAt(Position);
             if (idx != LyricIndex) LyricIndex = idx;
+            UpdateKaraokeHighlight();
         }
+    }
+
+    /// <summary>逐字卡拉OK：把当前句的时长按字符均分，推进已点亮字符数。</summary>
+    private void UpdateKaraokeHighlight()
+    {
+        if (LyricIndex < 0 || LyricIndex >= _lyrics.Document.Lines.Count) return;
+        var lines = _lyrics.Document.Lines;
+        var cur = lines[LyricIndex];
+        var nextStart = (LyricIndex + 1 < lines.Count) ? lines[LyricIndex + 1].Time.TotalSeconds : cur.Time.TotalSeconds + 5.0;
+        var duration = Math.Max(0.1, nextStart - cur.Time.TotalSeconds);
+        var frac = Math.Clamp((Position.TotalSeconds - cur.Time.TotalSeconds) / duration, 0, 1);
+        var count = (int)(frac * cur.Text.Length);
+
+        if (LyricLines.Count > LyricIndex)
+        {
+            var lvm = LyricLines[LyricIndex];
+            if (lvm.HighlightCount != count) lvm.HighlightCount = count;
+        }
+
+        if (CompactHighlightCount != count) CompactHighlightCount = count;
+
     }
 
     // ── Visibility ─────────────────────────────────────────────
@@ -310,6 +361,14 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
 
     public void ForceShow() { _userHidden = false; UpdateVisibility(); }
     public void ForceHide() { _userHidden = true; UpdateVisibility(); }
+
+    /// <summary>强制重新获取当前曲目的歌词（在线歌词开关变化后调用）。</summary>
+    public async Task RefreshLyricsAsync()
+    {
+        _lyricsKey = string.Empty;
+        _lyricsService.ClearCache();
+        if (_snapshot is not null) await LoadLyricsAsync(_snapshot);
+    }
 
     /// <summary>
     /// Demo mode (--demo): injects a fake track so the island can be previewed

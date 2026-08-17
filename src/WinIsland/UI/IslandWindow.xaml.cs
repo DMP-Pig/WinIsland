@@ -53,7 +53,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         DataContext = vm;
         InitializeComponent();
 
-        // 收起延迟（悬停离开后 700ms 再收起，防止误触）
+        // 收起延迟（鼠标移出展开态 700ms 后收起）
         _collapseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
         _collapseTimer.Tick += (_, _) =>
         {
@@ -61,12 +61,19 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             _vm.IsExpanded = false;
         };
 
-        // 悬停展开 / 移出收起
-        Card.MouseEnter += (_, _) => { _collapseTimer.Stop(); _vm.IsExpanded = true; };
+        _lyricsScrollTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _lyricsScrollTimer.Tick += (_, _) => SmoothScrollStep();
+
+        // 悬停不展开；移出时若已展开则延迟收起
         Card.MouseLeave += (_, _) =>
         {
             if (_vm.IsExpanded) _collapseTimer.Start();
         };
+
+        // 点击展开/收起；解锁状态下支持鼠标拖动
+        Card.PreviewMouseLeftButtonDown += OnCardMouseLeftButtonDown;
+        Card.PreviewMouseMove += OnCardMouseMove;
+        Card.PreviewMouseLeftButtonUp += OnCardMouseLeftButtonUp;
 
         // 进度条拖拽 seek
         ProgressSlider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler((_, _) => _vm.BeginSeek()));
@@ -91,6 +98,98 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     public Brush ButtonHoverBrush => _theme.ButtonHoverBrush;
     public Brush SliderTrackBrush => _theme.SliderTrackBrush;
     public Brush SliderThumbBrush => _theme.SliderThumbBrush;
+
+    // ── 点击展开 / 解锁拖动 / 右键菜单 ─────────────────────────
+
+    private Point _downPoint;
+    private bool _mouseDownOnCard;
+    private bool _draggedCard;
+
+    private void OnCardMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _mouseDownOnCard = true;
+        _draggedCard = false;
+        _downPoint = e.GetPosition(this);
+    }
+
+    private void OnCardMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!_mouseDownOnCard || e.LeftButton != MouseButtonState.Pressed) return;
+        if (_settings.Current.IsLocked) return; // 上锁不可拖动
+
+        var pos = e.GetPosition(this);
+        if (Math.Abs(pos.X - _downPoint.X) > 4 || Math.Abs(pos.Y - _downPoint.Y) > 4)
+        {
+            _mouseDownOnCard = false;
+            _draggedCard = true;
+            _collapseTimer.Stop();
+            try { DragMove(); } catch { /* ignore */ }
+            e.Handled = true;
+        }
+    }
+
+    private void OnCardMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_draggedCard) { _draggedCard = false; return; }
+        if (!_mouseDownOnCard) return;
+        _mouseDownOnCard = false;
+
+        // 点击按钮/滑块不触发展开切换
+        if (IsInteractiveElement(e.OriginalSource)) return;
+
+        _collapseTimer.Stop();
+        _vm.IsExpanded = !_vm.IsExpanded;
+        e.Handled = true;
+    }
+
+    private static bool IsInteractiveElement(object source)
+    {
+        var d = source as DependencyObject;
+        while (d is not null)
+        {
+            if (d is System.Windows.Controls.Primitives.ButtonBase or Slider
+                or System.Windows.Controls.Primitives.Thumb or System.Windows.Controls.Primitives.RepeatButton)
+                return true;
+            // Run/Inline 等 ContentElement 不是 Visual，VisualTreeHelper.GetParent 会抛异常，
+            // 需沿逻辑树向上（歌词 Run → TextBlock），到达 UIElement 后继续沿视觉树。
+            d = d is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D
+                ? VisualTreeHelper.GetParent(d)
+                : LogicalTreeHelper.GetParent(d);
+        }
+
+        return false;
+    }
+
+    private void Card_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        MenuLock.Header = _settings.Current.IsLocked
+            ? Localization.Get("Island_Unlock")
+            : Localization.Get("Island_Lock");
+        MenuOnlineLyrics.Header = Localization.Get("Island_OnlineLyrics");
+        MenuOnlineLyrics.IsChecked = _settings.Current.OnlineLyricsEnabled;
+    }
+
+    private void MenuOnlineLyrics_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.Update(s => s.OnlineLyricsEnabled = !s.OnlineLyricsEnabled);
+        _ = _vm.RefreshLyricsAsync();
+        Card_ContextMenuOpening(sender, null!);
+    }
+
+    private void MenuCenterAlign_Click(object sender, RoutedEventArgs e)
+    {
+        // 上下不变，左右居中
+        var work = ScreenHelper.DpiWorkArea(_screen);
+        var cardPos = Card.TransformToAncestor(this).Transform(new Point(0, 0));
+        var cardCenterInWindow = cardPos.X + Card.ActualWidth / 2;
+        Left = work.Left + work.Width / 2 - cardCenterInWindow;
+    }
+
+    private void MenuLock_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.Update(s => s.IsLocked = !s.IsLocked);
+        Card_ContextMenuOpening(sender, null!);
+    }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -139,6 +238,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
                 break;
             case nameof(IslandViewModel.IsExpanded):
                 AnimateSize();
+                if (_vm.IsExpanded && _vm.LyricIndex >= 0)
+                    Dispatcher.BeginInvoke(() => ScrollLyricsTo(_vm.LyricIndex), DispatcherPriority.Loaded);
                 break;
             case nameof(IslandViewModel.LyricIndex):
                 if (_vm.LyricIndex >= 0) QueueLyricsScroll(_vm.LyricIndex);
@@ -227,7 +328,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     private void Expand()
     {
-        // 先让展开内容参与布局，再测量目标高度
+        // 展开时收起胶囊行（紧凑封面/按钮不叠加在大封面上方），行高归零，再测量高度
+        ContentGrid.RowDefinitions[0].Height = GridLength.Auto;
+        PillRow.Visibility = Visibility.Collapsed;
         ExpandedContent.Visibility = Visibility.Visible;
         ContentGrid.Measure(new System.Windows.Size(ExpandedWidth - 24, double.PositiveInfinity));
         var targetHeight = Math.Clamp(ContentGrid.DesiredSize.Height + 16, 200, MaxExpandedHeight);
@@ -236,6 +339,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     private void Collapse()
     {
+        // 先恢复胶囊行（紧凑行占满并垂直居中），再缩回紧凑尺寸
+        ContentGrid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Star);
+        PillRow.Visibility = Visibility.Visible;
         AnimateCard(CompactWidth, CompactHeight, expand: false,
             onCompleted: () => ExpandedContent.Visibility = Visibility.Collapsed);
     }
@@ -303,13 +409,21 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     // ── 歌词自动滚动 ──────────────────────────────────────────
 
     private bool _lyricsScrollQueued;
+    private readonly DispatcherTimer _lyricsScrollTimer;
+    private double _lyricsScrollTarget;
 
     private void QueueLyricsScroll(int index)
     {
         if (!IsLoaded || !IsVisible || !_vm.IsExpanded) return;
         if (_lyricsScrollQueued) return;
         _lyricsScrollQueued = true;
-
+        Dispatcher.BeginInvoke(() =>
+        {
+            _lyricsScrollQueued = false;
+            // 执行时取最新索引：快速切句时排队中的旧索引会被最新句覆盖，滚动始终跟随当前句
+            var current = _vm.LyricIndex >= 0 ? _vm.LyricIndex : index;
+            ScrollLyricsTo(current);
+        }, DispatcherPriority.Loaded);
     }
 
     private void ScrollLyricsTo(int index)
@@ -320,8 +434,26 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         if (container is null) return;
 
         var viewer = LyricsScroll;
-        var target = container.TransformToAncestor(viewer).Transform(new Point(0, 0)).Y
-                     + container.ActualHeight / 2 - viewer.ViewportHeight / 2;
-        viewer.ScrollToVerticalOffset(Math.Max(0, target));
+        var relY = container.TransformToAncestor(viewer).Transform(new Point(0, 0)).Y;
+        // 视口相对坐标 + 当前偏移 = 内容坐标；再减去半个视口/加上半个行高使当前句居中
+        var target = viewer.VerticalOffset + relY - viewer.ViewportHeight / 2 + container.ActualHeight / 2;
+        target = Math.Max(0, target);
+        _lyricsScrollTarget = target;
+        _lyricsScrollTimer.Start();
+    }
+
+    /// <summary>平滑滚动：每帧按比例逼近目标偏移（当前句居中）。</summary>
+    private void SmoothScrollStep()
+    {
+        var current = LyricsScroll.VerticalOffset;
+        var delta = _lyricsScrollTarget - current;
+        if (Math.Abs(delta) < 0.5)
+        {
+            LyricsScroll.ScrollToVerticalOffset(_lyricsScrollTarget);
+            _lyricsScrollTimer.Stop();
+            return;
+        }
+
+        LyricsScroll.ScrollToVerticalOffset(current + delta * 0.22);
     }
 }

@@ -22,6 +22,7 @@ public partial class App : Application
     private LyricsWindow? _lyricsWindow;
     private TrayIcon? _tray;
     private SingleInstance? _singleInstance;
+    private AppSettings? _lastPositionSettings;
 
     public App()
     {
@@ -62,6 +63,7 @@ public partial class App : Application
 
         // ── Services ──
         _settings = new SettingsService();
+        _lastPositionSettings = _settings.Current.Clone();
         _theme = new ThemeService();
         _theme.Apply(_settings.Current);
         Localization.CurrentLanguage = _settings.Current.Language;
@@ -107,7 +109,16 @@ public partial class App : Application
             if (!s.StandaloneLyricsWindow && _lyricsWindow is { IsVisible: true })
                 _lyricsWindow.Hide();
 
-            RecreateWindows();
+            // 仅位置/显示器类设置变更时重定位；锁定等其它变更保留拖动后的位置
+            var posChanged = _lastPositionSettings is null
+                || s.Position != _lastPositionSettings.Position
+                || s.Monitor != _lastPositionSettings.Monitor
+                || s.MonitorIndex != _lastPositionSettings.MonitorIndex
+                || s.OffsetX != _lastPositionSettings.OffsetX
+                || s.OffsetY != _lastPositionSettings.OffsetY;
+            _lastPositionSettings = s.Clone();
+            if (posChanged) RecreateWindows();
+
             _vm?.UpdateVisibility();
         };
 

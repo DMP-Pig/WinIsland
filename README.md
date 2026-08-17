@@ -29,14 +29,18 @@
 ## 功能特性
 
 ### P0（已实现）
-- **灵动岛悬浮 UI（仿 iOS）**：顶部居中（可配置顶部右侧）；圆角胶囊；跟随系统明暗主题或手动主题色；紧凑 ↔ 完整卡片**形变动画**（固定窗口 + 单元素缩放/淡入，WPF 合成线程 60fps 驱动，带 iOS 弹簧回弹）；悬停展开、移出自动收起（700ms 防误触缓冲）；卡片外区域点击穿透。
+- **灵动岛悬浮 UI（仿 iOS）**：默认顶部居中（可配置顶部右侧）；圆角胶囊；跟随系统明暗主题或手动主题色；紧凑 ↔ 完整卡片**形变动画**（固定窗口 + 单元素缩放/淡入，WPF 合成线程 60fps 驱动，带 iOS 弹簧回弹）；**点击展开/收起**（悬停不展开），移出自动收起（700ms 防误触缓冲）；卡片外区域点击穿透。
+- **锁定与拖动**：默认上锁不可移动；右键菜单可**解锁**（解锁后鼠标拖动灵动岛）、**居中对齐**（上下不变、左右居中）、再次**上锁**。解锁拖动后重新上锁会**保持拖动位置**（不回归默认）。
+- **紧凑态排版**：歌名/歌手/歌词左对齐（贴封面）、垂直居中。
 - **专辑封面展示**：胶囊与展开卡片均显示封面（展开时为大封面 64px，无封面时显示占位图标）；SMTC 缩略图与 Cider 封面自动缓存。
 - **媒体播放控制**：显示歌名、歌手、专辑；可拖拽进度条 seek；播放/暂停、上一首、下一首；需要时提供音量调节（Cider 用其 API，其它来源控制系统音量，可关闭）。
 - **多来源接入**：
   1. Windows 全局媒体会话（`Windows.Media.Control` / SMTC）——网易云、QQ音乐、Spotify、Apple Music 官方版、Groove、电影和电视等；
   2. **Cider** 本地 HTTP API（端口 10767，兼容旧版 10769 RPC，自动扫描端口 + 手动配置，支持 `apptoken` 鉴权）；
   3. 兜底：窗口标题 + 进程识别（仅展示信息，无控制能力）。
-- **歌词显示**：展开卡片内同步滚动高亮（无边框干净排版）；可选独立悬浮歌词小窗；来源优先级 **本地 .lrc → Cider 歌词接口 → 在线歌词（默认关闭）**；无歌词时优雅降级为曲目信息。
+- **歌词显示（逐字卡拉OK模式）**：点击展开后，歌词区以卡拉OK方式显示——**当前句的字逐个点亮**（随播放进度逐字填充，20px 大号 + 主题色高亮胶囊），其余句淡化，**平滑滚动自动居中**（60fps 逐帧逼近当前句，展开即自动跟随）；紧凑态左对齐实时显示当前句并同样逐字点亮；可选独立悬浮歌词小窗。
+  - **进度同步**：自动读取 Cider 的本地 API Token（零配置）获取真实播放进度，卡拉OK逐字与歌曲精确同步；无进度可用的播放器用本地时钟推进。
+  - **歌词来源**：本地 `.lrc`（`%APPDATA%\WinIsland\Lyrics` 或音乐目录）→ Cider 歌词接口 → 在线歌词（右键灵动岛可一键开关）。无歌词时显示"暂无歌词"，不报错。
 - **系统托盘**：常驻图标，右键菜单（显示/隐藏、独立歌词窗口、开机自启、设置、退出），双击切换显示。
 
 ### P1（已实现）
@@ -48,7 +52,7 @@
 ### P2（部分实现）
 - 简体中文 + English 界面切换。
 - 导出 / 导入 JSON 配置文件。
-- 尚未实现：Windows 通知接入（来电/日历/电量）、逐字卡拉OK高亮（当前为整行高亮）。
+- 尚未实现：Windows 通知接入（来电/日历/电量）。
 
 ---
 
@@ -82,7 +86,7 @@ src/WinIsland/
 │   ├── MediaCoordinator.cs    # 中央调度：Cider > SMTC > 窗口标题，封面缓存、音量附加
 │   ├── LrcParser.cs           # LRC 解析（多时间戳、offset、时长格式）
 │   ├── LyricsService.cs       # 歌词解析（本地 .lrc → Cider → 在线）
-│   ├── OnlineLyricsService.cs # 在线歌词（网易云非官方接口，默认关闭）
+│   ├── OnlineLyricsService.cs # 在线歌词（网易云/QQ音乐非官方接口，默认开启可一键开关）
 │   ├── ArtworkCache.cs        # 封面下载/缓存（Cider 远程封面 → 本地文件）
 │   ├── SystemVolume.cs        # CoreAudio 系统音量（COM P/Invoke）
 │   ├── AppSettings.cs         # JSON 配置读写（%APPDATA%\WinIsland\settings.json）
@@ -113,7 +117,7 @@ build/
 
 ## 快速开始
 
-> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.1beta1/win-x64/WinIsland.exe`，约 70MB，含 .NET 8 运行时，双击即可运行），另有 win-x86 / win-arm64 及 Windows 安装包。
+> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.1beta2/win-x64/WinIsland.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x86 / win-arm64 及 Windows 安装包）。
 ## 快速开始
 
 ### 环境要求
@@ -189,10 +193,10 @@ iscc.exe build\release-1.0.1.iss
 | `CiderEnabled` | `true` | 启用 Cider 本地 API |
 | `CiderPort` | `0` | `0` 自动检测（默认 10767）；手动填端口 |
 | `CiderToken` | `""` | Cider API Token（可留空） |
-| `OnlineLyricsEnabled` | `false` | 在线歌词（默认关闭，见版权提示） |
+| `OnlineLyricsEnabled` | `true` | 在线歌词（默认开启，右键灵动岛可一键开关；见版权提示） |
 | `LyricsFolder` | `""` | 额外 .lrc 目录；留空自动搜索 `%APPDATA%\WinIsland\Lyrics`、`音乐\Lyrics`、`音乐` 顶层 |
 | `StandaloneLyricsWindow` | `false` | 独立歌词小窗 |
-| `KaraokeHighlight` | `true` | 逐字高亮（当前为整行高亮预留） |
+| `KaraokeHighlight` | `true` | 逐字卡拉OK高亮（当前句按字符点亮） |
 | `UseSystemVolume` | `true` | 非 Cider 来源时用系统音量条 |
 
 ---
@@ -201,10 +205,12 @@ iscc.exe build\release-1.0.1.iss
 
 Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已封装独立模块（`CiderClient.cs`），自动适配版本差异。
 
-**开启步骤**：
-1. 打开 Cider：**设置 → 连接性 → 允许外部控制（Manage External Application Access）**，按需生成 API Token。
-2. WinIsland 设置 → Cider：确认已启用；Token 可留空（未开启鉴权时）。
-3. 默认端口 `10767`（新版本）或 `10769`（旧版 RPC），WinIsland 会自动探测，也可手动指定。
+**开启步骤（重要）**：
+1. 打开 Cider：**设置 → 连接性 → 允许外部控制（Manage External Application Access）**，开启后 Cider 会显示 API Token（若为空白则点击生成）。
+2. 将 Token 复制到 **WinIsland 设置 → Cider → API Token** 并保存。
+3. 默认端口 `10767`，WinIsland 自动探测；旧版 RPC 为 `10769`。
+
+> ⚠️ Cider 2.x 新版默认**所有 API 请求都需要 Token**（无 Token 会返回 `403 UNAUTHORIZED_APP_TOKEN`）。若诊断日志提示需要 Token，请按上述步骤填入；否则 Cider 歌词/控制不可用（曲目仍可通过 SMTC 显示）。
 
 **已实现的 API 能力**（依据 Cider 社区文档 / `cider-api` crate 实测整理，2026 年版本）：
 - `GET /api/v1/playback/active`、`GET /now-playing`（曲目/封面/进度/状态）
@@ -223,7 +229,7 @@ Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已�
 优先级：
 1. **本地 .lrc**：按 `歌名.lrc` / `歌手 - 歌名.lrc` 在歌词目录（默认 `%APPDATA%\WinIsland\Lyrics`、`音乐\Lyrics`、`音乐` 顶层）查找；
 2. **Cider 歌词接口**（来源为 Cider 时）；
-3. **在线歌词**（网易云非官方接口）：**默认关闭**，需在设置中手动开启。
+3. **在线歌词**（网易云 / QQ音乐非官方接口）：**默认开启**，右键灵动岛可一键开关，也可在设置中关闭。
 
 > ⚠️ 在线歌词使用非官方接口，仅限个人学习使用，请尊重版权；如版权方要求可随时关闭该功能（关闭后完全无联网）。
 
@@ -257,7 +263,7 @@ Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已�
 
 ## 已知限制
 
-- **逐字卡拉OK高亮**：当前为整行高亮（预留 `KaraokeHighlight` 配置），未做逐字时间轴解析。
+- **逐字卡拉OK依赖歌词来源与进度**：无歌词或播放器不提供真实进度时，逐字效果降级为整句高亮（本地时钟推进）。
 - **Windows 通知接入**（来电/日历/低电量）：未实现（P2 可选）。低电量提示实现成本低但价值有限，暂缓。
 - **SMTC 覆盖范围**：依赖播放器是否注册全局媒体会话；个别旧播放器不注册时仅能通过窗口标题兜底（无控制按钮）。
 - **Cider 1.x（端口 9000 旧 API）**：未适配，仅支持 2.x 及以上。
@@ -275,7 +281,7 @@ Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已�
 | 播放/暂停/切歌/seek（真实播放器） | ⚠️ 需配合测试（代码路径与 SMTC 控制 API 直接对应） |
 | Cider API 连接与控制 | ⚠️ 需本机安装 Cider 并开启外部控制后验证 |
 | 本地 .lrc 歌词同步滚动 | ✅ LRC 解析已单测；端到端需真实歌曲验证 |
-| 在线歌词 | ⚠️ 需手动开启后验证（网络 + 接口可用性） |
+| 在线歌词 | ✅ 已接入网易云/QQ音乐；端到端效果需配合真实歌曲验证 |
 
 **验证步骤建议**：
 1. `WinIsland.exe --diagnose` → 确认 `System media sessions` 列出了播放器；
@@ -295,7 +301,7 @@ Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已�
 - 确认 Cider 设置中开启“允许外部控制”；检查端口（默认 10767）；WinIsland 设置里确认 Cider 已启用。
 
 **Q: 在线歌词打不开？**
-- 在线歌词默认关闭，需在设置 → 歌词中手动开启；网络可达性需自测。
+- 在线歌词默认开启（右键灵动岛 → 在线歌词 可一键开关）；若仍无歌词，请在设置 → 歌词中确认已开启，并自测网络可达性。
 
 **Q: 退出后托盘图标仍在？**
 - 托盘菜单 → 退出；直接关闭灵动岛窗口仅隐藏（符合“托盘常驻”设计）。
@@ -306,6 +312,13 @@ Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已�
 
 - 应用本体：MIT（见 [LICENSE](LICENSE)）
 - 第三方组件：见 [THIRD_PARTY.md](THIRD_PARTY.md)
+
+
+
+
+
+
+
 
 
 
