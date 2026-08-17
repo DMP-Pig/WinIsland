@@ -1,0 +1,178 @@
+﻿<Window x:Class="WinIsland.UI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WinIsland 设置" Width="560" Height="560"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F7" Foreground="#1A1A1A">
+    <Window.Resources>
+        <Style TargetType="TextBlock" x:Key="Label">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#555"/>
+            <Setter Property="Margin" Value="0,8,0,2"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,6"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TabControl>
+            <!-- ═══ General ═══ -->
+            <TabItem x:Name="TabGeneral" Header="通用">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock x:Name="LblLanguage" Style="{StaticResource Label}" Text="界面语言"/>
+                        <ComboBox SelectedValuePath="Value" DisplayMemberPath="Display"
+                                  SelectedValue="{Binding Language}">
+                            <ComboBoxItem Tag="zh-CN" Content="简体中文"/>
+                            <ComboBoxItem Tag="en-US" Content="English"/>
+                        </ComboBox>
+                        <CheckBox x:Name="ChkStartWithWindows" Content="开机自启" IsChecked="{Binding Working.StartWithWindows}"/>
+                        <CheckBox x:Name="ChkStartHidden" Content="启动时隐藏灵动岛" IsChecked="{Binding Working.StartHidden}"/>
+                        <CheckBox x:Name="ChkHideWhenNoMedia" Content="无媒体播放时自动隐藏" IsChecked="{Binding Working.HideWhenNoMedia}"/>
+                        <CheckBox x:Name="ChkShowWhenPaused" Content="暂停时仍然显示" IsChecked="{Binding Working.ShowWhenPaused}"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ═══ Appearance ═══ -->
+            <TabItem x:Name="TabAppearance" Header="外观">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock x:Name="LblTheme" Style="{StaticResource Label}" Text="主题"/>
+                        <ComboBox ItemsSource="{Binding ThemeOptions}" SelectedValuePath="Value"
+                                  DisplayMemberPath="Display" SelectedValue="{Binding Working.Theme}"/>
+
+                        <TextBlock x:Name="LblAccent" Style="{StaticResource Label}" Text="主题色"/>
+                        <WrapPanel x:Name="ColorSwatches">
+                            <ItemsControl ItemsSource="{Binding PresetColors}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Width="26" Height="26" Margin="2" Tag="{Binding}"
+                                                Background="{Binding}" BorderThickness="1" BorderBrush="#33000000"
+                                                ToolTip="{Binding}" Click="ColorSwatch_Click">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="13"/>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </WrapPanel>
+                        <TextBox x:Name="AccentBox" Width="120" HorizontalAlignment="Left" Margin="2,4,0,0"
+                                 Text="{Binding Working.AccentColor}"/>
+
+                        <TextBlock x:Name="LblPosition" Style="{StaticResource Label}" Text="位置"/>
+                        <ComboBox ItemsSource="{Binding PositionOptions}" SelectedValuePath="Value"
+                                  DisplayMemberPath="Display" SelectedValue="{Binding Working.Position}"/>
+
+                        <TextBlock x:Name="LblMonitor" Style="{StaticResource Label}" Text="显示器"/>
+                        <ComboBox ItemsSource="{Binding MonitorOptions}" SelectedValuePath="Value"
+                                  DisplayMemberPath="Display" SelectedValue="{Binding Working.Monitor}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <TextBlock x:Name="LblMonitorIndex" Text="屏幕编号" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
+                            <TextBox Width="70" Text="{Binding Working.MonitorIndex}"/>
+                        </StackPanel>
+
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                <TextBlock x:Name="LblOffsetX" Style="{StaticResource Label}" Text="水平偏移"/>
+                                <TextBox Text="{Binding Working.OffsetX}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock x:Name="LblOffsetY" Style="{StaticResource Label}" Text="垂直偏移"/>
+                                <TextBox Text="{Binding Working.OffsetY}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock x:Name="LblOpacity" Style="{StaticResource Label}" Text="不透明度"/>
+                        <Slider Minimum="0.3" Maximum="1" Value="{Binding Working.Opacity}" Width="300" HorizontalAlignment="Left"/>
+
+                        <TextBlock x:Name="LblCompact" Style="{StaticResource Label}" Text="紧凑模式显示内容"/>
+                        <CheckBox x:Name="ChkCompactArt" Content="封面" IsChecked="{Binding Working.CompactShowArt}"/>
+                        <CheckBox x:Name="ChkCompactTitle" Content="歌名" IsChecked="{Binding Working.CompactShowTitle}"/>
+                        <CheckBox x:Name="ChkCompactProgress" Content="进度条" IsChecked="{Binding Working.CompactShowProgress}"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ═══ Media ═══ -->
+            <TabItem x:Name="TabMedia" Header="媒体">
+                <StackPanel Margin="12">
+                    <CheckBox x:Name="ChkUseSystemVolume" Content="非 Cider 来源时控制系统音量" IsChecked="{Binding Working.UseSystemVolume}"/>
+                    <TextBlock x:Name="TxtMediaInfo" Text="媒体来源优先级：Cider 本地 API → Windows 全局媒体会话 (SMTC) → 窗口标题识别" 
+                               FontSize="11" Foreground="#777" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                </StackPanel>
+            </TabItem>
+
+            <!-- ═══ Lyrics ═══ -->
+            <TabItem x:Name="TabLyrics" Header="歌词">
+                <StackPanel Margin="12">
+                    <CheckBox x:Name="ChkOnlineLyrics" Content="在线歌词（网易云，非官方接口，默认关闭）" IsChecked="{Binding Working.OnlineLyricsEnabled}"/>
+                    <TextBlock x:Name="TxtLyricsNote" Text="在线歌词使用非官方接口，仅供个人学习，请尊重版权。" FontSize="11" Foreground="#A55" TextWrapping="Wrap" Margin="0,2,0,8"/>
+                    <TextBlock x:Name="LblLyricsFolder" Style="{StaticResource Label}" Text="歌词文件夹（留空自动搜索）"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Text="{Binding Working.LyricsFolder}"/>
+                        <Button x:Name="BtnBrowse" Grid.Column="1" Content="浏览..." Margin="6,0,0,0" Click="BrowseLyrics_Click"/>
+                    </Grid>
+                    <CheckBox x:Name="ChkStandaloneLyrics" Content="启用独立歌词小窗" IsChecked="{Binding Working.StandaloneLyricsWindow}" Margin="0,10,0,0"/>
+                    <CheckBox Content="逐字高亮（卡拉OK效果）" IsChecked="{Binding Working.KaraokeHighlight}"/>
+                </StackPanel>
+            </TabItem>
+
+            <!-- ═══ Cider ═══ -->
+            <TabItem x:Name="TabCider" Header="Cider">
+                <StackPanel Margin="12">
+                    <CheckBox x:Name="ChkCiderEnabled" Content="启用 Cider 本地 API" IsChecked="{Binding Working.CiderEnabled}"/>
+                    <TextBlock x:Name="LblCiderPort" Style="{StaticResource Label}" Text="端口（0 = 自动检测，默认 10767）"/>
+                    <TextBox Width="120" HorizontalAlignment="Left" Text="{Binding Working.CiderPort}"/>
+                    <TextBlock x:Name="LblCiderToken" Style="{StaticResource Label}" Text="API Token（可留空）"/>
+                    <TextBox Text="{Binding Working.CiderToken}" Width="300" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="TxtCiderHint" Text="在 Cider 中开启：设置 → 连接性 → 允许外部控制（Manage External Application Access），生成 Token 后填入。" 
+                               FontSize="11" Foreground="#777" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                </StackPanel>
+            </TabItem>
+
+            <!-- ═══ About ═══ -->
+            <TabItem x:Name="TabAbout" Header="关于">
+                <StackPanel Margin="12">
+                    <TextBlock x:Name="TxtAbout" Text="WinIsland — Windows 灵动岛&#10;灵感来自 macOS Dynamic Island。&#10;基于 .NET 8 + WPF，仅使用系统媒体会话与本地 API。" 
+                               FontSize="12" TextWrapping="Wrap" LineHeight="20"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                        <Button x:Name="BtnOpenConfig" Content="打开配置目录" Padding="10,4" Click="OpenConfigFolder_Click"/>
+                        <Button x:Name="BtnDiagnostics" Content="诊断信息" Padding="10,4" Margin="8,0,0,0" Click="Diagnostics_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+
+        <!-- Footer -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="BtnExport" Content="导出配置" Padding="12,5" Margin="0,0,8,0" Click="Export_Click"/>
+            <Button x:Name="BtnImport" Content="导入配置" Padding="12,5" Margin="0,0,8,0" Click="Import_Click"/>
+            <Button x:Name="BtnCancel" Content="取消" Padding="12,5" Margin="0,0,8,0" Click="Cancel_Click"/>
+            <Button x:Name="BtnSave" Content="保存" Padding="16,5" FontWeight="SemiBold" Click="Save_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
+
+

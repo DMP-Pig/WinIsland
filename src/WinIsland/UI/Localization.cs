@@ -1,0 +1,183 @@
+﻿namespace WinIsland.UI;
+
+/// <summary>
+/// Lightweight in-app localization (Simplified Chinese default + English).
+/// UI strings are resolved through <see cref="Get"/> and view models re-raise
+/// PropertyChanged when <see cref="LanguageChanged"/> fires.
+/// </summary>
+public static class Localization
+{
+    private static readonly Dictionary<string, string> Zh = new()
+    {
+        ["AppName"] = "WinIsland",
+        ["Settings"] = "设置",
+        ["ShowHide"] = "显示 / 隐藏灵动岛",
+        ["LyricsWindow"] = "独立歌词窗口",
+        ["AutoStart"] = "开机自启",
+        ["Exit"] = "退出",
+        ["Paused"] = "已暂停",
+        ["NoMedia"] = "暂未检测到播放中的媒体",
+        ["Source"] = "来源",
+        ["LyricsUnavailable"] = "暂无歌词",
+        ["Lyrics_Local"] = "本地歌词",
+        ["Lyrics_FromCider"] = "Cider 歌词",
+        ["Settings_Title"] = "WinIsland 设置",
+        ["Settings_General"] = "通用",
+        ["Settings_Appearance"] = "外观",
+        ["Settings_Media"] = "媒体",
+        ["Settings_Lyrics"] = "歌词",
+        ["Settings_Cider"] = "Cider",
+        ["Settings_About"] = "关于",
+        ["General_StartWithWindows"] = "开机自启",
+        ["General_StartHidden"] = "启动时隐藏灵动岛",
+        ["General_HideWhenNoMedia"] = "无媒体播放时自动隐藏",
+        ["General_ShowWhenPaused"] = "暂停时仍然显示",
+        ["General_Language"] = "界面语言",
+        ["Appearance_Theme"] = "主题",
+        ["Appearance_ThemeAuto"] = "跟随系统",
+        ["Appearance_ThemeLight"] = "浅色",
+        ["Appearance_ThemeDark"] = "深色",
+        ["Appearance_Accent"] = "主题色",
+        ["Appearance_Position"] = "位置",
+        ["Appearance_PositionCenter"] = "顶部居中",
+        ["Appearance_PositionRight"] = "顶部右侧",
+        ["Appearance_Monitor"] = "显示器",
+        ["Appearance_MonitorPrimary"] = "主屏幕",
+        ["Appearance_MonitorAll"] = "所有屏幕",
+        ["Appearance_MonitorIndex"] = "指定屏幕",
+        ["Appearance_MonitorIndexLabel"] = "屏幕编号",
+        ["Appearance_OffsetX"] = "水平偏移",
+        ["Appearance_OffsetY"] = "垂直偏移",
+        ["Appearance_Opacity"] = "不透明度",
+        ["Appearance_Compact"] = "紧凑模式显示内容",
+        ["Appearance_CompactArt"] = "封面",
+        ["Appearance_CompactTitle"] = "歌名",
+        ["Appearance_CompactProgress"] = "进度条",
+        ["Appearance_CompactShowArt"] = "紧凑模式显示封面",
+        ["Appearance_CompactShowTitle"] = "紧凑模式显示歌名",
+        ["Appearance_CompactShowProgress"] = "紧凑模式显示进度",
+        ["Media_UseSystemVolume"] = "非 Cider 来源时控制系统音量",
+        ["Media_SourcePriority"] = "媒体来源优先级：Cider 本地 API → Windows 全局媒体会话 (SMTC) → 窗口标题识别",
+        ["Lyrics_Online"] = "在线歌词（网易云，非官方接口，默认关闭）",
+        ["Lyrics_Folder"] = "歌词文件夹（留空自动搜索）",
+        ["Lyrics_StandaloneWindow"] = "启用独立歌词小窗",
+        ["Lyrics_Karaoke"] = "逐字高亮（卡拉OK效果）",
+        ["Lyrics_CopyrightNote"] = "在线歌词使用非官方接口，仅供个人学习，请尊重版权。",
+        ["Cider_Enabled"] = "启用 Cider 本地 API",
+        ["Cider_Port"] = "端口（0 = 自动检测，默认 10767）",
+        ["Cider_Token"] = "API Token（可留空）",
+        ["Cider_HowTo"] = "在 Cider 中开启：设置 → 连接性 → 允许外部控制（Manage External Application Access），生成 Token 后填入。",
+        ["About_Text"] = "WinIsland — Windows 灵动岛\n灵感来自 macOS Dynamic Island。\n基于 .NET 8 + WPF，仅使用系统媒体会话与本地 API。",
+        ["Save"] = "保存",
+        ["Cancel"] = "取消",
+        ["Export"] = "导出配置",
+        ["Import"] = "导入配置",
+        ["Browse"] = "浏览...",
+        ["OpenConfigFolder"] = "打开配置目录",
+        ["Diagnostics"] = "诊断信息",
+        ["SettingsSaved"] = "设置已保存",
+        ["ImportFailed"] = "导入失败：配置文件无效",
+        ["ShowIsland"] = "显示灵动岛",
+        ["HideIsland"] = "隐藏灵动岛",
+        ["RestartHint"] = "部分设置将在重启后完全生效",
+    };
+
+    private static readonly Dictionary<string, string> En = new()
+    {
+        ["AppName"] = "WinIsland",
+        ["Settings"] = "Settings",
+        ["ShowHide"] = "Show / Hide Island",
+        ["LyricsWindow"] = "Standalone lyrics window",
+        ["AutoStart"] = "Start with Windows",
+        ["Exit"] = "Exit",
+        ["Paused"] = "Paused",
+        ["NoMedia"] = "No media detected",
+        ["Source"] = "Source",
+        ["LyricsUnavailable"] = "No lyrics available",
+        ["Lyrics_Local"] = "Local lyrics",
+        ["Lyrics_FromCider"] = "Cider lyrics",
+        ["Settings_Title"] = "WinIsland Settings",
+        ["Settings_General"] = "General",
+        ["Settings_Appearance"] = "Appearance",
+        ["Settings_Media"] = "Media",
+        ["Settings_Lyrics"] = "Lyrics",
+        ["Settings_Cider"] = "Cider",
+        ["Settings_About"] = "About",
+        ["General_StartWithWindows"] = "Start with Windows",
+        ["General_StartHidden"] = "Start with island hidden",
+        ["General_HideWhenNoMedia"] = "Hide automatically when no media",
+        ["General_ShowWhenPaused"] = "Keep visible while paused",
+        ["General_Language"] = "Language",
+        ["Appearance_Theme"] = "Theme",
+        ["Appearance_ThemeAuto"] = "Follow system",
+        ["Appearance_ThemeLight"] = "Light",
+        ["Appearance_ThemeDark"] = "Dark",
+        ["Appearance_Accent"] = "Accent color",
+        ["Appearance_Position"] = "Position",
+        ["Appearance_PositionCenter"] = "Top center",
+        ["Appearance_PositionRight"] = "Top right",
+        ["Appearance_Monitor"] = "Monitor",
+        ["Appearance_MonitorPrimary"] = "Primary",
+        ["Appearance_MonitorAll"] = "All screens",
+        ["Appearance_MonitorIndex"] = "Specific screen",
+        ["Appearance_MonitorIndexLabel"] = "Screen #",
+        ["Appearance_OffsetX"] = "Horizontal offset",
+        ["Appearance_OffsetY"] = "Vertical offset",
+        ["Appearance_Opacity"] = "Opacity",
+        ["Appearance_Compact"] = "Compact mode content",
+        ["Appearance_CompactArt"] = "Artwork",
+        ["Appearance_CompactTitle"] = "Title",
+        ["Appearance_CompactProgress"] = "Progress",
+        ["Appearance_CompactShowArt"] = "Show artwork in compact mode",
+        ["Appearance_CompactShowTitle"] = "Show title in compact mode",
+        ["Appearance_CompactShowProgress"] = "Show progress in compact mode",
+        ["Media_UseSystemVolume"] = "Control system volume for non-Cider sources",
+        ["Media_SourcePriority"] = "Source priority: Cider local API → Windows global media session (SMTC) → window title",
+        ["Lyrics_Online"] = "Online lyrics (Netease, unofficial, OFF by default)",
+        ["Lyrics_Folder"] = "Lyrics folder (leave empty to auto-search)",
+        ["Lyrics_StandaloneWindow"] = "Enable standalone lyrics window",
+        ["Lyrics_Karaoke"] = "Word-by-word karaoke highlight",
+        ["Lyrics_CopyrightNote"] = "Online lyrics use unofficial APIs; personal use only. Respect copyright.",
+        ["Cider_Enabled"] = "Enable Cider local API",
+        ["Cider_Port"] = "Port (0 = auto-detect, default 10767)",
+        ["Cider_Token"] = "API token (optional)",
+        ["Cider_HowTo"] = "In Cider: Settings → Connectivity → Manage External Application Access, generate a token and paste it here.",
+        ["About_Text"] = "WinIsland — Dynamic Island for Windows\nInspired by macOS Dynamic Island.\nBuilt with .NET 8 + WPF using the system media session and local APIs only.",
+        ["Save"] = "Save",
+        ["Cancel"] = "Cancel",
+        ["Export"] = "Export config",
+        ["Import"] = "Import config",
+        ["Browse"] = "Browse...",
+        ["OpenConfigFolder"] = "Open config folder",
+        ["Diagnostics"] = "Diagnostics",
+        ["SettingsSaved"] = "Settings saved",
+        ["ImportFailed"] = "Import failed: invalid config file",
+        ["ShowIsland"] = "Show Island",
+        ["HideIsland"] = "Hide Island",
+        ["RestartHint"] = "Some settings fully apply after restart",
+    };
+
+    private static string _current = "zh-CN";
+
+    public static string CurrentLanguage
+    {
+        get => _current;
+        set
+        {
+            if (_current == value) return;
+            _current = value == "en-US" ? "en-US" : "zh-CN";
+            LanguageChanged?.Invoke(null, EventArgs.Empty);
+        }
+    }
+
+    public static event EventHandler? LanguageChanged;
+
+    public static string Get(string key)
+    {
+        var table = _current == "en-US" ? En : Zh;
+        return table.TryGetValue(key, out var v) ? v : key;
+    }
+}
+
+
+
