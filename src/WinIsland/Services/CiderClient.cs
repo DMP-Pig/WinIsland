@@ -41,7 +41,7 @@ public sealed class CiderClient
     public const int LegacyPort = 10769;
 
     private readonly HttpClient _http;
-    private readonly string _token;
+    private string _token;
 
     public CiderClient(string token = "")
     {
@@ -58,6 +58,9 @@ public sealed class CiderClient
     /// <summary>Force the client back to disconnected so the next tick re-probes.</summary>
     public void MarkDisconnected() => Profile = CiderApiProfile.None;
     public int Port { get; private set; }
+
+    /// <summary>更新 API Token（自动检测或用户手动填写）。</summary>
+    public void SetToken(string token) => _token = token ?? string.Empty;
     public bool IsConnected => Profile != CiderApiProfile.None;
     public string? LastError { get; private set; }
 
@@ -173,7 +176,7 @@ public sealed class CiderClient
         {
             if (Profile == CiderApiProfile.V3)
             {
-                using var req = Build(HttpMethod.Get, "/now-playing");
+                using var req = Build(HttpMethod.Get, "/api/v1/playback/now-playing");
                 using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
                 if (resp.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.NoContent) return null;
                 if (!resp.IsSuccessStatusCode) return null;
@@ -221,7 +224,8 @@ public sealed class CiderClient
             var artUrl = ArtworkUrl(info, 320);
             var durationMs = Num(info, "durationInMillis", 0);
             var positionSec = Num(info, "currentPlaybackTime", 0);
-            var isPlaying = Bool(info, "isPlaying") || Str(info, "status") == "playing";
+            var isPlaying = Bool(info, "isPlaying") || Str(info, "status") == "playing"
+                            || Num(info, "remainingTime", -1) > 0.5; // 无显式状态时按剩余时间推断
             var status = isPlaying ? PlaybackStatus.Playing : PlaybackStatus.Paused;
             var hasLyrics = Bool(info, "hasLyrics") || Bool(info, "hasTimeSyncedLyrics");
 
@@ -266,7 +270,8 @@ public sealed class CiderClient
             var artUrl = ArtworkUrl(info, 320);
             var durationMs = Num(info, "durationInMillis", 0);
             var positionSec = Num(info, "currentPlaybackTime", 0);
-            var isPlaying = Bool(info, "isPlaying") || Str(info, "status") == "playing";
+            var isPlaying = Bool(info, "isPlaying") || Str(info, "status") == "playing"
+                            || Num(info, "remainingTime", -1) > 0.5; // 无显式状态时按剩余时间推断
 
             if (string.IsNullOrEmpty(name) && string.IsNullOrEmpty(artist)) return null;
 
@@ -420,8 +425,8 @@ public sealed class CiderClient
     public async Task<string?> GetLyricsAsync(string? songId = null, CancellationToken ct = default)
     {
         if (Profile == CiderApiProfile.None) return null;
-        var attempts = new List<string> { "/api/v1/lyrics" };
-        if (!string.IsNullOrEmpty(songId)) attempts.Add($"/api/v1/lyrics?id={Uri.EscapeDataString(songId)}");
+        var attempts = new List<string> { "/api/v1/lyrics/current", "/api/v1/lyrics" };
+        if (!string.IsNullOrEmpty(songId)) attempts.Add($"/api/v1/lyrics/current?id={Uri.EscapeDataString(songId)}");
 
         foreach (var path in attempts)
         {

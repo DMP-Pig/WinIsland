@@ -26,6 +26,7 @@ public sealed class AppSettings
     public double Opacity { get; set; } = 0.92;
 
     // ── Behavior ───────────────────────────────────────────────
+    public bool IsLocked { get; set; } = true;   // 上锁后不可拖动，解锁后可拖动
     public bool HideWhenNoMedia { get; set; } = true;
     public bool ShowWhenPaused { get; set; } = true;
     public bool StartWithWindows { get; set; } = false;
@@ -42,7 +43,7 @@ public sealed class AppSettings
     public string CiderToken { get; set; } = string.Empty;
 
     // ── Lyrics ─────────────────────────────────────────────────
-    public bool OnlineLyricsEnabled { get; set; } = false;   // opt-in, default OFF (copyright)
+    public bool OnlineLyricsEnabled { get; set; } = true;    // 在线歌词（网易云非官方接口）；右键灵动岛可一键开关
     public string LyricsFolder { get; set; } = string.Empty; // extra .lrc folder; empty = auto (Music)
     public bool StandaloneLyricsWindow { get; set; } = false;
     public bool KaraokeHighlight { get; set; } = true;

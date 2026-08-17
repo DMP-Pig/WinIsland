@@ -149,6 +149,12 @@ public sealed class LyricsService
         return null;
     }
 
+    /// <summary>清空歌词缓存（例如在线歌词开关变化后强制重新获取）。</summary>
+    public void ClearCache()
+    {
+        lock (_cacheLock) _cache.Clear();
+    }
+
     internal static string TrackKey(TrackInfo track) =>
         $"{Sanitize(track.Artist)}\u0001{Sanitize(track.Title)}\u0001{Sanitize(track.Album)}";
 

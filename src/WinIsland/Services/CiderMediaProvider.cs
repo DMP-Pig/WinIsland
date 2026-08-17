@@ -33,6 +33,11 @@ public sealed class CiderMediaProvider : IDisposable
             _reconnecting = true;
             _lastConnectAttempt = DateTime.UtcNow;
             var s = _settings.Current;
+            // 用户未手动填写 Token 时，自动从 Cider 配置读取（零配置）
+            var token = !string.IsNullOrWhiteSpace(s.CiderToken)
+                ? s.CiderToken
+                : CiderTokenAutoDetect.TryGetToken() ?? string.Empty;
+            Client.SetToken(token);
             await Client.ConnectAsync(s.CiderPort, _cts.Token);
         }
         finally
