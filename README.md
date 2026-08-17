@@ -212,6 +212,8 @@ Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已�
 
 > ⚠️ Cider 2.x 新版默认**所有 API 请求都需要 Token**（无 Token 会返回 `403 UNAUTHORIZED_APP_TOKEN`）。若诊断日志提示需要 Token，请按上述步骤填入；否则 Cider 歌词/控制不可用（曲目仍可通过 SMTC 显示）。
 
+> ⚠️ 若日志反复出现 HttpClient.Timeout（原 2s），多为本机安全软件/代理拦截回环 HTTP 所致（Cider 实际响应约 30ms）。1.0.1beta12 起数据读取超时放宽到 5s；仍超时请检查杀毒软件对 WinIsland 的联网拦截。
+
 **已实现的 API 能力**（依据 Cider 社区文档 / `cider-api` crate 实测整理，2026 年版本）：
 - `GET /api/v1/playback/active`、`GET /now-playing`（曲目/封面/进度/状态）
 - `POST /api/v1/playback/play|pause|playpause|next|previous|seek`
@@ -264,6 +266,7 @@ Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已�
 ## 已知限制
 
 - **逐字卡拉OK依赖歌词来源与进度**：无歌词或播放器不提供真实进度时，逐字效果降级为整句高亮（本地时钟推进）。
+- **播放器偶发回退进度**（如 Cider/SMTC 瞬间上报 0 或过期位置）：已做位置守卫——瞬间回退会被忽略，保持当前进度推进，不会把歌词/进度条打回开头；持续回退超过约 4 秒才判定为真正的重播或播放器端 seek。
 - **Windows 通知接入**（来电/日历/低电量）：未实现（P2 可选）。低电量提示实现成本低但价值有限，暂缓。
 - **SMTC 覆盖范围**：依赖播放器是否注册全局媒体会话；个别旧播放器不注册时仅能通过窗口标题兜底（无控制按钮）。
 - **Cider 1.x（端口 9000 旧 API）**：未适配，仅支持 2.x 及以上。

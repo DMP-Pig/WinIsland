@@ -49,7 +49,7 @@ public sealed class CiderClient
         var handler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All };
         _http = new HttpClient(handler)
         {
-            Timeout = TimeSpan.FromSeconds(2), // localhost: fail fast, never block the UI
+            Timeout = TimeSpan.FromSeconds(5), // localhost: 留足余量（部分环境有安全软件/代理拦截回环 HTTP，2s 会频繁超时）
         };
     }
 
