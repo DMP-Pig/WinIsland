@@ -21,10 +21,10 @@ public class KaraokeTextBlock : TextBlock
         DependencyProperty.Register(nameof(KaraokeText), typeof(string), typeof(KaraokeTextBlock),
             new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.AffectsMeasure, OnRenderPropsChanged));
 
-    /// <summary>目标高亮字符数（由 ViewModel 按播放进度驱动）。</summary>
-    public static readonly DependencyProperty HighlightCountProperty =
-        DependencyProperty.Register(nameof(HighlightCount), typeof(int), typeof(KaraokeTextBlock),
-            new FrameworkPropertyMetadata(0, OnRenderPropsChanged));
+    /// <summary>目标高亮比例 0..1（连续值，由 ViewModel 每 100ms 平滑驱动）。</summary>
+    public static readonly DependencyProperty HighlightFractionProperty =
+        DependencyProperty.Register(nameof(HighlightFraction), typeof(double), typeof(KaraokeTextBlock),
+            new FrameworkPropertyMetadata(0.0, OnRenderPropsChanged));
 
     public static readonly DependencyProperty HighlightBrushProperty =
         DependencyProperty.Register(nameof(HighlightBrush), typeof(Brush), typeof(KaraokeTextBlock),
@@ -36,7 +36,7 @@ public class KaraokeTextBlock : TextBlock
 
     private readonly DispatcherTimer _animTimer;
     private double _currentFraction;   // 当前已点亮比例（0..1，平滑推进）
-    private double _targetFraction;    // 目标比例 = HighlightCount / Text.Length
+    private double _targetFraction;    // 目标比例（0..1，来自 HighlightFraction）
     private string _lastText = string.Empty;
 
     public KaraokeTextBlock()
@@ -56,10 +56,10 @@ public class KaraokeTextBlock : TextBlock
         set => SetValue(KaraokeTextProperty, value);
     }
 
-    public int HighlightCount
+    public double HighlightFraction
     {
-        get => (int)GetValue(HighlightCountProperty);
-        set => SetValue(HighlightCountProperty, value);
+        get => (double)GetValue(HighlightFractionProperty);
+        set => SetValue(HighlightFractionProperty, value);
     }
 
     public Brush HighlightBrush
@@ -80,8 +80,7 @@ public class KaraokeTextBlock : TextBlock
     private void RefreshTarget()
     {
         var text = KaraokeText ?? string.Empty;
-        var len = text.Length;
-        _targetFraction = len == 0 ? 0 : Math.Clamp(HighlightCount, 0, len) / (double)len;
+        _targetFraction = Math.Clamp(HighlightFraction, 0, 1);
 
         // 换行时直接对齐，避免上一行残留的高亮“滑”到新行开头。
         if (!string.Equals(text, _lastText, StringComparison.Ordinal))
