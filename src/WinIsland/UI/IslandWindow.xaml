@@ -109,16 +109,11 @@
             </Style.Triggers>
         </Style>
 
-        <!-- 歌词行容器：当前行带高亮背景胶囊 -->
+        <!-- 歌词行容器：不加背景胶囊，当前句高亮只由卡拉OK文字渐变体现（避免双重高亮） -->
         <Style x:Key="LyricLineBorder" TargetType="Border">
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="Padding" Value="10,2"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                    <Setter Property="Background" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"/>
-                </DataTrigger>
-            </Style.Triggers>
         </Style>
     </Window.Resources>
 
@@ -182,7 +177,7 @@
                         <!-- 当前歌词行：未悬停时也显示（左对齐，逐字卡拉OK） -->
                         <karaoke:KaraokeTextBlock
                             KaraokeText="{Binding CurrentLyricText}"
-                            HighlightCount="{Binding CompactHighlightCount}"
+                            HighlightFraction="{Binding CompactHighlightFraction}"
                             HighlightBrush="White"
                             BaseBrush="#80FFFFFF"
                             FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"/>
@@ -295,7 +290,7 @@
                                     <Border Style="{StaticResource LyricLineBorder}" HorizontalAlignment="Center">
                                         <karaoke:KaraokeTextBlock
                                             KaraokeText="{Binding Text}"
-                                            HighlightCount="{Binding HighlightCount}"
+                                            HighlightFraction="{Binding HighlightFraction}"
                                             HighlightBrush="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
                                             BaseBrush="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                             Style="{StaticResource LyricLineText}"/>

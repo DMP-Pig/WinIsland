@@ -164,8 +164,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public string CurrentLyricText { get => _currentLyricText; private set => Set(ref _currentLyricText, value); }
 
     /// <summary>紧凑态逐字卡拉OK已点亮字符数。</summary>
-    private int _compactHighlightCount;
-    public int CompactHighlightCount { get => _compactHighlightCount; private set => Set(ref _compactHighlightCount, value); }
+    private double _compactHighlightFraction;
+    public double CompactHighlightFraction { get => _compactHighlightFraction; private set => Set(ref _compactHighlightFraction, value); }
 
     // ── Visibility / expansion ─────────────────────────────────
     public bool IsExpanded
@@ -369,15 +369,15 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         var nextStart = (LyricIndex + 1 < lines.Count) ? lines[LyricIndex + 1].Time.TotalSeconds : cur.Time.TotalSeconds + 5.0;
         var duration = Math.Max(0.1, nextStart - cur.Time.TotalSeconds);
         var frac = Math.Clamp((Position.TotalSeconds - cur.Time.TotalSeconds) / duration, 0, 1);
-        var count = (int)(frac * cur.Text.Length);
 
+        // 连续比例（0..1），供控件 60fps 缓动平滑过渡，避免整数跳字造成的停顿感。
         if (LyricLines.Count > LyricIndex)
         {
             var lvm = LyricLines[LyricIndex];
-            if (lvm.HighlightCount != count) lvm.HighlightCount = count;
+            if (Math.Abs(lvm.HighlightFraction - frac) > 0.0005) lvm.HighlightFraction = frac;
         }
 
-        if (CompactHighlightCount != count) CompactHighlightCount = count;
+        if (Math.Abs(CompactHighlightFraction - frac) > 0.0005) CompactHighlightFraction = frac;
 
     }
 
