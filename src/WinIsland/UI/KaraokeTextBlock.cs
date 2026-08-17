@@ -11,9 +11,9 @@ namespace WinIsland.UI;
 
 /// <summary>
 /// 逐字卡拉OK歌词控件（带平滑过渡动画）。
-/// 不再按整数个字符硬切 Run，而是用「线性渐变扫过」的方式渲染高亮：
-/// 高亮边界在 60fps 下以缓动逼近目标进度，像 iOS 卡拉OK一样平滑“流”过歌词，
-/// 避免一个字一个字“跳”的卡顿感。
+/// 按字符着色：已点亮字符用高亮色，边界字符在 60fps 下从基础色平滑混色到高亮色，
+/// 高亮按阅读顺序从左到右流动（换行也正确，不会出现多行同时点亮）；
+/// 每句从 0 开始，第一个字保持未点亮再逐步点亮。
 /// </summary>
 public class KaraokeTextBlock : TextBlock
 {
@@ -82,13 +82,13 @@ public class KaraokeTextBlock : TextBlock
         var text = KaraokeText ?? string.Empty;
         _targetFraction = Math.Clamp(HighlightFraction, 0, 1);
 
-        // 换行时直接对齐，避免上一行残留的高亮“滑”到新行开头。
+        // 换行时从 0 开始：新句第一个字保持未点亮，随进度从左到右平滑点亮。
         if (!string.Equals(text, _lastText, StringComparison.Ordinal))
         {
             _lastText = text;
-            _currentFraction = _targetFraction;
-            _animTimer.Stop();
-            Render();
+            _currentFraction = 0;
+            Render(); // 立即显示新句（全未点亮），再随进度平滑点亮
+            _animTimer.Start();
             return;
         }
 
@@ -121,38 +121,43 @@ public class KaraokeTextBlock : TextBlock
         var text = KaraokeText ?? string.Empty;
         if (text.Length == 0) return;
 
-        var f = _currentFraction;
+        var f = Math.Clamp(_currentFraction, 0, 1);
         var hl = ToColor(HighlightBrush) ?? System.Windows.Media.Colors.White;
         var bs = ToColor(BaseBrush) ?? System.Windows.Media.Colors.Gray;
 
-        Brush fg;
-        if (f <= 0.001)
+        // 按字符着色（而非二维渐变）：文字换行时高亮也按阅读顺序从左到右逐行流动，
+        // 不会出现“每一行开头都亮一段”的两条高亮线。
+        var len = text.Length;
+        var litChars = Math.Min((int)Math.Floor(f * len), len);      // 已完全点亮的字符数
+        var blend = f * len - litChars;                              // 边界字符混色比例 0..1
+        if (litChars >= len) blend = 1;                              // 整句点亮
+
+        if (litChars > 0)
         {
-            fg = new System.Windows.Media.SolidColorBrush(bs);
-        }
-        else if (f >= 0.999)
-        {
-            fg = new System.Windows.Media.SolidColorBrush(hl);
-        }
-        else
-        {
-            // 高亮→基础色渐变扫过：f 之前是高亮，f~f+edge 之间柔和过渡，之后为基础色。
-            var edge = 0.10; // 过渡带宽度（占文本比例，约 1~2 个字）
-            var g = new System.Windows.Media.LinearGradientBrush
-            {
-                StartPoint = new System.Windows.Point(0, 0.5),
-                EndPoint = new System.Windows.Point(1, 0.5),
-            };
-            g.GradientStops.Add(new System.Windows.Media.GradientStop(hl, 0));
-            g.GradientStops.Add(new System.Windows.Media.GradientStop(hl, f));
-            g.GradientStops.Add(new System.Windows.Media.GradientStop(bs, Math.Min(1, f + edge)));
-            g.GradientStops.Add(new System.Windows.Media.GradientStop(bs, 1));
-            fg = g;
+            Inlines.Add(new Run(text.Substring(0, litChars)) { Foreground = Frozen(new System.Windows.Media.SolidColorBrush(hl)) });
         }
 
-        fg.Freeze();
-        Inlines.Add(new Run(text) { Foreground = fg });
+        if (litChars < len)
+        {
+            // 边界字符：从基础色平滑过渡到高亮色（这就是“流畅”的过渡动画）
+            var bc = Lerp(bs, hl, Math.Clamp(blend, 0, 1));
+            Inlines.Add(new Run(text[litChars].ToString()) { Foreground = Frozen(new System.Windows.Media.SolidColorBrush(bc)) });
+        }
+
+        if (litChars + 1 < len)
+        {
+            Inlines.Add(new Run(text.Substring(litChars + 1)) { Foreground = Frozen(new System.Windows.Media.SolidColorBrush(bs)) });
+        }
     }
+
+    private static System.Windows.Media.SolidColorBrush Frozen(System.Windows.Media.SolidColorBrush b) { b.Freeze(); return b; }
+
+    private static System.Windows.Media.Color Lerp(System.Windows.Media.Color a, System.Windows.Media.Color b, double t)
+        => System.Windows.Media.Color.FromArgb(
+            (byte)(a.A + (b.A - a.A) * t),
+            (byte)(a.R + (b.R - a.R) * t),
+            (byte)(a.G + (b.G - a.G) * t),
+            (byte)(a.B + (b.B - a.B) * t));
 
     private static System.Windows.Media.Color? ToColor(Brush? brush)
         => (brush as SolidColorBrush)?.Color;
