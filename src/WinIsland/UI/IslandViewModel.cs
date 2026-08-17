@@ -106,7 +106,27 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public double DurationSeconds { get => _durationSeconds; private set => Set(ref _durationSeconds, value); }
 
     private TimeSpan _position;
-    public TimeSpan Position { get => _position; private set => Set(ref _position, value); }
+    public TimeSpan Position
+    {
+        get => _position;
+        private set
+        {
+            if (!Set(ref _position, value)) return;
+            OnPropertyChanged(nameof(PositionText));
+        }
+    }
+
+    /// <summary>当前位置文本（精确到秒，如 1:23 / 1:02:03），与 DurationText 同格式。</summary>
+    public string PositionText
+    {
+        get
+        {
+            var total = (int)Math.Max(0, _position.TotalSeconds);
+            return total >= 3600
+                ? TimeSpan.FromSeconds(total).ToString(@"h\:mm\:ss")
+                : TimeSpan.FromSeconds(total).ToString(@"m\:ss");
+        }
+    }
 
     public string DurationText =>
         DurationSeconds >= 3600
