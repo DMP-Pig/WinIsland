@@ -51,6 +51,18 @@ public sealed class AppSettings
     // ── Volume ─────────────────────────────────────────────────
     public bool UseSystemVolume { get; set; } = true;   // for non-Cider sources, control system volume
 
+    // ── Island size ────────────────────────────────────────────
+    public double CompactWidth { get; set; } = 360;
+    public double CompactHeight { get; set; } = 72;
+    public double ExpandedWidth { get; set; } = 400;
+    public double MaxExpandedHeight { get; set; } = 384;
+
+    // ── Notifications ──────────────────────────────────────────
+    public bool BluetoothNotifyEnabled { get; set; } = false;   // 蓝牙设备连接/断开提示
+    public bool NotificationTakeoverEnabled { get; set; } = false; // 接管 Windows 通知（尽力而为）
+    public int NotificationTimeoutSeconds { get; set; } = 6;      // 横幅显示时长
+    public string NotificationPosition { get; set; } = "TopRight"; // TopRight = 右上角
+
     public AppSettings Clone() => (AppSettings)MemberwiseClone();
 }
 

@@ -23,6 +23,9 @@ public partial class App : Application
     private TrayIcon? _tray;
     private SingleInstance? _singleInstance;
     private AppSettings? _lastPositionSettings;
+    private BluetoothMonitor? _bluetooth;
+    private SystemNotificationMonitor? _systemNotifications;
+    private NotificationService? _notifications;
 
     public App()
     {
@@ -74,6 +77,14 @@ public partial class App : Application
         _coordinator = new MediaCoordinator(_settings, smtc, _cider, title, Dispatcher);
         _lyrics = new LyricsService(_settings, _cider);
 
+        // ── 通知服务（右上角横幅 + 蓝牙/系统通知监控）──
+        _notifications = new NotificationService(Dispatcher, _settings);
+        _bluetooth = new BluetoothMonitor();
+        _bluetooth.DeviceConnected += (_, name) => _notifications.Show("蓝牙设备已连接", name, "\uE702");
+        _bluetooth.DeviceDisconnected += (_, name) => _notifications.Show("蓝牙设备已断开", name, "\uE702");
+        _systemNotifications = new SystemNotificationMonitor();
+        _systemNotifications.NotificationCaptured += (_, n) => _notifications.Show(n.Title, n.Body, "\uE945");
+
         _vm = new IslandViewModel(_coordinator, _settings, _lyrics);
         _vm.OpenSettingsRequested += (_, _) => OpenSettings();
         _vm.ToggleLyricsWindowRequested += (_, _) => ToggleLyricsWindow();
@@ -119,6 +130,13 @@ public partial class App : Application
             _lastPositionSettings = s.Clone();
             if (posChanged) RecreateWindows();
 
+            // 通知监控开关
+            if (s.BluetoothNotifyEnabled) _bluetooth?.Start(); else _bluetooth?.Stop();
+            if (s.NotificationTakeoverEnabled) _systemNotifications?.Start(); else _systemNotifications?.Stop();
+
+            // 尺寸设置变更 → 应用到灵动岛
+            foreach (var w in _windows) w.ApplySize();
+
             _vm?.UpdateVisibility();
         };
 
@@ -128,6 +146,9 @@ public partial class App : Application
 
         // ── Start media pipeline ──
         _coordinator.Start();
+
+        if (_settings.Current.BluetoothNotifyEnabled) _bluetooth?.Start();
+        if (_settings.Current.NotificationTakeoverEnabled) _systemNotifications?.Start();
         _vm.UpdateVisibility();
 
         if (_settings.Current.StandaloneLyricsWindow)
@@ -237,6 +258,8 @@ public partial class App : Application
             _vm?.SavePlaybackState(); // 退出前保存播放位置，重启后恢复（暂停时不再跳回开头）
             _vm?.Dispose();
             _coordinator?.Dispose();
+            _bluetooth?.Dispose();
+            _systemNotifications?.Dispose();
             _tray?.Dispose();
             _singleInstance?.Dispose();
             foreach (var w in _windows) w.Close();

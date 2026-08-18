@@ -23,10 +23,11 @@ namespace WinIsland.UI;
 /// </summary>
 public partial class IslandWindow : Window, INotifyPropertyChanged
 {
-    private const double CompactWidth = 360;
-    private const double CompactHeight = 72;
-    private const double ExpandedWidth = 400;
-    private const double MaxExpandedHeight = 384;
+    // 尺寸来自设置（可调），带安全钳制
+    private double CompactWidth => Math.Clamp(_settings.Current.CompactWidth, 240, 520);
+    private double CompactHeight => Math.Clamp(_settings.Current.CompactHeight, 48, 140);
+    private double ExpandedWidth => Math.Clamp(_settings.Current.ExpandedWidth, CompactWidth, 620);
+    private double MaxExpandedHeight => Math.Clamp(_settings.Current.MaxExpandedHeight, 240, 620);
 
     private const int WM_NCHITTEST = 0x0084;
     private const int HTCLIENT = 1;
@@ -199,6 +200,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         _hwndSource?.AddHook(WndProc);
 
         ApplyTheme();
+        ApplySize();
         ApplyCardAlignment();
         Reposition();
         if (_vm.IsVisible) ShowIsland(instant: true);
@@ -218,6 +220,23 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SliderThumbBrush)));
     }
 
+    /// <summary>按设置调整窗口与卡片尺寸（紧凑/展开），并重新定位。</summary>
+    public void ApplySize()
+    {
+        var w = Math.Max(ExpandedWidth, CompactWidth) + 24;
+        var h = Math.Max(MaxExpandedHeight, CompactHeight) + 24;
+        if (Math.Abs(Width - w) > 0.5 || Math.Abs(Height - h) > 0.5)
+        {
+            Width = w;
+            Height = h;
+        }
+        if (!_vm.IsExpanded)
+        {
+            Card.Width = CompactWidth;
+            Card.Height = CompactHeight;
+        }
+        Dispatcher.BeginInvoke(Reposition, System.Windows.Threading.DispatcherPriority.Loaded);
+    }
     private void ApplyCardAlignment()
     {
         Card.HorizontalAlignment = _settings.Current.Position == IslandPosition.Right

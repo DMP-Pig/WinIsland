@@ -99,6 +99,7 @@ public partial class SettingsWindow : Window
         TabLyrics.Header = Localization.Get("Settings_Lyrics");
         TabCider.Header = Localization.Get("Settings_Cider");
         TabAbout.Header = Localization.Get("Settings_About");
+        TabNotify.Header = Localization.Get("Settings_Notifications");
 
         LblLanguage.Text = Localization.Get("General_Language");
         LblTheme.Text = Localization.Get("Appearance_Theme");
@@ -109,6 +110,10 @@ public partial class SettingsWindow : Window
         LblOffsetX.Text = Localization.Get("Appearance_OffsetX");
         LblOffsetY.Text = Localization.Get("Appearance_OffsetY");
         LblOpacity.Text = Localization.Get("Appearance_Opacity");
+        LblIslandSize.Text = Localization.Get("Appearance_IslandSize");
+        LblCompactWidth.Text = Localization.Get("Appearance_CompactWidth");
+        LblCompactHeight.Text = Localization.Get("Appearance_CompactHeight");
+        LblExpandedWidth.Text = Localization.Get("Appearance_ExpandedWidth");
         LblCompact.Text = Localization.Get("Appearance_Compact");
         LblLyricsFolder.Text = Localization.Get("Lyrics_Folder");
         LblCiderPort.Text = Localization.Get("Cider_Port");
@@ -122,6 +127,10 @@ public partial class SettingsWindow : Window
         ChkOnlineLyrics.Content = Localization.Get("Lyrics_Online");
         ChkStandaloneLyrics.Content = Localization.Get("Lyrics_StandaloneWindow");
         ChkCiderEnabled.Content = Localization.Get("Cider_Enabled");
+        ChkBluetoothNotify.Content = Localization.Get("Notifications_Bluetooth");
+        ChkNotifyTakeover.Content = Localization.Get("Notifications_Takeover");
+        LblNotifyTimeout.Text = Localization.Get("Notifications_Timeout");
+        TxtNotifyNote.Text = Localization.Get("Notifications_Note");
         ChkCompactArt.Content = Localization.Get("Appearance_CompactArt");
         ChkCompactTitle.Content = Localization.Get("Appearance_CompactTitle");
         ChkCompactProgress.Content = Localization.Get("Appearance_CompactProgress");
