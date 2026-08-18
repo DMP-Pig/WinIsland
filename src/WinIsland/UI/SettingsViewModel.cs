@@ -14,11 +14,13 @@ public sealed class ComponentRow : ObservableObject
     private readonly Func<ComponentFlags, bool> _playGet;
     private readonly Action<ComponentFlags, bool> _playSet;
 
-    public ComponentRow(string nameKey, ComponentFlags c,
+    public string Key { get; }
+
+    public ComponentRow(string key, string nameKey, ComponentFlags c,
         Func<ComponentFlags, bool> idleGet, Action<ComponentFlags, bool> idleSet,
         Func<ComponentFlags, bool> playGet, Action<ComponentFlags, bool> playSet)
     {
-        _nameKey = nameKey; _c = c;
+        Key = key; _nameKey = nameKey; _c = c;
         _idleGet = idleGet; _idleSet = idleSet;
         _playGet = playGet; _playSet = playSet;
     }
@@ -59,7 +61,7 @@ public sealed class SettingsViewModel : ObservableObject
             new EnumOption<MonitorSelection>(MonitorSelection.All, Localization.Get("Appearance_MonitorAll")),
             new EnumOption<MonitorSelection>(MonitorSelection.Index, Localization.Get("Appearance_MonitorIndex")),
         };
-        Components = BuildComponents(Working.Components);
+        _components = BuildComponents(Working.Components);
         Localization.LanguageChanged += (_, _) => { foreach (var r in Components) r.RefreshName(); };
 
         PresetColors = new[]
@@ -85,18 +87,28 @@ public sealed class SettingsViewModel : ObservableObject
     public IReadOnlyList<EnumOption<IslandPosition>> PositionOptions { get; }
     public IReadOnlyList<EnumOption<MonitorSelection>> MonitorOptions { get; }
     public IReadOnlyList<string> PresetColors { get; }
-    public IReadOnlyList<ComponentRow> Components { get; }
+    public IReadOnlyList<ComponentRow> Components => _components;
 
-    private static IReadOnlyList<ComponentRow> BuildComponents(ComponentFlags c) => new ComponentRow[]
+    private List<ComponentRow> _components = new();
+
+    private List<ComponentRow> BuildComponents(ComponentFlags c) => new()
     {
-        new("Comp_Time", c, x => x.TimeWhenIdle, (x, v) => x.TimeWhenIdle = v, x => x.TimeWhenPlaying, (x, v) => x.TimeWhenPlaying = v),
-        new("Comp_Weather", c, x => x.WeatherWhenIdle, (x, v) => x.WeatherWhenIdle = v, x => x.WeatherWhenPlaying, (x, v) => x.WeatherWhenPlaying = v),
-        new("Comp_Cover", c, x => x.CoverWhenIdle, (x, v) => x.CoverWhenIdle = v, x => x.CoverWhenPlaying, (x, v) => x.CoverWhenPlaying = v),
-        new("Comp_Title", c, x => x.TitleWhenIdle, (x, v) => x.TitleWhenIdle = v, x => x.TitleWhenPlaying, (x, v) => x.TitleWhenPlaying = v),
-        new("Comp_Artist", c, x => x.ArtistWhenIdle, (x, v) => x.ArtistWhenIdle = v, x => x.ArtistWhenPlaying, (x, v) => x.ArtistWhenPlaying = v),
-        new("Comp_Lyrics", c, x => x.LyricsWhenIdle, (x, v) => x.LyricsWhenIdle = v, x => x.LyricsWhenPlaying, (x, v) => x.LyricsWhenPlaying = v),
-        new("Comp_Progress", c, x => x.ProgressWhenIdle, (x, v) => x.ProgressWhenIdle = v, x => x.ProgressWhenPlaying, (x, v) => x.ProgressWhenPlaying = v),
+        new("Time", "Comp_Time", c, x => x.TimeWhenIdle, (x, v) => x.TimeWhenIdle = v, x => x.TimeWhenPlaying, (x, v) => x.TimeWhenPlaying = v),
+        new("Weather", "Comp_Weather", c, x => x.WeatherWhenIdle, (x, v) => x.WeatherWhenIdle = v, x => x.WeatherWhenPlaying, (x, v) => x.WeatherWhenPlaying = v),
     };
+
+    /// <summary>把组件移动到指定索引（拖拽排序用）。</summary>
+    public void MoveComponentTo(ComponentRow row, int newIndex)
+    {
+        var i = _components.IndexOf(row);
+        if (i < 0) return;
+        newIndex = Math.Clamp(newIndex, 0, _components.Count - 1);
+        if (i == newIndex) return;
+        _components.RemoveAt(i);
+        _components.Insert(newIndex, row);
+        OnPropertyChanged(nameof(Components));
+        Working.WidgetOrder = string.Join(",", _components.Select(x => x.Key));
+    }
 
     public void Save()
     {
