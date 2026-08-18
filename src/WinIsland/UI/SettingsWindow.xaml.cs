@@ -248,6 +248,7 @@ public partial class SettingsWindow : Window
         ChkCompactArt.Content = Localization.Get("Appearance_CompactArt");
         ChkCompactTitle.Content = Localization.Get("Appearance_CompactTitle");
         ChkCompactProgress.Content = Localization.Get("Appearance_CompactProgress");
+        ChkSingleLine.Content = Localization.Get("Appearance_SingleLine");
 
         TxtLyricsNote.Text = Localization.Get("Lyrics_CopyrightNote");
         TxtCiderHint.Text = Localization.Get("Cider_HowTo");
