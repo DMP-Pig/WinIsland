@@ -456,6 +456,7 @@
                             <CheckBox x:Name="ChkCompactArt" Content="封面" IsChecked="{Binding Working.CompactShowArt}"/>
                             <CheckBox x:Name="ChkCompactTitle" Content="歌名" IsChecked="{Binding Working.CompactShowTitle}"/>
                             <CheckBox x:Name="ChkCompactProgress" Content="进度条" IsChecked="{Binding Working.CompactShowProgress}"/>
+                            <CheckBox x:Name="ChkSingleLine" IsChecked="{Binding Working.SingleLineMode}"/>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>

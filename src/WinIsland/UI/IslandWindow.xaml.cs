@@ -107,6 +107,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     public bool ExpandedShowControls => _settings.Current.ExpandedShowControls;
     public bool ExpandedShowLyrics => _settings.Current.ExpandedShowLyrics;
 
+    // ── 单行模式：紧凑态所有组件一行显示 ──
+    public bool SingleLineMode => _settings.Current.SingleLineMode;
+
     // ── 点击展开 / 解锁拖动 / 右键菜单 ─────────────────────────
 
     private Point _downPoint;
@@ -235,6 +238,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowProgress)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowControls)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowLyrics)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SingleLineMode)));
     }
 
     /// <summary>按设置调整窗口与卡片尺寸（紧凑/展开）。仅当窗口尺寸真正变化时才重定位，

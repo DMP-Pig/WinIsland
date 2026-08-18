@@ -224,7 +224,8 @@
                                                        Visibility="{Binding DataContext.Artwork, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource NullToVisInvert}}"/>
                                         </Grid>
                                     </Border>
-                                    <StackPanel VerticalAlignment="Center">
+                                    <!-- 多行模式（默认）：歌名 / 歌手 / 歌词 / 进度条 -->
+                                    <StackPanel x:Name="MultiLineInfo" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding DataContext.Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="13" FontWeight="SemiBold"
                                                    Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
                                                    TextTrimming="CharacterEllipsis"/>
@@ -250,7 +251,22 @@
                                             </ProgressBar.Template>
                                         </ProgressBar>
                                     </StackPanel>
+                                    <!-- 单行模式：封面 + 歌名 - 歌手（一行） -->
+                                    <StackPanel x:Name="SingleLineInfo" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                                        <TextBlock Text="{Binding DataContext.Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="160" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding DataContext.Artist, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="11" Margin="6,0,0,0"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="120" VerticalAlignment="Center"/>
+                                    </StackPanel>
                                 </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding SingleLineMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                        <Setter TargetName="MultiLineInfo" Property="Visibility" Value="Collapsed"/>
+                                        <Setter TargetName="SingleLineInfo" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
                             </DataTemplate>
                         </ItemsControl.Resources>
                         <ItemsControl.ItemTemplate>

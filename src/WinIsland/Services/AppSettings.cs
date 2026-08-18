@@ -76,6 +76,7 @@ public sealed class AppSettings
     public bool CompactShowArt { get; set; } = true;
     public bool CompactShowTitle { get; set; } = true;
     public bool CompactShowProgress { get; set; } = false;
+    public bool SingleLineMode { get; set; } = false;   // 单行模式：紧凑态所有组件一行显示
 
     // ── Expanded card sections（展开卡片里可独立开关的区块）──
     public bool ExpandedShowArtTitle { get; set; } = true;   // 大封面 + 歌名/歌手/专辑
