@@ -11,7 +11,7 @@ using Point = System.Windows.Point;
 
 namespace WinIsland.UI;
 
-/// <summary>右上角弹出的玻璃通知横幅，自动消失，点击关闭。</summary>
+/// <summary>右上角弹出的玻璃通知横幅（带弹出动画），自动消失，点击关闭。</summary>
 public partial class NotificationBannerWindow : Window
 {
     private readonly DispatcherTimer _closeTimer;
@@ -24,11 +24,19 @@ public partial class NotificationBannerWindow : Window
         BodyText.Text = body;
         IconText.Text = glyph;
 
-        // 定位到屏幕右上角（带堆叠偏移）
-        Loaded += (_, _) =>
+        // 初始隐藏状态：动画在 ContentRendered（窗口真正渲染后）启动
+        var tg = new TransformGroup();
+        tg.Children.Add(new ScaleTransform(0.9, 0.9));
+        tg.Children.Add(new TranslateTransform(100, 0));
+        Card.RenderTransform = tg;
+        Card.RenderTransformOrigin = new Point(1.0, 0.5);
+        Card.Opacity = 0;
+
+        ContentRendered += (_, _) =>
         {
             var area = screen.WorkingArea;
-            Left = area.Right - ActualWidth - 18; // 整体左移，不贴屏幕右边缘
+            // 用固定 Width（330）定位，避免 Loaded 时 ActualWidth 未就绪导致贴边
+            Left = area.Right - Width - 24;          // 整体左移，不贴右边缘
             Top = area.Top + 8 + stackIndex * (ActualHeight + 10);
             AnimateIn();
         };
@@ -37,7 +45,6 @@ public partial class NotificationBannerWindow : Window
         _closeTimer.Tick += (_, _) => { _closeTimer.Stop(); Close(); };
         _closeTimer.Start();
 
-        // 液态玻璃模糊
         SourceInitialized += (_, _) =>
         {
             try
@@ -50,36 +57,29 @@ public partial class NotificationBannerWindow : Window
         };
     }
 
-    /// <summary>弹出动画：从右侧滑入 + 轻微放大 + 淡入（iOS 风格，快速弹出）。</summary>
+    /// <summary>弹出动画：从右滑入 + 轻微放大 + 淡入（iOS 风格）。</summary>
     private void AnimateIn()
     {
-        var tg = new TransformGroup();
-        var tx = new TranslateTransform(90, 0);
-        var sc = new ScaleTransform(0.9, 0.9);
-        tg.Children.Add(sc);
-        tg.Children.Add(tx);
-        Card.RenderTransform = tg;
-        Card.RenderTransformOrigin = new Point(1.0, 0.5);
-        Card.Opacity = 0;
-
+        var sb = new Storyboard();
         var spring = new SpringEase { Damping = 14, Stiffness = 300, Mass = 1 };
         var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
 
-        var sb = new Storyboard();
+        var tx = (TranslateTransform)((TransformGroup)Card.RenderTransform).Children[1];
+        var sc = (ScaleTransform)((TransformGroup)Card.RenderTransform).Children[0];
 
-        var animX = new DoubleAnimation(0, TimeSpan.FromMilliseconds(260)) { EasingFunction = smooth };
+        var animX = new DoubleAnimation(0, TimeSpan.FromMilliseconds(280)) { EasingFunction = smooth };
         Storyboard.SetTarget(animX, tx);
         Storyboard.SetTargetProperty(animX, new PropertyPath(TranslateTransform.XProperty));
 
-        var animSx = new DoubleAnimation(1, TimeSpan.FromMilliseconds(300)) { EasingFunction = spring };
+        var animSx = new DoubleAnimation(1, TimeSpan.FromMilliseconds(320)) { EasingFunction = spring };
         Storyboard.SetTarget(animSx, sc);
         Storyboard.SetTargetProperty(animSx, new PropertyPath(ScaleTransform.ScaleXProperty));
 
-        var animSy = new DoubleAnimation(1, TimeSpan.FromMilliseconds(300)) { EasingFunction = spring };
+        var animSy = new DoubleAnimation(1, TimeSpan.FromMilliseconds(320)) { EasingFunction = spring };
         Storyboard.SetTarget(animSy, sc);
         Storyboard.SetTargetProperty(animSy, new PropertyPath(ScaleTransform.ScaleYProperty));
 
-        var animO = new DoubleAnimation(1, TimeSpan.FromMilliseconds(180)) { EasingFunction = smooth };
+        var animO = new DoubleAnimation(1, TimeSpan.FromMilliseconds(200)) { EasingFunction = smooth };
         Storyboard.SetTarget(animO, Card);
         Storyboard.SetTargetProperty(animO, new PropertyPath(UIElement.OpacityProperty));
 
