@@ -124,11 +124,16 @@ public sealed class SystemNotificationMonitor : IDisposable
                 if (!GetWindowRect(h, out var r)) continue;
                 var w = r.Right - r.Left;
                 var hh = r.Bottom - r.Top;
-                if (w <= 0 || hh <= 0 || w > 560 || hh > 480) continue; // 弹窗尺寸
                 var cls = GetWindowClass(h);
                 if (ShellClasses.Contains(cls)) continue;
-                // 位置：右侧 ~60% 区域（QQ 右下、Windows 右上）
-                if (r.Left < area.Right - (area.Width * 0.6)) continue;
+                if (cls.IndexOf("DV2ControlHost", StringComparison.OrdinalIgnoreCase) >= 0) continue; // 右键菜单宿主
+
+                // 严格限定：只收 Windows 右下角通知区（贴右缘 + 贴底部 + 通知尺寸），
+                // 避免把右键菜单、按键提示等细碎弹窗也弹出来。
+                if (w < 240 || w > 560 || hh < 60 || hh > 300) continue;          // 通知尺寸
+                var rightNear = r.Right >= area.Right - 80 && r.Right <= area.Right + 30;  // 右缘贴近屏幕右
+                var bottomNear = r.Bottom >= area.Bottom - 120 && r.Bottom <= area.Bottom + 30; // 底缘贴近工作区底部
+                if (!rightNear || !bottomNear) continue;
 
                 if (_firstScan) { lock (_gate) _knownWindows.Add(h); continue; }
                 lock (_gate)
