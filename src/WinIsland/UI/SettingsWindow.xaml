@@ -423,6 +423,13 @@
 
                             <TextBlock x:Name="LblOpacity" Style="{StaticResource Label}" Text="不透明度"/>
                             <Slider Minimum="0.3" Maximum="1" Value="{Binding Working.Opacity}" Width="300" HorizontalAlignment="Left"/>
+                            <TextBlock x:Name="LblIslandSize" Style="{StaticResource Label}"/>
+                            <TextBlock x:Name="LblCompactWidth" Style="{StaticResource Label}"/>
+                            <Slider Minimum="260" Maximum="520" Value="{Binding Working.CompactWidth}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="2"/>
+                            <TextBlock x:Name="LblCompactHeight" Style="{StaticResource Label}"/>
+                            <Slider Minimum="48" Maximum="140" Value="{Binding Working.CompactHeight}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="1"/>
+                            <TextBlock x:Name="LblExpandedWidth" Style="{StaticResource Label}"/>
+                            <Slider Minimum="340" Maximum="620" Value="{Binding Working.ExpandedWidth}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="2"/>
 
                             <TextBlock x:Name="LblCompact" Style="{StaticResource Label}" Text="紧凑模式显示内容"/>
                             <CheckBox x:Name="ChkCompactArt" Content="封面" IsChecked="{Binding Working.CompactShowArt}"/>
@@ -478,6 +485,18 @@
                             <Button x:Name="BtnOpenConfig" Content="打开配置目录" Padding="10,4" Click="OpenConfigFolder_Click"/>
                             <Button x:Name="BtnDiagnostics" Content="诊断信息" Padding="10,4" Margin="8,0,0,0" Click="Diagnostics_Click"/>
                         </StackPanel>
+                    </StackPanel>
+                </TabItem>
+
+                <TabItem x:Name="TabNotify" Header="通知">
+                    <StackPanel Margin="10,6">
+                        <CheckBox x:Name="ChkBluetoothNotify" IsChecked="{Binding Working.BluetoothNotifyEnabled}"/>
+                        <CheckBox x:Name="ChkNotifyTakeover" IsChecked="{Binding Working.NotificationTakeoverEnabled}"/>
+                        <TextBlock x:Name="LblNotifyTimeout" Style="{StaticResource Label}"/>
+                        <Slider Minimum="3" Maximum="15" Value="{Binding Working.NotificationTimeoutSeconds}" Width="300" HorizontalAlignment="Left"
+                                IsSnapToTickEnabled="True" TickFrequency="1"/>
+                        <TextBlock x:Name="TxtNotifyNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,10,0,0"/>
                     </StackPanel>
                 </TabItem>
             </TabControl>

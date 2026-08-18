@@ -84,7 +84,15 @@ public static class Localization
         ["ShowIsland"] = "显示灵动岛",
         ["HideIsland"] = "隐藏灵动岛",
         ["RestartHint"] = "部分设置将在重启后完全生效",
-    };
+        ["Settings_Notifications"] = "通知",
+        ["Notifications_Bluetooth"] = "蓝牙设备连接/断开提示",
+        ["Notifications_Takeover"] = "接管 Windows 通知（尽力而为）",
+        ["Notifications_Timeout"] = "通知显示时长（秒）",
+        ["Notifications_Note"] = "Windows 未提供公开的“拦截其它应用通知”API，本功能通过 UI 自动化尽力镜像通知中心，部分通知可能无法捕获。",
+        ["Appearance_IslandSize"] = "灵动岛尺寸",
+        ["Appearance_CompactWidth"] = "紧凑宽度",
+        ["Appearance_CompactHeight"] = "紧凑高度",
+        ["Appearance_ExpandedWidth"] = "展开宽度",    };
 
     private static readonly Dictionary<string, string> En = new()
     {
@@ -163,7 +171,15 @@ public static class Localization
         ["ShowIsland"] = "Show Island",
         ["HideIsland"] = "Hide Island",
         ["RestartHint"] = "Some settings fully apply after restart",
-    };
+        ["Settings_Notifications"] = "Notifications",
+        ["Notifications_Bluetooth"] = "Bluetooth device connect/disconnect alerts",
+        ["Notifications_Takeover"] = "Mirror Windows notifications (best effort)",
+        ["Notifications_Timeout"] = "Notification duration (seconds)",
+        ["Notifications_Note"] = "Windows has no public API to intercept other apps' toasts; this mirrors the notification center via UI Automation (best effort) and may miss some notifications.",
+        ["Appearance_IslandSize"] = "Island size",
+        ["Appearance_CompactWidth"] = "Compact width",
+        ["Appearance_CompactHeight"] = "Compact height",
+        ["Appearance_ExpandedWidth"] = "Expanded width",    };
 
     private static string _current = "zh-CN";
 
