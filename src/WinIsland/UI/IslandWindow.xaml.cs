@@ -209,6 +209,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     private void ApplyTheme()
     {
+        ApplyMenuTheme();
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TextPrimary)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TextSecondary)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(AccentBrush)));
@@ -237,6 +238,25 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         {
             Card.Width = CompactWidth;
             Card.Height = CompactHeight;
+        }
+    }
+    /// <summary>右键菜单主题色（圆角液态玻璃）。</summary>
+    private void ApplyMenuTheme()
+    {
+        void Add(string key, Brush b) { b.Freeze(); Resources[key] = b; }
+        if (_theme.IsDark)
+        {
+            Add("MenuBgBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xEE, 0x1B, 0x1B, 0x26)));
+            Add("MenuBorderBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x59, 0xFF, 0xFF, 0xFF)));
+            Add("MenuTextBrush", new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF2, 0xF2, 0xF7)));
+            Add("MenuHoverBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)));
+        }
+        else
+        {
+            Add("MenuBgBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xEE, 0xF5, 0xF5, 0xFA)));
+            Add("MenuBorderBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF)));
+            Add("MenuTextBrush", new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1D, 0x1D, 0x24)));
+            Add("MenuHoverBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x18, 0x00, 0x00, 0x00)));
         }
     }
     private void ApplyCardAlignment()

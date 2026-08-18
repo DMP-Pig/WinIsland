@@ -46,6 +46,30 @@ public partial class SettingsWindow : Window
         Closed += (_, _) => { try { _vm.Save(); } catch { } };
     }
 
+    /// <summary>滚轮滚动当前页签的 ScrollViewer（避免被 ComboBox/Slider 拦截）。</summary>
+    private void Root_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+    {
+        if (e.OriginalSource is DependencyObject d)
+        {
+            var sv = FindAncestor<System.Windows.Controls.ScrollViewer>(d);
+            if (sv is not null)
+            {
+                sv.ScrollToVerticalOffset(sv.VerticalOffset - e.Delta);
+                e.Handled = true;
+            }
+        }
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? d) where T : class
+    {
+        while (d is not null)
+        {
+            if (d is T t) return t;
+            d = System.Windows.Media.VisualTreeHelper.GetParent(d)
+                ?? System.Windows.LogicalTreeHelper.GetParent(d);
+        }
+        return null;
+    }
     private void AutoApply()
     {
         try
@@ -71,8 +95,8 @@ public partial class SettingsWindow : Window
             ThemeMode.Dark => true,
             _ => ThemeHelper.IsSystemDark(),
         };
+        // 注意：不用 ApplyAcrylic —— 在 AllowsTransparency 窗口上会渲染出黑色大块
         WindowEffects.ApplyDarkMode(hwnd, dark);
-        WindowEffects.ApplyAcrylic(hwnd, dark ? Color.FromRgb(0x1B, 0x1B, 0x26) : Color.FromRgb(0xF2, 0xF2, 0xF7), dark ? 0.6 : 0.5);
         ApplyGlassPalette(dark);
     }
 
@@ -92,6 +116,8 @@ public partial class SettingsWindow : Window
             Add("ControlBgBrush", new SolidColorBrush(Color.FromArgb(0x24, 0xFF, 0xFF, 0xFF)));
             Add("ControlBorderBrush", new SolidColorBrush(Color.FromArgb(0x3C, 0xFF, 0xFF, 0xFF)));
             Add("TrackBrush", new SolidColorBrush(Color.FromArgb(0x5E, 0xFF, 0xFF, 0xFF)));
+            Add("ScrollTrackBrush", new SolidColorBrush(Color.FromArgb(0x2A, 0xFF, 0xFF, 0xFF)));
+            Add("ScrollThumbBrush", new SolidColorBrush(Color.FromArgb(0x9A, 0xFF, 0xFF, 0xFF)));
         }
         else
         {
@@ -104,6 +130,8 @@ public partial class SettingsWindow : Window
             Add("ControlBgBrush", new SolidColorBrush(Color.FromArgb(0xD9, 0xFF, 0xFF, 0xFF)));
             Add("ControlBorderBrush", new SolidColorBrush(Color.FromArgb(0x30, 0x00, 0x00, 0x00)));
             Add("TrackBrush", new SolidColorBrush(Color.FromArgb(0x50, 0x00, 0x00, 0x00)));
+            Add("ScrollTrackBrush", new SolidColorBrush(Color.FromArgb(0x18, 0x00, 0x00, 0x00)));
+            Add("ScrollThumbBrush", new SolidColorBrush(Color.FromArgb(0x66, 0x00, 0x00, 0x00)));
         }
 
         Add("AccentBrush", new SolidColorBrush(accent));
