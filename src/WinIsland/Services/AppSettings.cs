@@ -9,6 +9,24 @@ public enum IslandPosition { Center, Right }
 public enum ThemeMode { Auto, Light, Dark }
 public enum MonitorSelection { Primary, All, Index }
 
+/// <summary>灵动岛组件开关：无歌曲播放时（Idle）与有歌曲播放时（Playing）可分别勾选。</summary>
+public sealed class ComponentFlags
+{
+    public bool TimeWhenIdle { get; set; } = true;
+    public bool TimeWhenPlaying { get; set; } = false;
+    public bool WeatherWhenIdle { get; set; } = false;
+    public bool WeatherWhenPlaying { get; set; } = false;
+    public bool CoverWhenIdle { get; set; } = false;
+    public bool CoverWhenPlaying { get; set; } = true;
+    public bool TitleWhenIdle { get; set; } = false;
+    public bool TitleWhenPlaying { get; set; } = true;
+    public bool ArtistWhenIdle { get; set; } = false;
+    public bool ArtistWhenPlaying { get; set; } = true;
+    public bool LyricsWhenIdle { get; set; } = false;
+    public bool LyricsWhenPlaying { get; set; } = true;
+    public bool ProgressWhenIdle { get; set; } = false;
+    public bool ProgressWhenPlaying { get; set; } = false;
+}
 /// <summary>Persisted user configuration. JSON at %APPDATA%\WinIsland\settings.json.</summary>
 public sealed class AppSettings
 {
@@ -59,10 +77,13 @@ public sealed class AppSettings
     public double MaxExpandedHeight { get; set; } = 384;
 
     // ── Idle widgets（无媒体时组件）──────────────────────────
-    public bool ShowWidgetsWhenNoMedia { get; set; } = false; // 无媒体时显示时间/天气等组件
+    public bool ShowWidgetsWhenNoMedia { get; set; } = false; // 无媒体时显示组件（旧开关）
     public bool WidgetShowTime { get; set; } = true;
     public bool WidgetShowWeather { get; set; } = false;
     public string WeatherCity { get; set; } = "";             // 天气城市（Open-Meteo，需联网）
+
+    // ── 组件（灵动岛显示内容，Idle/Playing 可分别勾选）──
+    public ComponentFlags Components { get; set; } = new();
     // ── Notifications ──────────────────────────────────────────
     public bool BluetoothNotifyEnabled { get; set; } = false;   // 蓝牙设备连接/断开提示
     public bool NotificationTakeoverEnabled { get; set; } = false; // 接管 Windows 通知（尽力而为）
@@ -104,7 +125,8 @@ public sealed class SettingsService
                 var loaded = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
                 if (loaded is not null)
                 {
-                    // Recreate JSON members that were added after a user's old config file.
+                    // 兼容旧配置：补齐新增字段
+                    loaded.Components ??= new ComponentFlags();
                     return loaded;
                 }
             }

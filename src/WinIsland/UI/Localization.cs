@@ -99,7 +99,18 @@ public static class Localization
         ["Appearance_WeatherCity"] = "天气城市（需联网，Open-Meteo）",
         ["Appearance_WidgetNote"] = "天气使用 Open-Meteo 免费接口，仅在你开启并填写城市时联网；城市名可用中文或英文。",        ["Done"] = "完成",
         ["General_AlwaysVisible"] = "灵动岛常驻（始终显示，无媒体时显示时间）",
-    };
+        ["Settings_Components"] = "组件",
+        ["Comp_Header_Name"] = "组件",
+        ["Comp_Header_Idle"] = "无歌曲播放时",
+        ["Comp_Header_Playing"] = "有歌曲播放时",
+        ["Comp_Time"] = "时间",
+        ["Comp_Weather"] = "天气",
+        ["Comp_Cover"] = "专辑封面",
+        ["Comp_Title"] = "歌名",
+        ["Comp_Artist"] = "歌手",
+        ["Comp_Lyrics"] = "歌词",
+        ["Comp_Progress"] = "进度条",
+        ["Comp_Note"] = "勾选要在灵动岛上显示的内容；同一组件在「无歌曲播放时」和「有歌曲播放时」可以同时勾选。天气组件需要填写城市并联网获取。",    };
 
     private static readonly Dictionary<string, string> En = new()
     {
@@ -193,7 +204,18 @@ public static class Localization
         ["Appearance_WeatherCity"] = "Weather city (requires network, Open-Meteo)",
         ["Appearance_WidgetNote"] = "Weather uses the free Open-Meteo API; it only goes online when enabled with a city.",        ["Done"] = "Done",
         ["General_AlwaysVisible"] = "Island always visible (shows time when idle)",
-    };
+        ["Settings_Components"] = "Components",
+        ["Comp_Header_Name"] = "Component",
+        ["Comp_Header_Idle"] = "When no song",
+        ["Comp_Header_Playing"] = "When playing",
+        ["Comp_Time"] = "Time",
+        ["Comp_Weather"] = "Weather",
+        ["Comp_Cover"] = "Album art",
+        ["Comp_Title"] = "Song title",
+        ["Comp_Artist"] = "Artist",
+        ["Comp_Lyrics"] = "Lyrics",
+        ["Comp_Progress"] = "Progress bar",
+        ["Comp_Note"] = "Check what to show on the island; a component can be shown both when idle and when playing. Weather needs a city and network.",    };
 
     private static string _current = "zh-CN";
 

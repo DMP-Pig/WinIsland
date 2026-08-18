@@ -451,6 +451,47 @@
                     </ScrollViewer>
                 </TabItem>
 
+                <TabItem x:Name="TabComponents" Header="组件">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10,6">
+                            <Grid Margin="2,4,2,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="120"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblCompName" Text="组件" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock x:Name="LblCompIdle" Grid.Column="1" Text="无歌曲播放时" HorizontalAlignment="Center" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock x:Name="LblCompPlaying" Grid.Column="2" Text="有歌曲播放时" HorizontalAlignment="Center" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </Grid>
+                            <Border CornerRadius="12" Background="{DynamicResource ControlBgBrush}"
+                                    BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Padding="4,2">
+                                <ItemsControl ItemsSource="{Binding Components}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="2,4,2,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="120"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                <CheckBox Grid.Column="1" IsChecked="{Binding Idle, Mode=TwoWay}" HorizontalAlignment="Center"/>
+                                                <CheckBox Grid.Column="2" IsChecked="{Binding Playing, Mode=TwoWay}" HorizontalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                            <TextBlock x:Name="TxtCompNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
                 <TabItem x:Name="TabMedia" Header="媒体">
                     <StackPanel Margin="10,6">
                         <CheckBox x:Name="ChkUseSystemVolume" Content="非 Cider 来源时控制系统音量" IsChecked="{Binding Working.UseSystemVolume}"/>

@@ -161,7 +161,7 @@
 
                     <!-- 封面靠左（组件模式隐藏） -->
                     <Border Grid.Column="0" Width="40" Height="40" CornerRadius="12"
-                            Visibility="{Binding ShowIdleWidgets, Converter={StaticResource BoolToVisInvert}}"
+                            Visibility="{Binding ShowCover, Converter={StaticResource BoolToVis}}"
                             Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
                         <Grid>
                             <Image Source="{Binding Artwork}" Stretch="UniformToFill"
@@ -174,13 +174,15 @@
 
                     <!-- 歌名/歌手/歌词：左对齐（贴封面），垂直居中 -->
                     <StackPanel x:Name="PillText" Grid.Column="1" Margin="10,0,8,0" VerticalAlignment="Center"
-                                Visibility="{Binding ShowIdleWidgets, Converter={StaticResource BoolToVisInvert}}">
+                                Visibility="{Binding HasMedia, Converter={StaticResource BoolToVis}}">
                         <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" TextAlignment="Left"
                                    Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                   TextTrimming="CharacterEllipsis"/>
+                                   TextTrimming="CharacterEllipsis"
+                                   Visibility="{Binding ShowTitle, Converter={StaticResource BoolToVis}}"/>
                         <TextBlock Text="{Binding Artist}" FontSize="11" Margin="0,1,0,0" TextAlignment="Left"
                                    Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
-                                   TextTrimming="CharacterEllipsis"/>
+                                   TextTrimming="CharacterEllipsis"
+                                   Visibility="{Binding ShowArtist, Converter={StaticResource BoolToVis}}"/>
                         <!-- 当前歌词行：未悬停时也显示（左对齐，逐字卡拉OK） -->
                         <karaoke:KaraokeTextBlock
                             KaraokeText="{Binding CurrentLyricText}"
@@ -188,12 +190,26 @@
                             IsPlaying="{Binding IsPlaying}"
                             HighlightBrush="White"
                             BaseBrush="#80FFFFFF"
-                            FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"/>
+                            FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"
+                            Visibility="{Binding ShowLyrics, Converter={StaticResource BoolToVis}}"/>
+                        <!-- 紧凑进度条 -->
+                        <ProgressBar Height="3" Maximum="1" Value="{Binding Progress, Mode=OneWay}" Margin="0,4,0,0"
+                                     Visibility="{Binding ShowCompactProgress, Converter={StaticResource BoolToVis}}">
+                            <ProgressBar.Template>
+                                <ControlTemplate TargetType="ProgressBar">
+                                    <Grid>
+                                        <Border CornerRadius="2" Background="#33FFFFFF"/>
+                                        <Border x:Name="PART_Indicator" CornerRadius="2" HorizontalAlignment="Left"
+                                                Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"/>
+                                    </Grid>
+                                </ControlTemplate>
+                            </ProgressBar.Template>
+                        </ProgressBar>
                     </StackPanel>
 
                     <!-- 按钮靠右（组件模式隐藏） -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
-                                Visibility="{Binding ShowIdleWidgets, Converter={StaticResource BoolToVisInvert}}">
+                                Visibility="{Binding HasMedia, Converter={StaticResource BoolToVis}}">
                         <Button Style="{StaticResource IconButton}" Command="{Binding PlayPauseCommand}">
                             <TextBlock Text="{Binding PlayPauseGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                         </Button>
@@ -206,9 +222,11 @@
                     <StackPanel x:Name="WidgetPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center"
                                 Visibility="{Binding ShowIdleWidgets, Converter={StaticResource BoolToVis}}">
                         <TextBlock Text="{Binding ClockText}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"
-                                   Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"/>
+                                   Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                   Visibility="{Binding ShowIdleTime, Converter={StaticResource BoolToVis}}"/>
                         <TextBlock Text="{Binding WeatherText}" FontSize="12" Margin="10,5,0,0" VerticalAlignment="Center"
-                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                   Visibility="{Binding ShowIdleWeather, Converter={StaticResource BoolToVis}}"/>
                     </StackPanel>
                 </Grid>
 
