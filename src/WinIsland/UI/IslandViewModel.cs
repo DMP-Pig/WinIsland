@@ -567,11 +567,14 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     {
         var hasMedia = _snapshot is not null && Status is PlaybackStatus.Playing or PlaybackStatus.Paused;
         HasMedia = hasMedia;
-        var showWidgets = !hasMedia && _settings.Current.ShowWidgetsWhenNoMedia;
+        var alwaysVisible = _settings.Current.IslandAlwaysVisible;
+        // 常驻或开启无媒体组件时，无媒体也显示（内容为时间/天气组件）
+        var showWidgets = !hasMedia && (_settings.Current.ShowWidgetsWhenNoMedia || alwaysVisible);
         ShowIdleWidgets = showWidgets;
 
         var show = !_userHidden && (hasMedia || showWidgets || !_settings.Current.HideWhenNoMedia);
-        if (hasMedia && Status == PlaybackStatus.Paused && !_settings.Current.ShowWhenPaused)
+        // 常驻时不因暂停而隐藏
+        if (!alwaysVisible && hasMedia && Status == PlaybackStatus.Paused && !_settings.Current.ShowWhenPaused)
             show = false;
 
         // 无媒体组件显示时，重置天气缓存城市（切换城市立即生效）

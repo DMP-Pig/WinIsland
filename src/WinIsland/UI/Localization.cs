@@ -98,6 +98,7 @@ public static class Localization
         ["Appearance_WidgetWeather"] = "显示天气",
         ["Appearance_WeatherCity"] = "天气城市（需联网，Open-Meteo）",
         ["Appearance_WidgetNote"] = "天气使用 Open-Meteo 免费接口，仅在你开启并填写城市时联网；城市名可用中文或英文。",        ["Done"] = "完成",
+        ["General_AlwaysVisible"] = "灵动岛常驻（始终显示，无媒体时显示时间）",
     };
 
     private static readonly Dictionary<string, string> En = new()
@@ -191,6 +192,7 @@ public static class Localization
         ["Appearance_WidgetWeather"] = "Show weather",
         ["Appearance_WeatherCity"] = "Weather city (requires network, Open-Meteo)",
         ["Appearance_WidgetNote"] = "Weather uses the free Open-Meteo API; it only goes online when enabled with a city.",        ["Done"] = "Done",
+        ["General_AlwaysVisible"] = "Island always visible (shows time when idle)",
     };
 
     private static string _current = "zh-CN";

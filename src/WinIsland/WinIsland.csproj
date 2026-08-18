@@ -12,7 +12,7 @@
     <RootNamespace>WinIsland</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\winisland.ico</ApplicationIcon>
-    <Version>1.0.2-beta14</Version>
+    <Version>1.0.2-beta15</Version>
     <AssemblyVersion>1.0.2.0</AssemblyVersion>
     <FileVersion>1.0.2.0</FileVersion>
     <Authors>WinIsland</Authors>

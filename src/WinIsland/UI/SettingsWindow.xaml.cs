@@ -187,6 +187,7 @@ public partial class SettingsWindow : Window
         ChkStartHidden.Content = Localization.Get("General_StartHidden");
         ChkHideWhenNoMedia.Content = Localization.Get("General_HideWhenNoMedia");
         ChkShowWhenPaused.Content = Localization.Get("General_ShowWhenPaused");
+        ChkAlwaysVisible.Content = Localization.Get("General_AlwaysVisible");
         ChkUseSystemVolume.Content = Localization.Get("Media_UseSystemVolume");
         ChkOnlineLyrics.Content = Localization.Get("Lyrics_Online");
         ChkStandaloneLyrics.Content = Localization.Get("Lyrics_StandaloneWindow");

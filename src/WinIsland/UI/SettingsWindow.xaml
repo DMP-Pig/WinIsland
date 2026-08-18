@@ -361,6 +361,7 @@
                             <CheckBox x:Name="ChkStartHidden" Content="启动时隐藏灵动岛" IsChecked="{Binding Working.StartHidden}"/>
                             <CheckBox x:Name="ChkHideWhenNoMedia" Content="无媒体播放时自动隐藏" IsChecked="{Binding Working.HideWhenNoMedia}"/>
                             <CheckBox x:Name="ChkShowWhenPaused" Content="暂停时仍然显示" IsChecked="{Binding Working.ShowWhenPaused}"/>
+                            <CheckBox x:Name="ChkAlwaysVisible" IsChecked="{Binding Working.IslandAlwaysVisible}"/>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
