@@ -20,6 +20,7 @@ public sealed class SystemNotificationMonitor : IDisposable
     private readonly HashSet<string> _seen = new(StringComparer.OrdinalIgnoreCase);
     private System.Threading.Timer? _timer;
     private bool _started;
+    private int _notFoundCount;
 
     public event EventHandler<SystemNotification>? NotificationCaptured;
 
@@ -79,9 +80,11 @@ public sealed class SystemNotificationMonitor : IDisposable
 
             if (center is null)
             {
-                AppLogger.Debug("SysNotify: no notification center/window found.");
+                // 节流：每 10 次轮询（约 15s）记一次，避免刷屏
+                if (++_notFoundCount % 10 == 1) AppLogger.Debug("SysNotify: no notification center/window found.");
                 return;
             }
+            _notFoundCount = 0;
             if (!found) return;
 
             var texts = center.FindAll(TreeScope.Descendants,

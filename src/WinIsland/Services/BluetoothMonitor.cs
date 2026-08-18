@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using Windows.Devices.Bluetooth;
 using Windows.Devices.Enumeration;
 
 namespace WinIsland.Services;
 
 /// <summary>
-/// 监听已配对蓝牙设备的连接/断开（耳机/音箱/鼠标等）。
-/// 轮询 AEP：连接 = System.Devices.Aep.IsConnected 或 IsPresent 为真（部分设备只报其一）。
-/// 轮询间隔 5s，带诊断日志；事件在后台线程触发，调用方需封送到 UI 线程。
+/// 监听已配对蓝牙设备的连接/断开。
+/// 轮询 BluetoothDevice.ConnectionStatus（真实连接状态，AEP 的 IsConnected/IsPresent 不可靠）。
+/// 事件在后台线程触发，调用方需封送到 UI 线程。
 /// </summary>
 public sealed class BluetoothMonitor : IDisposable
 {
-    private const string ConnectedKey = "System.Devices.Aep.IsConnected";
-    private const string PresentKey = "System.Devices.Aep.IsPresent";
     private const string NameKey = "System.ItemNameDisplay";
 
     private System.Threading.Timer? _timer;
@@ -22,6 +21,7 @@ public sealed class BluetoothMonitor : IDisposable
     private readonly object _gate = new();
     private bool _started;
     private bool _firstPass = true;
+    private bool _polling;
 
     /// <summary>蓝牙设备连接（参数：设备名）。</summary>
     public event EventHandler<string>? DeviceConnected;
@@ -39,28 +39,40 @@ public sealed class BluetoothMonitor : IDisposable
             _connected.Clear();
         }
         _timer?.Dispose();
-        _timer = new System.Threading.Timer(_ => Poll(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5));
-        AppLogger.Info("Bluetooth monitor started (poll 5s).");
+        _timer = new System.Threading.Timer(_ => Poll(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(8));
+        AppLogger.Info("Bluetooth monitor started (ConnectionStatus poll 8s).");
     }
 
     private void Poll()
     {
+        if (_polling) return;
+        _polling = true;
         try
         {
             var devices = DeviceInformation.FindAllAsync(
-                Windows.Devices.Bluetooth.BluetoothDevice.GetDeviceSelector(),
-                new[] { ConnectedKey, PresentKey, NameKey },
+                BluetoothDevice.GetDeviceSelector(),
+                new[] { NameKey },
                 DeviceInformationKind.AssociationEndpoint)
                 .AsTask().GetAwaiter().GetResult();
 
             var current = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             foreach (var d in devices)
             {
-                var conn = IsConnectedFlag(d);
                 var name = (d.Properties.TryGetValue(NameKey, out var n) && n is string s && s.Length > 0) ? s : d.Name;
                 if (!_names.ContainsKey(d.Id)) _names[d.Id] = name;
+
+                var conn = false;
+                try
+                {
+                    var bt = BluetoothDevice.FromIdAsync(d.Id).AsTask().GetAwaiter().GetResult();
+                    conn = bt is not null && bt.ConnectionStatus == BluetoothConnectionStatus.Connected;
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Debug($"BT FromIdAsync failed for '{name}': {ex.Message}");
+                }
                 current[d.Id] = conn;
-                AppLogger.Debug($"BT: '{name}' connected={conn} IsConnected={Prop(d, ConnectedKey)} IsPresent={Prop(d, PresentKey)}");
+                AppLogger.Debug($"BT: '{name}' ConnectionStatus={(conn ? "Connected" : "Disconnected")}");
             }
 
             lock (_gate)
@@ -82,7 +94,6 @@ public sealed class BluetoothMonitor : IDisposable
                     _connected[kv.Key] = kv.Value;
                 }
 
-                // 从枚举中消失的设备视为断开
                 var gone = new List<string>();
                 foreach (var id in _connected.Keys) if (!current.ContainsKey(id)) gone.Add(id);
                 foreach (var id in gone)
@@ -96,17 +107,11 @@ public sealed class BluetoothMonitor : IDisposable
         {
             AppLogger.Warn($"Bluetooth poll failed: {ex.Message}");
         }
+        finally
+        {
+            _polling = false;
+        }
     }
-
-    private static bool IsConnectedFlag(DeviceInformation d)
-    {
-        if (d.Properties.TryGetValue(ConnectedKey, out var c) && c is bool cb && cb) return true;
-        if (d.Properties.TryGetValue(PresentKey, out var p) && p is bool pb && pb) return true;
-        return false;
-    }
-
-    private static string Prop(DeviceInformation d, string key)
-        => d.Properties.TryGetValue(key, out var v) ? v?.ToString() ?? "null" : "absent";
 
     private void Raise(EventHandler<string>? ev, string id)
     {
