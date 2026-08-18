@@ -84,7 +84,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             if (ShowIdleWeather && ++_weatherTick % 60 == 1)
             {
                 var w = await _weather.GetWeatherAsync(_settings.Current.WeatherCity);
-                if (WeatherText != w) WeatherText = w ?? string.Empty;
+                if (w is not null && WeatherText != w) WeatherText = w; // 失败保留旧值，避免天气忽有忽无
             }
         };
         _widgetTimer.Start();
@@ -271,6 +271,11 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             else if (key == "Weather" && ShowIdleWeather) items.Add(new IslandComponent("Weather"));
             else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(new IslandComponent("Song"));
         }
+
+        // 内容未变化时不重建，避免每个快照（每秒）都重创建组件导致闪烁
+        if (_compactItems.Count == items.Count
+            && _compactItems.Select(i => i.Kind).SequenceEqual(items.Select(i => i.Kind)))
+            return;
         CompactItems = items;
     }
 
@@ -619,7 +624,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         if (!alwaysVisible && hasMedia && Status == PlaybackStatus.Paused && !_settings.Current.ShowWhenPaused)
             show = false;
 
-        if (!showWidgets) WeatherText = string.Empty;
+        if (!ShowIdleWeather) WeatherText = string.Empty; // 仅天气组件不显示时才清空
 
         // 通知界面组件可见性变化
         OnPropertyChanged(nameof(ShowCover));
