@@ -6,6 +6,7 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" ShowInTaskbar="False"
         FontFamily="Segoe UI Variable Text, Segoe UI" TextOptions.TextFormattingMode="Ideal"
+        PreviewMouseWheel="Root_PreviewMouseWheel"
         Foreground="{DynamicResource TextPrimaryBrush}">
     <Window.Resources>
         <Style TargetType="TextBlock" x:Key="Label">
@@ -274,12 +275,13 @@
             </Setter>
         </Style>
         <Style TargetType="ScrollBar">
-            <Setter Property="Width" Value="8"/>
+            <Setter Property="Width" Value="12"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollBar">
                         <Grid Background="Transparent">
+                            <Border Margin="3,2" CornerRadius="3" Background="{DynamicResource ScrollTrackBrush}"/>
                             <Track x:Name="PART_Track" IsDirectionReversed="True">
                                 <Track.DecreaseRepeatButton>
                                     <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0"/>
@@ -291,7 +293,7 @@
                                     <Thumb>
                                         <Thumb.Template>
                                             <ControlTemplate TargetType="Thumb">
-                                                <Border x:Name="ThumbBd" CornerRadius="4" Margin="1" Background="{DynamicResource TrackBrush}"/>
+                                                <Border x:Name="ThumbBd" CornerRadius="4" Margin="2" Background="{DynamicResource ScrollThumbBrush}"/>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
                                                         <Setter TargetName="ThumbBd" Property="Background" Value="{DynamicResource TextSecondaryBrush}"/>
