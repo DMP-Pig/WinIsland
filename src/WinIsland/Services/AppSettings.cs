@@ -33,6 +33,16 @@ public sealed class ComponentFlags
     public bool LyricsWhenPlaying { get; set; } = true;
     public bool ProgressWhenIdle { get; set; } = false;
     public bool ProgressWhenPlaying { get; set; } = false;
+    public bool DateWhenIdle { get; set; } = true;
+    public bool DateWhenPlaying { get; set; } = false;
+    public bool CpuWhenIdle { get; set; } = false;
+    public bool CpuWhenPlaying { get; set; } = false;
+    public bool RamWhenIdle { get; set; } = false;
+    public bool RamWhenPlaying { get; set; } = false;
+    public bool NetWhenIdle { get; set; } = false;
+    public bool NetWhenPlaying { get; set; } = false;
+    public bool BatteryWhenIdle { get; set; } = false;
+    public bool BatteryWhenPlaying { get; set; } = false;
 }
 /// <summary>Persisted user configuration. JSON at %APPDATA%\WinIsland\settings.json.</summary>
 public sealed class AppSettings
@@ -55,6 +65,9 @@ public sealed class AppSettings
     public bool HideWhenNoMedia { get; set; } = true;
     public bool IslandAlwaysVisible { get; set; } = false;   // 常驻：始终显示（无视媒体/暂停）
     public bool ShowMediaInfo { get; set; } = true;              // 是否显示媒体播放信息（歌名/封面/歌词等）
+    public bool ReduceMotion { get; set; } = false;             // 减少动态效果（无障碍/省电）
+    public bool GlobalHotkeysEnabled { get; set; } = true;         // 全局快捷键
+    public int LowBatteryThreshold { get; set; } = 20;             // 低电量提醒阈值（%）
     public bool ShowWhenPaused { get; set; } = true;
     public bool StartWithWindows { get; set; } = false;
     public bool StartHidden { get; set; } = false;
@@ -63,6 +76,12 @@ public sealed class AppSettings
     public bool CompactShowArt { get; set; } = true;
     public bool CompactShowTitle { get; set; } = true;
     public bool CompactShowProgress { get; set; } = false;
+
+    // ── Expanded card sections（展开卡片里可独立开关的区块）──
+    public bool ExpandedShowArtTitle { get; set; } = true;   // 大封面 + 歌名/歌手/专辑
+    public bool ExpandedShowProgress { get; set; } = true;   // 进度条 + 时间
+    public bool ExpandedShowControls { get; set; } = true;   // 控制按钮 + 音量
+    public bool ExpandedShowLyrics { get; set; } = true;     // 歌词滚动区
 
     // ── Cider ──────────────────────────────────────────────────
     public bool CiderEnabled { get; set; } = true;

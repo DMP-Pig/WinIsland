@@ -39,22 +39,25 @@ public sealed class ComponentRow : ObservableObject
     private readonly Action<ComponentFlags, bool> _idleSet;
     private readonly Func<ComponentFlags, bool> _playGet;
     private readonly Action<ComponentFlags, bool> _playSet;
+    private readonly Action<ComponentRow> _onChanged;
 
     public string Key { get; }
 
     public ComponentRow(string key, string nameKey, ComponentFlags c,
         Func<ComponentFlags, bool> idleGet, Action<ComponentFlags, bool> idleSet,
-        Func<ComponentFlags, bool> playGet, Action<ComponentFlags, bool> playSet)
+        Func<ComponentFlags, bool> playGet, Action<ComponentFlags, bool> playSet,
+        Action<ComponentRow>? onChanged = null)
     {
         Key = key; _nameKey = nameKey; _c = c;
         _idleGet = idleGet; _idleSet = idleSet;
         _playGet = playGet; _playSet = playSet;
+        _onChanged = onChanged ?? (_ => { });
     }
 
     public string Name => Localization.Get(_nameKey);
 
-    public bool Idle { get => _idleGet(_c); set { _idleSet(_c, value); OnPropertyChanged(); } }
-    public bool Playing { get => _playGet(_c); set { _playSet(_c, value); OnPropertyChanged(); } }
+    public bool Idle { get => _idleGet(_c); set { _idleSet(_c, value); OnPropertyChanged(); _onChanged(this); } }
+    public bool Playing { get => _playGet(_c); set { _playSet(_c, value); OnPropertyChanged(); _onChanged(this); } }
 
     public void RefreshName() => OnPropertyChanged(nameof(Name));
 }
@@ -88,7 +91,8 @@ public sealed class SettingsViewModel : ObservableObject
             new EnumOption<MonitorSelection>(MonitorSelection.Index, Localization.Get("Appearance_MonitorIndex")),
         };
         _components = BuildComponents(Working.Components);
-        _orderItems = BuildOrderItems();
+        _orderItems = new List<OrderItem>();
+        RebuildOrderItems();
         _mediaAppRows = BuildMediaApps(Working.MediaApps, registry);
         Localization.LanguageChanged += (_, _) => { foreach (var r in Components) r.RefreshName(); foreach (var o in OrderItems) o.RefreshName(); };
 
@@ -126,30 +130,50 @@ public sealed class SettingsViewModel : ObservableObject
 
     private List<ComponentRow> BuildComponents(ComponentFlags c) => new()
     {
-        new("Time", "Comp_Time", c, x => x.TimeWhenIdle, (x, v) => x.TimeWhenIdle = v, x => x.TimeWhenPlaying, (x, v) => x.TimeWhenPlaying = v),
-        new("Weather", "Comp_Weather", c, x => x.WeatherWhenIdle, (x, v) => x.WeatherWhenIdle = v, x => x.WeatherWhenPlaying, (x, v) => x.WeatherWhenPlaying = v),
+        new("Time", "Comp_Time", c, x => x.TimeWhenIdle, (x, v) => x.TimeWhenIdle = v, x => x.TimeWhenPlaying, (x, v) => x.TimeWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Weather", "Comp_Weather", c, x => x.WeatherWhenIdle, (x, v) => x.WeatherWhenIdle = v, x => x.WeatherWhenPlaying, (x, v) => x.WeatherWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Date", "Comp_Date", c, x => x.DateWhenIdle, (x, v) => x.DateWhenIdle = v, x => x.DateWhenPlaying, (x, v) => x.DateWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Cpu", "Comp_Cpu", c, x => x.CpuWhenIdle, (x, v) => x.CpuWhenIdle = v, x => x.CpuWhenPlaying, (x, v) => x.CpuWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Ram", "Comp_Ram", c, x => x.RamWhenIdle, (x, v) => x.RamWhenIdle = v, x => x.RamWhenPlaying, (x, v) => x.RamWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Net", "Comp_Net", c, x => x.NetWhenIdle, (x, v) => x.NetWhenIdle = v, x => x.NetWhenPlaying, (x, v) => x.NetWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Battery", "Comp_Battery", c, x => x.BatteryWhenIdle, (x, v) => x.BatteryWhenIdle = v, x => x.BatteryWhenPlaying, (x, v) => x.BatteryWhenPlaying = v, _ => RebuildOrderItems()),
     };
 
     private static readonly (string Key, string NameKey)[] OrderDefs =
     {
         ("Time", "Comp_Time"),
         ("Weather", "Comp_Weather"),
+        ("Date", "Comp_Date"),
+        ("Cpu", "Comp_Cpu"),
+        ("Ram", "Comp_Ram"),
+        ("Net", "Comp_Net"),
+        ("Battery", "Comp_Battery"),
         ("Song", "Comp_Song"),
     };
 
-    private List<OrderItem> BuildOrderItems()
+    /// <summary>
+    /// 重建「拖动顺序」条：只保留已勾选（空闲或播放任一勾选）的组件；
+    /// 没有勾选行的组件（如 Song 歌曲信息）始终显示。顺序沿用 WidgetOrder。
+    /// </summary>
+    private void RebuildOrderItems()
     {
         var keys = (Working.WidgetOrder ?? string.Empty)
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        foreach (var d in OrderDefs) if (!keys.Contains(d.Key)) keys.Add(d.Key);
+
         var used = new HashSet<string>();
         var result = new List<OrderItem>();
         foreach (var k in keys)
         {
             var d = Array.Find(OrderDefs, x => x.Key == k);
-            if (d.Key is not null && used.Add(d.Key)) result.Add(new OrderItem(d.Key, d.NameKey));
+            if (d.Key is null || !used.Add(d.Key)) continue;
+            var row = _components.FirstOrDefault(c => c.Key == k);
+            // 无勾选行的组件（Song）始终显示；其余只有被勾选才显示
+            if (row is null || row.Idle || row.Playing)
+                result.Add(new OrderItem(d.Key, d.NameKey));
         }
-        foreach (var d in OrderDefs) if (used.Add(d.Key)) result.Add(new OrderItem(d.Key, d.NameKey));
-        return result;
+        _orderItems = result;
+        OnPropertyChanged(nameof(OrderItems));
     }
 
     private List<MediaAppRow> BuildMediaApps(List<MediaAppEntry>? saved, MediaAppRegistry? registry)
@@ -197,7 +221,14 @@ public sealed class SettingsViewModel : ObservableObject
         _orderItems.RemoveAt(i);
         _orderItems.Insert(newIndex, item);
         OnPropertyChanged(nameof(OrderItems));
-        Working.WidgetOrder = string.Join(",", _orderItems.Select(x => x.Key));
+
+        // 把新顺序写回 WidgetOrder：已显示项按新顺序在前，未勾选项按原顺序补在后面，
+        // 这样取消勾选再勾选后仍能记住相对位置。
+        var shown = _orderItems.Select(x => x.Key).ToList();
+        var hidden = _components.Where(r => !r.Idle && !r.Playing).Select(r => r.Key)
+            .Concat(OrderDefs.Select(d => d.Key)).Distinct()
+            .Where(k => !shown.Contains(k)).ToList();
+        Working.WidgetOrder = string.Join(",", shown.Concat(hidden));
     }
 
     public void MoveComponentTo(ComponentRow row, int newIndex)

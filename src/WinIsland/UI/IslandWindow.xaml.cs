@@ -82,6 +82,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
         _vm.PropertyChanged += OnVmPropertyChanged;
         _theme.ThemeChanged += (_, _) => ApplyTheme();
+        _settings.Changed += (_, _) => ApplyExpandedSectionVisibility();
 
         Loaded += OnLoaded;
         DpiChanged += (_, _) => Reposition();
@@ -99,6 +100,12 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     public Brush ButtonHoverBrush => _theme.ButtonHoverBrush;
     public Brush SliderTrackBrush => _theme.SliderTrackBrush;
     public Brush SliderThumbBrush => _theme.SliderThumbBrush;
+
+    // ── 展开卡片分区块开关（来自设置，绑定到展开内容）──
+    public bool ExpandedShowArtTitle => _settings.Current.ExpandedShowArtTitle;
+    public bool ExpandedShowProgress => _settings.Current.ExpandedShowProgress;
+    public bool ExpandedShowControls => _settings.Current.ExpandedShowControls;
+    public bool ExpandedShowLyrics => _settings.Current.ExpandedShowLyrics;
 
     // ── 点击展开 / 解锁拖动 / 右键菜单 ─────────────────────────
 
@@ -219,6 +226,15 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ButtonHoverBrush)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SliderTrackBrush)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SliderThumbBrush)));
+    }
+
+    /// <summary>展开卡片分区块的可见性随设置即时刷新。</summary>
+    private void ApplyExpandedSectionVisibility()
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowArtTitle)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowProgress)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowControls)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowLyrics)));
     }
 
     /// <summary>按设置调整窗口与卡片尺寸（紧凑/展开）。仅当窗口尺寸真正变化时才重定位，
@@ -350,7 +366,11 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     {
         if (!IsVisible) return;
         var sb = new Storyboard();
-        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(180));
+        // 非线性淡出：先快后慢（EaseIn），消失过程不匀速、不生硬
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(200))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn },
+        };
         Storyboard.SetTarget(fade, this);
         Storyboard.SetTargetProperty(fade, new PropertyPath(OpacityProperty));
         sb.Children.Add(fade);
@@ -420,25 +440,41 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         _currentStoryboard?.Stop();
         _currentStoryboard = null;
 
+        // 减少动态效果：关闭弹簧/错峰动画，直接瞬时切换（无障碍 / 省电）
+        if (_settings.Current.ReduceMotion)
+        {
+            Card.Width = width;
+            Card.Height = height;
+            PillRow.Visibility = expand ? Visibility.Collapsed : Visibility.Visible;
+            PillRow.Opacity = expand ? 0 : 1;
+            ExpandedContent.Visibility = expand ? Visibility.Visible : Visibility.Collapsed;
+            ExpandedContent.Opacity = expand ? 1 : 0;
+            ExpandedScale.ScaleX = ExpandedScale.ScaleY = expand ? 1 : 0.98;
+            ExpandedTranslate.Y = expand ? 0 : 10;
+            onCompleted?.Invoke();
+            return;
+        }
+
         var sb = new Storyboard();
-        var spring = new SpringEase { Damping = 13, Stiffness = 170, Mass = 1 }; // 更软更丝滑
+        // iOS 风格弹簧：快启动 + 轻微弹性回弹 + 慢收尾（低阻尼、高刚度）
+        var spring = new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 };
         var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
 
-        // 卡片尺寸：弹簧曲线（展开 520ms / 收起 380ms，更慢更丝滑）
-        AddAnim(sb, Card, FrameworkElement.WidthProperty, width, expand ? 520 : 380, spring);
-        AddAnim(sb, Card, FrameworkElement.HeightProperty, height, expand ? 520 : 380, spring);
+        // 卡片尺寸：弹簧曲线（展开 880ms / 收起 760ms，再慢一点点）
+        AddAnim(sb, Card, FrameworkElement.WidthProperty, width, expand ? 880 : 760, spring);
+        AddAnim(sb, Card, FrameworkElement.HeightProperty, height, expand ? 880 : 760, spring);
 
-        // 展开内容：错峰淡入 + 轻微缩放/位移（延迟 50ms，让尺寸先动、内容跟上）
-        var contentDelay = TimeSpan.FromMilliseconds(expand ? 55 : 0);
-        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, expand ? 260 : 140, smooth, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, 400, spring, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, 400, spring, contentDelay);
-        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, 400, smooth, contentDelay);
+        // 展开内容：错峰淡入 + 轻微缩放/位移（展开延迟 95ms，让尺寸先动、内容跟上）
+        var contentDelay = TimeSpan.FromMilliseconds(expand ? 95 : 0);
+        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, expand ? 480 : 300, smooth, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, expand ? 720 : 640, spring, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, expand ? 720 : 640, spring, contentDelay);
+        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, expand ? 720 : 640, smooth, contentDelay);
 
         // 胶囊行：展开后淡出（由大图区接管）；收起时立即恢复完全不透明，
         // 避免缩回瞬间胶囊内容还在淡入而出现“空内容”。
         if (expand)
-            AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, 180, smooth, TimeSpan.FromMilliseconds(40));
+            AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, 320, smooth, TimeSpan.FromMilliseconds(70));
         else
             PillRow.Opacity = 1;
 

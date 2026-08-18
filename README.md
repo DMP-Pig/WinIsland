@@ -120,7 +120,7 @@ build/
 
 ## 快速开始
 
-> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.2/win-x64/WinIsland.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x86 / win-arm64 及 Windows 安装包）。
+> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.3/win-x64/WinIsland.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x86 / win-arm64 及 Windows 安装包）。
 ## 快速开始
 
 ### 环境要求
@@ -152,7 +152,7 @@ dotnet run --project src\WinIsland -c Debug
 ```powershell
 iscc.exe build\release-1.0.1.iss
 ```
-生成 `releases\<版本>\WinIsland-Setup-<版本>.exe`（如 `WinIsland-Setup-1.0.1.exe`）。
+生成 `releases\<版本>\WinIsland-Setup-<版本>.exe`（如 `WinIsland-Setup-1.0.3-win-x64.exe`）。
 
 ---
 
