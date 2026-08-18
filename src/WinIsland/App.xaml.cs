@@ -26,6 +26,8 @@ public partial class App : Application
     private BluetoothMonitor? _bluetooth;
     private SystemNotificationMonitor? _systemNotifications;
     private NotificationService? _notifications;
+    private NotificationHistoryService? _notificationHistory;
+    private GlobalHotkeyService? _hotkeys;
     private MediaAppRegistry? _mediaApps;
 
     public App()
@@ -80,7 +82,8 @@ public partial class App : Application
         _lyrics = new LyricsService(_settings, _cider);
 
         // ── 通知服务（右上角横幅 + 蓝牙/系统通知监控）──
-        _notifications = new NotificationService(Dispatcher, _settings);
+        _notificationHistory = new NotificationHistoryService();
+        _notifications = new NotificationService(Dispatcher, _settings, _notificationHistory);
         _bluetooth = new BluetoothMonitor();
         _bluetooth.DeviceConnected += (_, name) => _notifications.Show("蓝牙设备已连接", name, "\uE702");
         _bluetooth.DeviceDisconnected += (_, name) => _notifications.Show("蓝牙设备已断开", name, "\uE702");
@@ -90,6 +93,10 @@ public partial class App : Application
         _vm = new IslandViewModel(_coordinator, _settings, _lyrics);
         _vm.OpenSettingsRequested += (_, _) => OpenSettings();
         _vm.ToggleLyricsWindowRequested += (_, _) => ToggleLyricsWindow();
+        _vm.NowPlayingRequested += (title, artist) =>
+            _notifications?.Show(Localization.Get("NowPlaying_Title"), string.IsNullOrEmpty(artist) ? title : $"{title} - {artist}", "\uE8D6");
+        _vm.LowBatteryRequested += percent =>
+            _notifications?.Show(Localization.Get("LowBattery_Title"), $"{percent}%", "\uEBA0");
 
         // ── Island windows (one per selected monitor) ──
         RecreateWindows();
@@ -107,6 +114,14 @@ public partial class App : Application
             _tray.SetAutoStartChecked(enable);
         };
         _tray.ExitRequested += (_, _) => Shutdown();
+
+        // ── 全局快捷键（Ctrl+Alt+P/←/→/I）──
+        _hotkeys = new GlobalHotkeyService();
+        _hotkeys.PlayPausePressed += () => _vm?.PlayPauseCommand.Execute(null);
+        _hotkeys.NextPressed += () => _ = _coordinator?.NextAsync();
+        _hotkeys.PreviousPressed += () => _ = _coordinator?.PreviousAsync();
+        _hotkeys.ToggleVisibilityPressed += () => _vm?.ToggleUserVisible();
+        _hotkeys.SetEnabled(_settings.Current.GlobalHotkeysEnabled);
 
         // ── Settings changed → re-apply live ──
         _settings.Changed += (_, s) =>
@@ -135,6 +150,9 @@ public partial class App : Application
             // 通知监控开关
             if (s.BluetoothNotifyEnabled) _bluetooth?.Start(); else _bluetooth?.Stop();
             if (s.NotificationTakeoverEnabled) _systemNotifications?.Start(); else _systemNotifications?.Stop();
+
+            // 全局快捷键开关
+            _hotkeys?.SetEnabled(s.GlobalHotkeysEnabled);
 
             // 尺寸设置变更 → 应用到灵动岛
             foreach (var w in _windows) w.ApplySize();
@@ -220,7 +238,7 @@ public partial class App : Application
     {
         if (_settings is null) return;
         var vm = new SettingsViewModel(_settings, _mediaApps);
-        var win = new SettingsWindow(vm, _settings, _cider);
+        var win = new SettingsWindow(vm, _settings, _cider, _notificationHistory);
         win.ShowDialog();
     }
 
@@ -262,6 +280,7 @@ public partial class App : Application
             _coordinator?.Dispose();
             _bluetooth?.Dispose();
             _systemNotifications?.Dispose();
+            _hotkeys?.Dispose();
             _tray?.Dispose();
             _singleInstance?.Dispose();
             foreach (var w in _windows) w.Close();

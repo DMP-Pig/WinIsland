@@ -13,13 +13,15 @@ public sealed class NotificationService
 {
     private readonly Dispatcher _dispatcher;
     private readonly SettingsService _settings;
+    private readonly NotificationHistoryService? _history;
     private readonly List<NotificationBannerWindow> _active = new();
     private const int MaxVisible = 3;
 
-    public NotificationService(Dispatcher dispatcher, SettingsService settings)
+    public NotificationService(Dispatcher dispatcher, SettingsService settings, NotificationHistoryService? history = null)
     {
         _dispatcher = dispatcher;
         _settings = settings;
+        _history = history;
     }
 
     public void Show(string title, string body, string glyph = "\uE7F4")
@@ -39,6 +41,8 @@ public sealed class NotificationService
         try
         {
             if (string.IsNullOrWhiteSpace(title)) return;
+
+            _history?.Add(title, body, glyph);
 
             var screen = System.Windows.Forms.Screen.PrimaryScreen
                 ?? System.Windows.Forms.Screen.AllScreens[0];

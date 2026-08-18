@@ -175,6 +175,43 @@
                                            FontSize="12" VerticalAlignment="Center" Margin="0,4,10,0"
                                            Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                             </DataTemplate>
+                            <DataTemplate x:Key="DateItem">
+                                <TextBlock Text="{Binding DataContext.DateText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                           FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"
+                                           Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                            </DataTemplate>
+                            <DataTemplate x:Key="CpuItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE950;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.CpuText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="RamItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.RamText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="NetItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE968;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.NetText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="BatteryItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xEBA0;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.BatteryText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
                             <DataTemplate x:Key="SongItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Border Width="40" Height="40" CornerRadius="12" Margin="0,0,10,0"
@@ -229,6 +266,21 @@
                                                 <DataTrigger Binding="{Binding Kind}" Value="Weather">
                                                     <Setter Property="ContentTemplate" Value="{StaticResource WeatherItem}"/>
                                                 </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Date">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource DateItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Cpu">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource CpuItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Ram">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource RamItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Net">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource NetItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Battery">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource BatteryItem}"/>
+                                                </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </ContentControl.Style>
@@ -261,7 +313,7 @@
                     </StackPanel.RenderTransform>
 
                     <!-- 大封面 + 标题/歌手/专辑 -->
-                    <Grid>
+                    <Grid Visibility="{Binding ExpandedShowArtTitle, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
@@ -292,7 +344,7 @@
                     </Grid>
 
                     <!-- 进度条 -->
-                    <Grid Margin="0,10,0,0">
+                    <Grid Margin="0,10,0,0" Visibility="{Binding ExpandedShowProgress, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
@@ -310,7 +362,7 @@
                     </Grid>
 
                     <!-- 控制行 -->
-                    <Grid Margin="0,6,0,0">
+                    <Grid Margin="0,6,0,0" Visibility="{Binding ExpandedShowControls, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
@@ -339,7 +391,8 @@
 
                     <!-- 歌词（无边框，干净排版） -->
                     <ScrollViewer x:Name="LyricsScroll" Height="180" Margin="0,8,0,0"
-                                  VerticalScrollBarVisibility="Hidden">
+                                  VerticalScrollBarVisibility="Hidden"
+                                  Visibility="{Binding ExpandedShowLyrics, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
                         <ItemsControl x:Name="LyricsList" ItemsSource="{Binding LyricLines}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>

@@ -27,16 +27,21 @@ public partial class SettingsWindow : Window
     private readonly SettingsService _service;
     private readonly CiderMediaProvider? _cider;
     private readonly DispatcherTimer _autoApply;
+    private readonly NotificationHistoryService? _history;
     private string _lastAppliedJson;
 
-    public SettingsWindow(SettingsViewModel vm, SettingsService service, CiderMediaProvider? cider)
+    public SettingsWindow(SettingsViewModel vm, SettingsService service, CiderMediaProvider? cider,
+        NotificationHistoryService? history = null)
     {
         _vm = vm;
         _service = service;
         _cider = cider;
+        _history = history;
         DataContext = vm;
         InitializeComponent();
         ApplyLocalization();
+        RefreshHistory();
+        if (_history is not null) _history.Changed += (_, _) => RefreshHistory();
 
         // 即时生效：轮询检测 Working 变化并立即应用（无保存按钮）
         _lastAppliedJson = JsonSerializer.Serialize(_vm.Working);
@@ -54,14 +59,31 @@ public partial class SettingsWindow : Window
     /// <summary>滚轮滚动当前页签的 ScrollViewer（避免被 ComboBox/Slider 拦截）。</summary>
     private void Root_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
     {
-        if (e.OriginalSource is DependencyObject d)
+        if (e.OriginalSource is not DependencyObject d) return;
+        var sv = FindAncestor<System.Windows.Controls.ScrollViewer>(d);
+        if (sv is null) return;
+
+        // 纵向优先；横向 ScrollViewer（如组件顺序条）转横向滚动
+        if (sv.ComputedVerticalScrollBarVisibility == System.Windows.Visibility.Visible)
         {
-            var sv = FindAncestor<System.Windows.Controls.ScrollViewer>(d);
-            if (sv is not null)
-            {
-                sv.ScrollToVerticalOffset(sv.VerticalOffset - e.Delta);
-                e.Handled = true;
-            }
+            sv.ScrollToVerticalOffset(sv.VerticalOffset - e.Delta);
+            e.Handled = true;
+        }
+        else if (sv.ComputedHorizontalScrollBarVisibility == System.Windows.Visibility.Visible)
+        {
+            sv.ScrollToHorizontalOffset(sv.HorizontalOffset - e.Delta);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>组件顺序条：滚轮转横向滚动（内容未超宽时无效果，不影响外层纵向滚动）。</summary>
+    private void OrderScroll_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+    {
+        if (sender is System.Windows.Controls.ScrollViewer sv
+            && sv.ComputedHorizontalScrollBarVisibility == System.Windows.Visibility.Visible)
+        {
+            sv.ScrollToHorizontalOffset(sv.HorizontalOffset - e.Delta);
+            e.Handled = true;
         }
     }
 
@@ -161,6 +183,11 @@ public partial class SettingsWindow : Window
         TabMedia.Header = Localization.Get("Settings_Media");
         TabMediaInfo.Header = Localization.Get("Settings_MediaInfo");
         ChkShowMediaInfo.Content = Localization.Get("MediaInfo_Show");
+        LblExpandedSections.Text = Localization.Get("MediaInfo_ExpandedSections");
+        ChkExpandedArtTitle.Content = Localization.Get("MediaInfo_ArtTitle");
+        ChkExpandedProgress.Content = Localization.Get("MediaInfo_Progress");
+        ChkExpandedControls.Content = Localization.Get("MediaInfo_Controls");
+        ChkExpandedLyrics.Content = Localization.Get("MediaInfo_Lyrics");
         TxtMediaInfoNote.Text = Localization.Get("MediaInfo_Note");
         TabComponents.Header = Localization.Get("Settings_Components");
         LblCompName.Text = Localization.Get("Comp_Header_Name");
@@ -202,6 +229,14 @@ public partial class SettingsWindow : Window
         ChkHideWhenNoMedia.Content = Localization.Get("General_HideWhenNoMedia");
         ChkShowWhenPaused.Content = Localization.Get("General_ShowWhenPaused");
         ChkAlwaysVisible.Content = Localization.Get("General_AlwaysVisible");
+        ChkReduceMotion.Content = Localization.Get("General_ReduceMotion");
+        ChkGlobalHotkeys.Content = Localization.Get("General_GlobalHotkeys");
+        TxtHotkeysHint.Text = Localization.Get("General_HotkeysHint");
+        LblLowBattery.Text = Localization.Get("General_LowBattery");
+        TxtLowBatteryHint.Text = Localization.Get("General_LowBatteryHint");
+        LblHistory.Text = Localization.Get("Notifications_History");
+        TxtHistoryEmpty.Text = Localization.Get("Notifications_HistoryEmpty");
+        BtnClearHistory.Content = Localization.Get("Notifications_HistoryClear");
         ChkUseSystemVolume.Content = Localization.Get("Media_UseSystemVolume");
         ChkOnlineLyrics.Content = Localization.Get("Lyrics_Online");
         ChkStandaloneLyrics.Content = Localization.Get("Lyrics_StandaloneWindow");
@@ -389,5 +424,20 @@ public partial class SettingsWindow : Window
         }
     }
 
+    /// <summary>刷新通知历史列表（设置打开 / 历史变化时调用）。</summary>
+    private void RefreshHistory()
+    {
+        if (HistoryList is null || _history is null) return;
+        HistoryList.ItemsSource = _history.Entries;
+        TxtHistoryEmpty.Visibility = _history.Entries.Count == 0
+            ? System.Windows.Visibility.Visible
+            : System.Windows.Visibility.Collapsed;
+    }
+
+    private void ClearHistory_Click(object sender, RoutedEventArgs e)
+    {
+        _history?.Clear();
+        RefreshHistory();
+    }
 
 }

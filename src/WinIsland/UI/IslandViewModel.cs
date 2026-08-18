@@ -62,6 +62,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                 ? PlaybackStatus.Paused : PlaybackStatus.Playing;
         }
 
+        // 系统状态计数器（CPU/内存）—— 复用实例，避免每次采样都新建
+        _cpuCounter = CreateCounter("Processor", "% Processor Time", "_Total");
+        _ramCounter = CreateCounter("Memory", "% Committed Bytes In Use", null);
+
         PlayPauseCommand = new AsyncRelayCommand(_ => TogglePlayPauseLocalAsync());
         NextCommand = new AsyncRelayCommand(_ => _coordinator.NextAsync());
         PreviousCommand = new AsyncRelayCommand(_ => _coordinator.PreviousAsync());
@@ -81,6 +85,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         {
             if (!IsVisible) return;
             ClockText = DateTime.Now.ToString("HH:mm");
+            DateText = DateTime.Now.ToString("M月d日 ddd", System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
+            UpdateSystemStats();
             if (ShowIdleWeather && ++_weatherTick % 60 == 1)
             {
                 var w = await _weather.GetWeatherAsync(_settings.Current.WeatherCity);
@@ -250,7 +256,13 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     // 时间/天气：空闲与播放分别按勾选显示
     public bool ShowIdleTime => HasMedia ? _settings.Current.Components.TimeWhenPlaying : _settings.Current.Components.TimeWhenIdle;
     public bool ShowIdleWeather => HasMedia ? _settings.Current.Components.WeatherWhenPlaying : _settings.Current.Components.WeatherWhenIdle;
-    public bool ShowAnyWidget => ShowIdleTime || ShowIdleWeather;
+    public bool ShowIdleDate => HasMedia ? _settings.Current.Components.DateWhenPlaying : _settings.Current.Components.DateWhenIdle;
+    public bool ShowIdleCpu => HasMedia ? _settings.Current.Components.CpuWhenPlaying : _settings.Current.Components.CpuWhenIdle;
+    public bool ShowIdleRam => HasMedia ? _settings.Current.Components.RamWhenPlaying : _settings.Current.Components.RamWhenIdle;
+    public bool ShowIdleNet => HasMedia ? _settings.Current.Components.NetWhenPlaying : _settings.Current.Components.NetWhenIdle;
+    public bool ShowIdleBattery => HasMedia ? _settings.Current.Components.BatteryWhenPlaying : _settings.Current.Components.BatteryWhenIdle;
+    public bool ShowAnyWidget => ShowIdleTime || ShowIdleWeather || ShowIdleDate
+        || ShowIdleCpu || ShowIdleRam || ShowIdleNet || ShowIdleBattery;
 
     private IReadOnlyList<IslandComponent> _compactItems = Array.Empty<IslandComponent>();
     public IReadOnlyList<IslandComponent> CompactItems { get => _compactItems; private set => Set(ref _compactItems, value); }
@@ -261,7 +273,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         // 读取顺序，并补齐缺失的已知组件（兼容旧配置里只有 Time,Weather 的情况）
         var keys = (_settings.Current.WidgetOrder ?? "Time,Weather,Song")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-        foreach (var known in new[] { "Time", "Weather", "Song" })
+        foreach (var known in new[] { "Time", "Weather", "Date", "Cpu", "Ram", "Net", "Battery", "Song" })
             if (!keys.Contains(known)) keys.Add(known);
 
         var items = new List<IslandComponent>();
@@ -269,6 +281,11 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         {
             if (key == "Time" && ShowIdleTime) items.Add(new IslandComponent("Time"));
             else if (key == "Weather" && ShowIdleWeather) items.Add(new IslandComponent("Weather"));
+            else if (key == "Date" && ShowIdleDate) items.Add(new IslandComponent("Date"));
+            else if (key == "Cpu" && ShowIdleCpu) items.Add(new IslandComponent("Cpu"));
+            else if (key == "Ram" && ShowIdleRam) items.Add(new IslandComponent("Ram"));
+            else if (key == "Net" && ShowIdleNet) items.Add(new IslandComponent("Net"));
+            else if (key == "Battery" && ShowIdleBattery) items.Add(new IslandComponent("Battery"));
             else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(new IslandComponent("Song"));
         }
 
@@ -279,9 +296,109 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         CompactItems = items;
     }
 
+    private int _statsTick;
+    private float? _cpuValue;
+    private long _lastNetBytes;
+    private DateTime _lastNetTime = DateTime.UtcNow;
+    // 性能计数器复用实例：新建实例的第一次 NextValue() 会返回 0，导致 CPU 显示错乱
+    private readonly System.Diagnostics.PerformanceCounter? _cpuCounter;
+    private readonly System.Diagnostics.PerformanceCounter? _ramCounter;
+
+    private System.Diagnostics.PerformanceCounter? CreateCounter(string cat, string name, string? inst)
+    {
+        try { return inst is null ? new System.Diagnostics.PerformanceCounter(cat, name) : new System.Diagnostics.PerformanceCounter(cat, name, inst); }
+        catch { return null; }
+    }
+
+    /// <summary>更新 CPU/内存/网络/电池/日期 等系统状态文本（每秒一次，UI 线程）。</summary>
+    private void UpdateSystemStats()
+    {
+        try
+        {
+            var ps = System.Windows.Forms.SystemInformation.PowerStatus;
+            var hasBattery = ps.BatteryChargeStatus != System.Windows.Forms.BatteryChargeStatus.NoSystemBattery;
+            var battery = ps.BatteryLifePercent * 100f;
+            BatteryText = hasBattery ? $"{battery:0}%" : string.Empty;
+
+            // 低电量提醒（每个充电周期提醒一次）
+            if (hasBattery && _settings.Current.LowBatteryThreshold > 0)
+            {
+                if (!_lowBatteryNotified && battery <= _settings.Current.LowBatteryThreshold)
+                {
+                    _lowBatteryNotified = true;
+                    LowBatteryRequested?.Invoke((int)battery);
+                }
+                if (battery > _settings.Current.LowBatteryThreshold + 5) _lowBatteryNotified = false;
+            }
+
+            // CPU / 内存（每 2 秒；计数器实例复用，避免首次采样为 0）
+            if (++_statsTick % 2 == 0)
+            {
+                try
+                {
+                    if (_cpuCounter is not null)
+                    {
+                        _cpuValue = (float?)_cpuCounter.NextValue();
+                        CpuText = _cpuValue.HasValue ? $"{_cpuValue.Value:0}%" : "--";
+                    }
+                }
+                catch { CpuText = "--"; }
+                try
+                {
+                    if (_ramCounter is not null)
+                    {
+                        var ram = _ramCounter.NextValue();
+                        RamText = $"{ram:0}%";
+                    }
+                }
+                catch { RamText = "--"; }
+            }
+
+            // 网络速度（每秒）
+            try
+            {
+                var iface = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+                    .FirstOrDefault(i => i.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up
+                        && i.NetworkInterfaceType != System.Net.NetworkInformation.NetworkInterfaceType.Loopback && i.Speed > 0);
+                if (iface is not null)
+                {
+                    var stats = iface.GetIPv4Statistics();
+                    var bytes = stats.BytesReceived + stats.BytesSent;
+                    var now = DateTime.UtcNow;
+                    var secs = Math.Max(0.1, (now - _lastNetTime).TotalSeconds);
+                    var kbs = (bytes - _lastNetBytes) / 1024.0 / secs;
+                    _lastNetBytes = bytes;
+                    _lastNetTime = now;
+                    NetText = kbs >= 1024 ? $"{kbs / 1024:0.0} MB/s" : $"{kbs:0} KB/s";
+                }
+                else NetText = string.Empty;
+            }
+            catch { NetText = string.Empty; }
+        }
+        catch { /* 忽略性能计数器/电量异常 */ }
+    }
+
+
     // 组件摆放顺序（WidgetOrder 中的下标决定左右列）
     public double WidgetTimeFontSize => HasMedia ? 14 : 22;
 
+    // 系统状态/日期组件文本
+    private string _dateText = string.Empty;
+    public string DateText { get => _dateText; private set => Set(ref _dateText, value); }
+    private string _cpuText = string.Empty;
+    public string CpuText { get => _cpuText; private set => Set(ref _cpuText, value); }
+    private string _ramText = string.Empty;
+    public string RamText { get => _ramText; private set => Set(ref _ramText, value); }
+    private string _netText = string.Empty;
+    public string NetText { get => _netText; private set => Set(ref _netText, value); }
+    private string _batteryText = string.Empty;
+    public string BatteryText { get => _batteryText; private set => Set(ref _batteryText, value); }
+
+    /// <summary>切歌时触发（参数：歌名、歌手），用于 Now Playing 横幅。</summary>
+    public event Action<string, string>? NowPlayingRequested;
+    /// <summary>低电量触发（参数：电量百分比）。</summary>
+    public event Action<int>? LowBatteryRequested;
+    private bool _lowBatteryNotified;
     // ── Visibility / expansion ─────────────────────────────────
     public bool IsExpanded
     {
@@ -310,7 +427,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         // 封面 URL 等字段抖动不应触发换曲（否则会重置进度并把歌词打回开头）。
         var trackChanged = _snapshot is null ||
             LyricsService.TrackKey(_snapshot.Track) != LyricsService.TrackKey(snapshot.Track);
+        var firstTrack = _snapshot is null;
         _snapshot = snapshot;
+        if (trackChanged && !firstTrack && !string.IsNullOrEmpty(snapshot.Track.Title))
+            NowPlayingRequested?.Invoke(snapshot.Track.Title, snapshot.Track.Artist);
 
         Title = snapshot.Track.Title;
         Artist = snapshot.Track.Artist;
@@ -637,6 +757,11 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowAnyWidget));
         RebuildCompactItems();
         OnPropertyChanged(nameof(WidgetTimeFontSize));
+        OnPropertyChanged(nameof(ShowIdleDate));
+        OnPropertyChanged(nameof(ShowIdleCpu));
+        OnPropertyChanged(nameof(ShowIdleRam));
+        OnPropertyChanged(nameof(ShowIdleNet));
+        OnPropertyChanged(nameof(ShowIdleBattery));
 
         IsVisible = show;
     }

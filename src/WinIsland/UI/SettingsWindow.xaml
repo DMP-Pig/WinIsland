@@ -362,6 +362,15 @@
                             <CheckBox x:Name="ChkHideWhenNoMedia" Content="无媒体播放时自动隐藏" IsChecked="{Binding Working.HideWhenNoMedia}"/>
                             <CheckBox x:Name="ChkShowWhenPaused" Content="暂停时仍然显示" IsChecked="{Binding Working.ShowWhenPaused}"/>
                             <CheckBox x:Name="ChkAlwaysVisible" IsChecked="{Binding Working.IslandAlwaysVisible}"/>
+                            <CheckBox x:Name="ChkReduceMotion" IsChecked="{Binding Working.ReduceMotion}"/>
+                            <CheckBox x:Name="ChkGlobalHotkeys" IsChecked="{Binding Working.GlobalHotkeysEnabled}"/>
+                            <TextBlock x:Name="TxtHotkeysHint" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,0,0,10"/>
+                            <TextBlock x:Name="LblLowBattery" Style="{StaticResource Label}"/>
+                            <Slider Minimum="0" Maximum="50" Value="{Binding Working.LowBatteryThreshold}" Width="300" HorizontalAlignment="Left"
+                                    IsSnapToTickEnabled="True" TickFrequency="5"/>
+                            <TextBlock x:Name="TxtLowBatteryHint" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,2,0,0"/>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
@@ -456,22 +465,25 @@
                         <StackPanel Margin="10,6">
                             <TextBlock x:Name="LblCompOrder" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="2,2,2,4"/>
                             <Border CornerRadius="12" Background="{DynamicResource ControlBgBrush}"
-                                    BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Padding="8,6" Margin="0,0,0,8" AllowDrop="True"
-                                    PreviewDrop="OrderStrip_Drop" PreviewDragOver="OrderStrip_PreviewDragOver">
-                                <ItemsControl x:Name="OrderStrip" ItemsSource="{Binding OrderItems}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border x:Name="Chip" CornerRadius="9" Padding="16,7" Margin="4" Cursor="Hand"
-                                                    Background="{DynamicResource ControlBgBrush}" BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1"
-                                                    PreviewMouseLeftButtonDown="Chip_PreviewMouseLeftButtonDown" PreviewMouseMove="Chip_PreviewMouseMove">
-                                                <TextBlock Text="{Binding Name}"/>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                    BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Padding="0" Margin="0,0,0,8">
+                                <ScrollViewer x:Name="OrderScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                              Padding="8,6" PreviewMouseWheel="OrderScroll_PreviewMouseWheel">
+                                    <ItemsControl x:Name="OrderStrip" ItemsSource="{Binding OrderItems}" AllowDrop="True"
+                                                  PreviewDragOver="OrderStrip_PreviewDragOver" PreviewDrop="OrderStrip_Drop">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border x:Name="Chip" CornerRadius="9" Padding="16,7" Margin="4" Cursor="Hand"
+                                                        Background="{DynamicResource ControlBgBrush}" BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1"
+                                                        PreviewMouseLeftButtonDown="Chip_PreviewMouseLeftButtonDown" PreviewMouseMove="Chip_PreviewMouseMove">
+                                                    <TextBlock Text="{Binding Name}"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
                             </Border>
                             <Border CornerRadius="12" Background="{DynamicResource ControlBgBrush}"
                                     BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Padding="4,2">
@@ -489,6 +501,7 @@
                                         <TextBlock x:Name="LblCompPlaying" Grid.Column="2" Text="有歌曲播放时" HorizontalAlignment="Center" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     </Grid>
+                                    <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
                                     <ItemsControl ItemsSource="{Binding Components}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -505,6 +518,7 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+                                    </ScrollViewer>
                                 </StackPanel>
                             </Border>
                             <TextBlock x:Name="TxtCompNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
@@ -556,6 +570,11 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10,6">
                             <CheckBox x:Name="ChkShowMediaInfo" IsChecked="{Binding Working.ShowMediaInfo}"/>
+                            <TextBlock x:Name="LblExpandedSections" Style="{StaticResource Label}" Margin="0,10,0,0"/>
+                            <CheckBox x:Name="ChkExpandedArtTitle" IsChecked="{Binding Working.ExpandedShowArtTitle}"/>
+                            <CheckBox x:Name="ChkExpandedProgress" IsChecked="{Binding Working.ExpandedShowProgress}"/>
+                            <CheckBox x:Name="ChkExpandedControls" IsChecked="{Binding Working.ExpandedShowControls}"/>
+                            <CheckBox x:Name="ChkExpandedLyrics" IsChecked="{Binding Working.ExpandedShowLyrics}"/>
                             <TextBlock x:Name="TxtMediaInfoNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                        TextWrapping="Wrap" Margin="0,8,0,0"/>
 
@@ -605,6 +624,7 @@
                 </TabItem>
 
                 <TabItem x:Name="TabNotify" Header="通知">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10,6">
                         <CheckBox x:Name="ChkBluetoothNotify" IsChecked="{Binding Working.BluetoothNotifyEnabled}"/>
                         <CheckBox x:Name="ChkNotifyTakeover" IsChecked="{Binding Working.NotificationTakeoverEnabled}"/>
@@ -613,7 +633,42 @@
                                 IsSnapToTickEnabled="True" TickFrequency="1"/>
                         <TextBlock x:Name="TxtNotifyNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,10,0,0"/>
+
+                        <TextBlock x:Name="LblHistory" Style="{StaticResource Label}" Margin="0,14,0,0"/>
+                        <Border CornerRadius="12" Background="{DynamicResource ControlBgBrush}"
+                                BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Padding="6">
+                            <StackPanel>
+                                <ListBox x:Name="HistoryList" MaxHeight="220" BorderThickness="0"
+                                         Background="Transparent" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,3,0,3">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                                                           VerticalAlignment="Center" Margin="0,0,8,0" Opacity="0.8"/>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12.5"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding Body}" FontSize="11" Opacity="0.75"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding TimeText}" FontSize="10" Opacity="0.6"
+                                                           VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                                <TextBlock x:Name="TxtHistoryEmpty" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           HorizontalAlignment="Center" Margin="0,12,0,12"/>
+                                <Button x:Name="BtnClearHistory" Padding="10,4" HorizontalAlignment="Right" Click="ClearHistory_Click"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
+                    </ScrollViewer>
                 </TabItem>
             </TabControl>
 
