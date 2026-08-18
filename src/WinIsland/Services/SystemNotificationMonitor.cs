@@ -20,10 +20,10 @@ public sealed class SystemNotificationMonitor : IDisposable
 {
     private readonly object _gate = new();
     private readonly HashSet<string> _seenText = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<IntPtr> _knownWindows = new();
+    private readonly HashSet<IntPtr> _visibleWindows = new();
     private System.Threading.Timer? _timer;
     private bool _started;
-    private bool _firstScan = true;
+    private bool _baselineDone;
     private int _notFoundCount;
 
     public event EventHandler<SystemNotification>? NotificationCaptured;
@@ -51,8 +51,8 @@ public sealed class SystemNotificationMonitor : IDisposable
             if (_started) return;
             _started = true;
             _seenText.Clear();
-            _knownWindows.Clear();
-            _firstScan = true;
+            _visibleWindows.Clear();
+            _baselineDone = false;
         }
         _timer?.Dispose();
         _timer = new System.Threading.Timer(_ => Poll(), null, TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(800));
@@ -117,6 +117,9 @@ public sealed class SystemNotificationMonitor : IDisposable
             var area = System.Windows.Forms.Screen.PrimaryScreen?.WorkingArea
                 ?? System.Windows.Forms.Screen.AllScreens[0].WorkingArea;
 
+            var seenVisible = new HashSet<IntPtr>();
+            var newOnes = new List<IntPtr>();
+
             foreach (var h in current)
             {
                 if (!IsWindowVisible(h)) continue;
@@ -135,24 +138,27 @@ public sealed class SystemNotificationMonitor : IDisposable
                 var bottomNear = r.Bottom >= area.Bottom - 120 && r.Bottom <= area.Bottom + 30; // 底缘贴近工作区底部
                 if (!rightNear || !bottomNear) continue;
 
-                if (_firstScan) { lock (_gate) _knownWindows.Add(h); continue; }
+                seenVisible.Add(h);
                 lock (_gate)
                 {
-                    if (!_knownWindows.Add(h)) continue;
+                    // “隐藏→显示”或“新出现”都视为新的弹窗（QQ 等会复用同一个窗口句柄）
+                    if (_baselineDone && !_visibleWindows.Contains(h)) newOnes.Add(h);
                 }
-
-                var text = ReadWindowText(h);
-                if (string.IsNullOrWhiteSpace(text)) continue;
-                AppLogger.Info($"SysNotify popup: '{text}'");
-                RaiseIfNew(new[] { text });
             }
 
             lock (_gate)
             {
-                _firstScan = false;
-                // 清理已消失的窗口句柄
-                var gone = _knownWindows.Where(k => !current.Contains(k)).ToList();
-                foreach (var g in gone) _knownWindows.Remove(g);
+                _visibleWindows.Clear();
+                foreach (var h in seenVisible) _visibleWindows.Add(h);
+                if (!_baselineDone) { _baselineDone = true; return; }
+            }
+
+            foreach (var h in newOnes)
+            {
+                var text = ReadWindowText(h);
+                if (string.IsNullOrWhiteSpace(text)) continue;
+                AppLogger.Info($"SysNotify popup: '{text}'");
+                RaiseIfNew(new[] { text });
             }
         }
         catch (Exception ex)
@@ -215,7 +221,7 @@ public sealed class SystemNotificationMonitor : IDisposable
 
     public void Stop()
     {
-        lock (_gate) { _started = false; _knownWindows.Clear(); _seenText.Clear(); }
+        lock (_gate) { _started = false; _visibleWindows.Clear(); _seenText.Clear(); }
         try { _timer?.Dispose(); _timer = null; } catch { /* ignore */ }
         AppLogger.Info("System notification monitor stopped.");
     }
