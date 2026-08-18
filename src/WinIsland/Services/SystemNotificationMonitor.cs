@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Automation;
 
@@ -10,19 +11,38 @@ namespace WinIsland.Services;
 public sealed record SystemNotification(string AppName, string Title, string Body);
 
 /// <summary>
-/// 接管 Windows 通知（尽力而为）：Windows 没有公开的“拦截其它应用通知”API。
-/// 通过 UI Automation 扫描：1) 通知中心元素；2) 顶层 CoreWindow 通知窗口。
-/// 带诊断日志；捕获不到时静默，不影响主流程。
+/// 接管 Windows 通知（尽力而为）：
+/// 1) UIA 扫描“通知中心”；
+/// 2) EnumWindows 监听新出现的右上/右下小弹窗（QQ 等自绘通知）并读取文本。
+/// Windows 无公开拦截 API，此为尽力而为；带诊断日志，失败静默。
 /// </summary>
 public sealed class SystemNotificationMonitor : IDisposable
 {
     private readonly object _gate = new();
-    private readonly HashSet<string> _seen = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _seenText = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<IntPtr> _knownWindows = new();
     private System.Threading.Timer? _timer;
     private bool _started;
+    private bool _firstScan = true;
     private int _notFoundCount;
 
     public event EventHandler<SystemNotification>? NotificationCaptured;
+
+    // ── Win32 ──
+    private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+    [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc cb, IntPtr lParam);
+    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hWnd);
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [DllImport("user32.dll")] private static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
+    [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
+
+    private static readonly HashSet<string> ShellClasses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "Progman", "WorkerW",
+        "Windows.UI.Core.CoreWindow", // 通知中心宿主也扫，但文本为空时跳过
+        "DV2ControlHost", "BaseBar", "SystemSettings",
+    };
 
     public void Start()
     {
@@ -30,89 +50,21 @@ public sealed class SystemNotificationMonitor : IDisposable
         {
             if (_started) return;
             _started = true;
-            _seen.Clear();
+            _seenText.Clear();
+            _knownWindows.Clear();
+            _firstScan = true;
         }
         _timer?.Dispose();
-        _timer = new System.Threading.Timer(_ => Poll(), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(1.5));
-        AppLogger.Info("System notification monitor started.");
+        _timer = new System.Threading.Timer(_ => Poll(), null, TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(800));
+        AppLogger.Info("System notification monitor started (poll 800ms).");
     }
 
     private void Poll()
     {
         try
         {
-            var root = AutomationElement.RootElement;
-            var found = false;
-
-            // 1) 通知中心（多语言/多版本名称）
-            string[] names = { "通知中心", "Notification Center", "Windows 通知", "Action Center", "操作中心" };
-            AutomationElement? center = null;
-            foreach (var n in names)
-            {
-                try
-                {
-                    center = root.FindFirst(TreeScope.Children,
-                        new PropertyCondition(AutomationElement.NameProperty, n, PropertyConditionFlags.IgnoreCase));
-                    if (center is not null) { found = true; break; }
-                }
-                catch { /* per-name */ }
-            }
-
-            // 2) 兜底：扫描所有顶层窗口，找 CoreWindow / 通知类窗口
-            if (center is null)
-            {
-                var all = root.FindAll(TreeScope.Children, Condition.TrueCondition);
-                foreach (AutomationElement w in all)
-                {
-                    var cls = Safe(() => w.Current.ClassName) ?? string.Empty;
-                    var nm = Safe(() => w.Current.Name) ?? string.Empty;
-                    if (cls.IndexOf("CoreWindow", StringComparison.OrdinalIgnoreCase) >= 0
-                        || cls.IndexOf("Notification", StringComparison.OrdinalIgnoreCase) >= 0
-                        || nm.IndexOf("通知", StringComparison.OrdinalIgnoreCase) >= 0
-                        || nm.IndexOf("Notification", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        center = w;
-                        found = true;
-                        break;
-                    }
-                }
-            }
-
-            if (center is null)
-            {
-                // 节流：每 10 次轮询（约 15s）记一次，避免刷屏
-                if (++_notFoundCount % 10 == 1) AppLogger.Debug("SysNotify: no notification center/window found.");
-                return;
-            }
-            _notFoundCount = 0;
-            if (!found) return;
-
-            var texts = center.FindAll(TreeScope.Descendants,
-                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text));
-            var lines = new List<string>();
-            foreach (AutomationElement t in texts)
-            {
-                var s = Safe(() => t.Current.Name);
-                if (!string.IsNullOrWhiteSpace(s)) lines.Add(s.Trim());
-            }
-            if (lines.Count == 0)
-            {
-                AppLogger.Debug("SysNotify: center found but no text items.");
-                return;
-            }
-
-            var key = string.Join("|", lines);
-            lock (_gate)
-            {
-                if (!_seen.Add(key)) return;
-                if (_seen.Count > 300) _seen.Clear();
-            }
-
-            var title = lines.FirstOrDefault() ?? string.Empty;
-            var body = lines.Count > 1 ? string.Join(" ", lines.Skip(1)) : string.Empty;
-            if (body == title) body = string.Empty;
-            AppLogger.Info($"SysNotify captured: title='{title}' body='{body}'");
-            NotificationCaptured?.Invoke(this, new SystemNotification("Windows", title, body));
+            ScanNotificationCenter();
+            ScanPopups();
         }
         catch (Exception ex)
         {
@@ -120,11 +72,145 @@ public sealed class SystemNotificationMonitor : IDisposable
         }
     }
 
+    // ── 1) UIA 通知中心 ──
+    private void ScanNotificationCenter()
+    {
+        var root = AutomationElement.RootElement;
+        string[] names = { "通知中心", "Notification Center", "Windows 通知", "Action Center", "操作中心" };
+        AutomationElement? center = null;
+        foreach (var n in names)
+        {
+            try
+            {
+                center = root.FindFirst(TreeScope.Children,
+                    new PropertyCondition(AutomationElement.NameProperty, n, PropertyConditionFlags.IgnoreCase));
+                if (center is not null) break;
+            }
+            catch { /* per-name */ }
+        }
+
+        if (center is null)
+        {
+            if (++_notFoundCount % 12 == 1) AppLogger.Debug("SysNotify: no notification center found.");
+            return;
+        }
+        _notFoundCount = 0;
+
+        var texts = center.FindAll(TreeScope.Descendants,
+            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text));
+        var lines = new List<string>();
+        foreach (AutomationElement t in texts)
+        {
+            try { var s = t.Current.Name; if (!string.IsNullOrWhiteSpace(s)) lines.Add(s.Trim()); } catch { }
+        }
+        if (lines.Count > 0) RaiseIfNew(lines);
+    }
+
+    // ── 2) 通用弹窗捕获（QQ 等自绘通知）──
+    private void ScanPopups()
+    {
+        var current = new List<IntPtr>();
+        EnumWindows((h, l) => { current.Add(h); return true; }, IntPtr.Zero);
+
+        try
+        {
+            var area = System.Windows.Forms.Screen.PrimaryScreen?.WorkingArea
+                ?? System.Windows.Forms.Screen.AllScreens[0].WorkingArea;
+
+            foreach (var h in current)
+            {
+                if (!IsWindowVisible(h)) continue;
+                if (OwnsProcess(h)) continue; // 排除本应用自身窗口（横幅/灵动岛）
+                if (!GetWindowRect(h, out var r)) continue;
+                var w = r.Right - r.Left;
+                var hh = r.Bottom - r.Top;
+                if (w <= 0 || hh <= 0 || w > 560 || hh > 480) continue; // 弹窗尺寸
+                var cls = GetWindowClass(h);
+                if (ShellClasses.Contains(cls)) continue;
+                // 位置：右侧 ~60% 区域（QQ 右下、Windows 右上）
+                if (r.Left < area.Right - (area.Width * 0.6)) continue;
+
+                if (_firstScan) { lock (_gate) _knownWindows.Add(h); continue; }
+                lock (_gate)
+                {
+                    if (!_knownWindows.Add(h)) continue;
+                }
+
+                var text = ReadWindowText(h);
+                if (string.IsNullOrWhiteSpace(text)) continue;
+                AppLogger.Info($"SysNotify popup: '{text}'");
+                RaiseIfNew(new[] { text });
+            }
+
+            lock (_gate)
+            {
+                _firstScan = false;
+                // 清理已消失的窗口句柄
+                var gone = _knownWindows.Where(k => !current.Contains(k)).ToList();
+                foreach (var g in gone) _knownWindows.Remove(g);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Debug($"SysNotify popup scan error: {ex.Message}");
+        }
+    }
+
+    private bool OwnsProcess(IntPtr h)
+    {
+        try { GetWindowThreadProcessId(h, out var pid); return pid == (uint)Environment.ProcessId; }
+        catch { return false; }
+    }
+
+    private static string GetWindowClass(IntPtr h)
+    {
+        try { var sb = new System.Text.StringBuilder(256); GetClassName(h, sb, sb.Capacity); return sb.ToString(); }
+        catch { return string.Empty; }
+    }
+
+    private string ReadWindowText(IntPtr h)
+    {
+        try
+        {
+            var el = AutomationElement.FromHandle(h);
+            if (el is null) return string.Empty;
+            var sb = new List<string>();
+            var name = Safe(() => el.Current.Name);
+            if (!string.IsNullOrWhiteSpace(name)) sb.Add(name.Trim());
+            var texts = el.FindAll(TreeScope.Descendants,
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text));
+            foreach (AutomationElement t in texts)
+            {
+                try { var s = t.Current.Name; if (!string.IsNullOrWhiteSpace(s)) sb.Add(s.Trim()); } catch { }
+            }
+            return string.Join(" ", sb.Distinct());
+        }
+        catch { return string.Empty; }
+    }
+
+    private void RaiseIfNew(IEnumerable<string> linesArr)
+    {
+        var lines = linesArr.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+        if (lines.Count == 0) return;
+        var key = string.Join("|", lines);
+        lock (_gate)
+        {
+            if (!_seenText.Add(key)) return;
+            if (_seenText.Count > 400) _seenText.Clear();
+        }
+
+        var title = lines[0];
+        var body = lines.Count > 1 ? string.Join(" ", lines.Skip(1)) : string.Empty;
+        if (body == title) body = string.Empty;
+        AppLogger.Info($"SysNotify captured: title='{title}' body='{body}'");
+        NotificationCaptured?.Invoke(this, new SystemNotification("Windows", title, body));
+    }
+
     private static string? Safe(Func<string> f) { try { return f(); } catch { return null; } }
 
     public void Stop()
     {
-        lock (_gate) { _started = false; }
+        lock (_gate) { _started = false; _knownWindows.Clear(); _seenText.Clear(); }
         try { _timer?.Dispose(); _timer = null; } catch { /* ignore */ }
         AppLogger.Info("System notification monitor stopped.");
     }

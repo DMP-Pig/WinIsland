@@ -8,20 +8,20 @@ namespace WinIsland.Services;
 
 /// <summary>
 /// 监听已配对蓝牙设备的连接/断开。
-/// 轮询 BluetoothDevice.ConnectionStatus（真实连接状态，AEP 的 IsConnected/IsPresent 不可靠）。
-/// 事件在后台线程触发，调用方需封送到 UI 线程。
+/// 采用「DeviceWatcher 事件即时触发 + 4s 轮询兜底」：设备连接/断开时 AEP 会触发事件，
+/// 立即用 BluetoothDevice.ConnectionStatus 确认并弹出提示；轮询负责基线/漏检兜底。
 /// </summary>
 public sealed class BluetoothMonitor : IDisposable
 {
     private const string NameKey = "System.ItemNameDisplay";
 
+    private DeviceWatcher? _watcher;
     private System.Threading.Timer? _timer;
     private readonly Dictionary<string, string> _names = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _connected = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _gate = new();
     private bool _started;
-    private bool _firstPass = true;
-    private bool _polling;
+    private bool _baselineReady;
 
     /// <summary>蓝牙设备连接（参数：设备名）。</summary>
     public event EventHandler<string>? DeviceConnected;
@@ -34,102 +34,141 @@ public sealed class BluetoothMonitor : IDisposable
         {
             if (_started) return;
             _started = true;
-            _firstPass = true;
+            _baselineReady = false;
             _names.Clear();
             _connected.Clear();
         }
+
+        try
+        {
+            var selector = Windows.Devices.Bluetooth.BluetoothDevice.GetDeviceSelector();
+            _watcher = DeviceInformation.CreateWatcher(selector, new[] { NameKey }, DeviceInformationKind.AssociationEndpoint);
+            _watcher.Added += OnChanged;
+            _watcher.Updated += OnChanged;
+            _watcher.Removed += OnRemoved;
+            _watcher.EnumerationCompleted += (_, _) =>
+            {
+                lock (_gate) _baselineReady = true;
+                AppLogger.Info("Bluetooth watcher: enumeration completed (baseline ready).");
+            };
+            _watcher.Start();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"Bluetooth watcher start failed: {ex.Message}");
+        }
+
         _timer?.Dispose();
         _timer = new System.Threading.Timer(_ => Poll(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(8));
-        AppLogger.Info("Bluetooth monitor started (ConnectionStatus poll 8s).");
+        AppLogger.Info("Bluetooth monitor started (watcher + poll).");
     }
 
+    // ── 即时路径：设备状态变化 → 立即确认 ──
+    private void OnChanged(DeviceWatcher sender, DeviceInformation info)
+    {
+        var name = (info.Properties.TryGetValue(NameKey, out var n) && n is string s && s.Length > 0) ? s : info.Name;
+        lock (_gate) _names[info.Id] = name;
+        _ = CheckDeviceImmediateAsync(info.Id);
+    }
+
+    private void OnChanged(DeviceWatcher sender, DeviceInformationUpdate update)
+        => _ = CheckDeviceImmediateAsync(update.Id);
+
+    private void OnRemoved(DeviceWatcher sender, DeviceInformationUpdate update)
+        => _ = CheckDeviceImmediateAsync(update.Id);
+
+    private async System.Threading.Tasks.Task CheckDeviceImmediateAsync(string id)
+    {
+        try
+        {
+            var bt = await BluetoothDevice.FromIdAsync(id);
+            if (bt is null) return;
+            var connected = bt.ConnectionStatus == BluetoothConnectionStatus.Connected;
+            AppLogger.Debug($"BT immediate: '{SafeName(id)}' -> {(connected ? "Connected" : "Disconnected")}");
+            ApplyState(id, connected);
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Debug($"BT immediate check failed: {ex.Message}");
+        }
+    }
+
+    // ── 兜底路径：4s 轮询 ──
     private void Poll()
     {
-        if (_polling) return;
-        _polling = true;
         try
         {
             var devices = DeviceInformation.FindAllAsync(
-                BluetoothDevice.GetDeviceSelector(),
-                new[] { NameKey },
-                DeviceInformationKind.AssociationEndpoint)
+                BluetoothDevice.GetDeviceSelector(), new[] { NameKey }, DeviceInformationKind.AssociationEndpoint)
                 .AsTask().GetAwaiter().GetResult();
 
-            var current = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             foreach (var d in devices)
             {
                 var name = (d.Properties.TryGetValue(NameKey, out var n) && n is string s && s.Length > 0) ? s : d.Name;
-                if (!_names.ContainsKey(d.Id)) _names[d.Id] = name;
-
-                var conn = false;
-                try
-                {
-                    var bt = BluetoothDevice.FromIdAsync(d.Id).AsTask().GetAwaiter().GetResult();
-                    conn = bt is not null && bt.ConnectionStatus == BluetoothConnectionStatus.Connected;
-                }
-                catch (Exception ex)
-                {
-                    AppLogger.Debug($"BT FromIdAsync failed for '{name}': {ex.Message}");
-                }
-                current[d.Id] = conn;
-                AppLogger.Debug($"BT: '{name}' ConnectionStatus={(conn ? "Connected" : "Disconnected")}");
-            }
-
-            lock (_gate)
-            {
-                if (_firstPass)
-                {
-                    _firstPass = false;
-                    _connected.Clear();
-                    foreach (var kv in current) _connected[kv.Key] = kv.Value;
-                    AppLogger.Info($"Bluetooth baseline: {current.Count} devices.");
-                    return;
-                }
-
-                foreach (var kv in current)
-                {
-                    var was = _connected.TryGetValue(kv.Key, out var w) && w;
-                    if (kv.Value && !was) Raise(DeviceConnected, kv.Key);
-                    else if (!kv.Value && was) Raise(DeviceDisconnected, kv.Key);
-                    _connected[kv.Key] = kv.Value;
-                }
-
-                var gone = new List<string>();
-                foreach (var id in _connected.Keys) if (!current.ContainsKey(id)) gone.Add(id);
-                foreach (var id in gone)
-                {
-                    if (_connected.TryGetValue(id, out var w) && w) Raise(DeviceDisconnected, id);
-                    _connected.Remove(id);
-                }
+                lock (_gate) { if (!_names.ContainsKey(d.Id)) _names[d.Id] = name; }
+                _ = CheckDeviceImmediateAsync(d.Id);
             }
         }
         catch (Exception ex)
         {
             AppLogger.Warn($"Bluetooth poll failed: {ex.Message}");
         }
-        finally
+    }
+
+    /// <summary>比对状态并触发事件（基线建立前只记录，不触发）。</summary>
+    private void ApplyState(string id, bool connected)
+    {
+        EventHandler<string>? ev = null;
+        lock (_gate)
         {
-            _polling = false;
+            if (!_baselineReady)
+            {
+                _names[id] = SafeName(id);
+                _connected[id] = connected;
+                return;
+            }
+            var was = _connected.TryGetValue(id, out var w) && w;
+            if (connected && !was) { _connected[id] = true; ev = DeviceConnected; }
+            else if (!connected && was) { _connected[id] = false; ev = DeviceDisconnected; }
+        }
+
+        if (ev is not null)
+        {
+            var name = SafeName(id);
+            AppLogger.Info($"Bluetooth event: {(ev == DeviceConnected ? "connected" : "disconnected")} '{name}'");
+            ev(this, name);
         }
     }
 
-    private void Raise(EventHandler<string>? ev, string id)
+    private string SafeName(string id)
     {
-        var name = _names.TryGetValue(id, out var n) ? n : "蓝牙设备";
-        AppLogger.Info($"Bluetooth event: {(ev == DeviceConnected ? "connected" : "disconnected")} '{name}'");
-        ev?.Invoke(this, name);
+        lock (_gate) { return _names.TryGetValue(id, out var n) ? n : id; }
     }
+
 
     public void Stop()
     {
         lock (_gate)
         {
             _started = false;
-            _firstPass = true;
+            _baselineReady = false;
             _names.Clear();
             _connected.Clear();
         }
-        try { _timer?.Dispose(); _timer = null; } catch { /* ignore */ }
+        try
+        {
+            if (_watcher is not null)
+            {
+                _watcher.Added -= OnChanged;
+                _watcher.Updated -= OnChanged;
+                _watcher.Removed -= OnRemoved;
+                _watcher.Stop();
+                _watcher = null;
+            }
+            _timer?.Dispose();
+            _timer = null;
+        }
+        catch { /* ignore */ }
         AppLogger.Info("Bluetooth monitor stopped.");
     }
 
