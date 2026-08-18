@@ -26,6 +26,7 @@ public partial class App : Application
     private BluetoothMonitor? _bluetooth;
     private SystemNotificationMonitor? _systemNotifications;
     private NotificationService? _notifications;
+    private MediaAppRegistry? _mediaApps;
 
     public App()
     {
@@ -72,7 +73,8 @@ public partial class App : Application
         Localization.CurrentLanguage = _settings.Current.Language;
 
         _cider = new CiderMediaProvider(_settings);
-        var smtc = new SmtcMediaProvider(preferredAppId: "Cider"); // Cider session priority, avoid other active sessions
+        _mediaApps = new MediaAppRegistry();
+        var smtc = new SmtcMediaProvider(_settings, _mediaApps, preferredAppId: "Cider"); // Cider session priority, avoid other active sessions
         var title = new WindowTitleMediaProvider();
         _coordinator = new MediaCoordinator(_settings, smtc, _cider, title, Dispatcher);
         _lyrics = new LyricsService(_settings, _cider);
@@ -217,7 +219,7 @@ public partial class App : Application
     private void OpenSettings()
     {
         if (_settings is null) return;
-        var vm = new SettingsViewModel(_settings);
+        var vm = new SettingsViewModel(_settings, _mediaApps);
         var win = new SettingsWindow(vm, _settings, _cider);
         win.ShowDialog();
     }

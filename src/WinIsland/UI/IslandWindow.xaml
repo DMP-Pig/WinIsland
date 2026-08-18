@@ -154,76 +154,91 @@
                 <!-- ═══ 胶囊行（始终可见）═══ -->
                 <Grid x:Name="PillRow" VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- 封面靠左（组件模式隐藏） -->
-                    <Border Grid.Column="0" Width="40" Height="40" CornerRadius="12"
-                            Visibility="{Binding ShowCover, Converter={StaticResource BoolToVis}}"
-                            Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
-                        <Grid>
-                            <Image Source="{Binding Artwork}" Stretch="UniformToFill"
-                                   Visibility="{Binding Artwork, Converter={StaticResource NullToVis}}"/>
-                            <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets"
-                                       FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Visibility="{Binding Artwork, Converter={StaticResource NullToVisInvert}}"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- 中间：歌曲信息 + 时间/天气（按勾选与顺序显示） -->
-                    <StackPanel Grid.Column="1" Margin="10,0,8,0" VerticalAlignment="Center">
-                        <!-- 歌曲信息（播放时固定显示：歌名/歌手/歌词/进度条） -->
-                        <StackPanel x:Name="SongInfo" Visibility="{Binding HasMedia, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" TextAlignment="Left"
-                                       Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                       TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding Artist}" FontSize="11" Margin="0,1,0,0" TextAlignment="Left"
-                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
-                                       TextTrimming="CharacterEllipsis"/>
-                            <!-- 当前歌词行：未悬停时也显示（左对齐，逐字卡拉OK） -->
-                            <karaoke:KaraokeTextBlock
-                                KaraokeText="{Binding CurrentLyricText}"
-                                HighlightFraction="{Binding CompactHighlightFraction}"
-                                IsPlaying="{Binding IsPlaying}"
-                                HighlightBrush="White"
-                                BaseBrush="#80FFFFFF"
-                                FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"/>
-                            <!-- 紧凑进度条 -->
-                            <ProgressBar Height="3" Maximum="1" Value="{Binding Progress, Mode=OneWay}" Margin="0,4,0,0">
-                                <ProgressBar.Template>
-                                    <ControlTemplate TargetType="ProgressBar">
+                    <!-- 按「组件顺序」动态渲染：歌曲信息 / 时间 / 天气（播放时含歌曲，空闲时去掉） -->
+                    <ItemsControl Grid.Column="0" ItemsSource="{Binding CompactItems}" VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.Resources>
+                            <DataTemplate x:Key="TimeItem">
+                                <TextBlock Text="{Binding DataContext.ClockText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                           FontSize="{Binding DataContext.WidgetTimeFontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                           FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"
+                                           Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"/>
+                            </DataTemplate>
+                            <DataTemplate x:Key="WeatherItem">
+                                <TextBlock Text="{Binding DataContext.WeatherText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                           FontSize="12" VerticalAlignment="Center" Margin="0,4,10,0"
+                                           Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                            </DataTemplate>
+                            <DataTemplate x:Key="SongItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Border Width="40" Height="40" CornerRadius="12" Margin="0,0,10,0"
+                                            Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
                                         <Grid>
-                                            <Border CornerRadius="2" Background="#33FFFFFF"/>
-                                            <Border x:Name="PART_Indicator" CornerRadius="2" HorizontalAlignment="Left"
-                                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"/>
+                                            <Image Source="{Binding Artwork, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="UniformToFill"
+                                                   Visibility="{Binding Artwork, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource NullToVis}}"/>
+                                            <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Visibility="{Binding Artwork, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource NullToVisInvert}}"/>
                                         </Grid>
-                                    </ControlTemplate>
-                                </ProgressBar.Template>
-                            </ProgressBar>
-                        </StackPanel>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Artist, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="11" Margin="0,1,0,0"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <karaoke:KaraokeTextBlock
+                                            KaraokeText="{Binding CurrentLyricText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            HighlightFraction="{Binding CompactHighlightFraction, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            IsPlaying="{Binding IsPlaying, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            HighlightBrush="White" BaseBrush="#80FFFFFF"
+                                            FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"/>
+                                        <ProgressBar Height="3" Maximum="1"
+                                                     Value="{Binding Progress, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" Margin="0,4,0,0">
+                                            <ProgressBar.Template>
+                                                <ControlTemplate TargetType="ProgressBar">
+                                                    <Grid>
+                                                        <Border CornerRadius="2" Background="#33FFFFFF"/>
+                                                        <Border x:Name="PART_Indicator" CornerRadius="2" HorizontalAlignment="Left"
+                                                                Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"/>
+                                                    </Grid>
+                                                </ControlTemplate>
+                                            </ProgressBar.Template>
+                                        </ProgressBar>
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.Resources>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ContentControl Focusable="False">
+                                    <ContentControl.Style>
+                                        <Style TargetType="ContentControl">
+                                            <Setter Property="ContentTemplate" Value="{StaticResource SongItem}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Time">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource TimeItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Weather">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource WeatherItem}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ContentControl.Style>
+                                </ContentControl>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-                        <!-- 时间/天气：按勾选（空闲/播放）与摆放顺序显示 -->
-                        <Grid x:Name="WidgetRow" HorizontalAlignment="Center" Margin="0,2,0,0"
-                              Visibility="{Binding ShowAnyWidget, Converter={StaticResource BoolToVis}}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="{Binding TimeColumn}" Text="{Binding ClockText}"
-                                       FontSize="{Binding WidgetTimeFontSize}" FontWeight="Bold" VerticalAlignment="Center"
-                                       Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                       Visibility="{Binding ShowIdleTime, Converter={StaticResource BoolToVis}}"/>
-                            <TextBlock Grid.Column="{Binding WeatherColumn}" Text="{Binding WeatherText}" FontSize="12"
-                                       Margin="8,4,0,0" VerticalAlignment="Center"
-                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
-                                       Visibility="{Binding ShowIdleWeather, Converter={StaticResource BoolToVis}}"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- 按钮靠右（组件模式隐藏） -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                    <!-- 按钮靠右 -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
                                 Visibility="{Binding HasMedia, Converter={StaticResource BoolToVis}}">
                         <Button Style="{StaticResource IconButton}" Command="{Binding PlayPauseCommand}">
                             <TextBlock Text="{Binding PlayPauseGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
@@ -232,9 +247,8 @@
                             <TextBlock Text="&#xE893;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                         </Button>
                     </StackPanel>
-
-
                 </Grid>
+
 
                 <!-- ═══ 展开内容 ═══ -->
                 <StackPanel x:Name="ExpandedContent" Grid.Row="1" Margin="0,10,0,0"

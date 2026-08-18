@@ -214,6 +214,8 @@ public partial class SettingsWindow : Window
         TxtLyricsNote.Text = Localization.Get("Lyrics_CopyrightNote");
         TxtCiderHint.Text = Localization.Get("Cider_HowTo");
         TxtMediaInfo.Text = Localization.Get("Media_SourcePriority");
+        LblMediaApps.Text = Localization.Get("Media_Apps");
+        TxtMediaNote.Text = Localization.Get("Media_Note");
         TxtAbout.Text = Localization.Get("About_Text");
 
         BtnExport.Content = Localization.Get("Export");
@@ -226,23 +228,23 @@ public partial class SettingsWindow : Window
 
     // ── 组件顺序：横向拖拽排序 ──
     private Point _dragStart;
-    private ComponentRow? _dragRow;
+    private OrderItem? _dragItem;
     private bool _dragActive;
 
     private void Chip_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         _dragStart = e.GetPosition(null);
-        _dragRow = (sender as FrameworkElement)?.DataContext as ComponentRow;
+        _dragItem = (sender as FrameworkElement)?.DataContext as OrderItem;
         _dragActive = true;
     }
 
     private void Chip_PreviewMouseMove(object sender, MouseEventArgs e)
     {
-        if (!_dragActive || _dragRow is null) return;
+        if (!_dragActive || _dragItem is null) return;
         var pos = e.GetPosition(null);
         if (Math.Abs(pos.X - _dragStart.X) < 4 && Math.Abs(pos.Y - _dragStart.Y) < 4) return;
         _dragActive = false;
-        try { DragDrop.DoDragDrop((DependencyObject)sender, _dragRow, DragDropEffects.Move); }
+        try { DragDrop.DoDragDrop((DependencyObject)sender, _dragItem, DragDropEffects.Move); }
         catch { /* ignore */ }
     }
 
@@ -254,12 +256,12 @@ public partial class SettingsWindow : Window
 
     private void OrderStrip_Drop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetDataPresent(typeof(ComponentRow)) && e.Data.GetData(typeof(ComponentRow)) is ComponentRow row
+        if (e.Data.GetDataPresent(typeof(OrderItem)) && e.Data.GetData(typeof(OrderItem)) is OrderItem item
             && sender is System.Windows.Controls.ItemsControl ic)
         {
             var x = e.GetPosition(ic).X;
-            var target = _vm.Components.Count - 1;
-            for (var i = 0; i < _vm.Components.Count; i++)
+            var target = _vm.OrderItems.Count - 1;
+            for (var i = 0; i < _vm.OrderItems.Count; i++)
             {
                 if (ic.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement fe)
                 {
@@ -268,8 +270,17 @@ public partial class SettingsWindow : Window
                     target = i;
                 }
             }
-            _vm.MoveComponentTo(row, target);
+            _vm.MoveOrderItemTo(item, target);
         }
+    }
+    private void MediaUp_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is MediaAppRow row) _vm.MoveMediaApp(row, -1);
+    }
+
+    private void MediaDown_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is MediaAppRow row) _vm.MoveMediaApp(row, 1);
     }
     private void ColorSwatch_Click(object sender, RoutedEventArgs e)
     {

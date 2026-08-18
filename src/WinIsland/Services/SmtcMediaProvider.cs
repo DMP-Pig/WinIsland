@@ -22,7 +22,15 @@ public sealed class SmtcMediaProvider : IDisposable
     private readonly string? _preferredAppId;
 
     /// <param name="preferredAppId">优先跟随的媒体应用标识（如 "Cider"），防止被其它活跃会话抢走。</param>
-    public SmtcMediaProvider(string? preferredAppId = null) => _preferredAppId = preferredAppId;
+    private readonly SettingsService _settings;
+    private readonly MediaAppRegistry _registry;
+
+    public SmtcMediaProvider(SettingsService settings, MediaAppRegistry registry, string? preferredAppId = null)
+    {
+        _settings = settings;
+        _registry = registry;
+        _preferredAppId = preferredAppId;
+    }
 
     public bool IsAvailable { get; private set; }
 
@@ -84,26 +92,34 @@ public sealed class SmtcMediaProvider : IDisposable
             var current = _manager.GetCurrentSession();
             var sessions = _manager.GetSessions().ToList();
 
-            // 优先跟随指定应用（如 Cider）的会话，防止被 GetCurrentSession() 指向的其它活跃会话（如 Bilibili）抢走
+            // 记录见过的媒体程序（供设置界面展示）
+            foreach (var s in sessions) _registry.Register(s.SourceAppUserModelId, s.SourceAppUserModelId);
+
+            // 优先跟随指定应用（如 Cider）的会话，防止被其它活跃会话抢走
             if (_preferredAppId is not null)
             {
                 var pref = sessions.FirstOrDefault(s =>
-                    s.SourceAppUserModelId.IndexOf(_preferredAppId, StringComparison.OrdinalIgnoreCase) >= 0 && IsActive(s));
+                    s.SourceAppUserModelId.IndexOf(_preferredAppId, StringComparison.OrdinalIgnoreCase) >= 0
+                    && IsEnabled(s.SourceAppUserModelId) && IsActive(s));
                 if (pref is not null) { Attach(pref); return; }
             }
 
+            // 用户配置的媒体程序顺序/禁用：先按优先级、再按状态（playing > paused）
+            var ordered = sessions
+                .Where(s => IsEnabled(s.SourceAppUserModelId))
+                .OrderBy(s => Priority(s.SourceAppUserModelId))
+                .ThenByDescending(s => StatusRank(PlaybackStatusOf(s)));
+            var best = ordered.FirstOrDefault(s => StatusRank(PlaybackStatusOf(s)) > 0);
+            if (best is not null) { Attach(best); return; }
+
             // Prefer the system's "current" session when it is actually active.
-            if (current is not null && IsActive(current))
+            if (current is not null && IsEnabled(current.SourceAppUserModelId) && IsActive(current))
             {
                 Attach(current);
                 return;
             }
 
-            // Otherwise pick the best session: playing > paused > any non-closed.
-            var best = sessions
-                .OrderByDescending(s => StatusRank(PlaybackStatusOf(s)))
-                .FirstOrDefault(s => StatusRank(PlaybackStatusOf(s)) > 0);
-            Attach(best);
+            Attach(null);
         }
         catch (Exception ex)
         {
@@ -111,6 +127,27 @@ public sealed class SmtcMediaProvider : IDisposable
         }
     }
 
+    /// <summary>该媒体程序是否启用：在 MediaApps 中则按它的 Enabled，否则默认启用。</summary>
+    private bool IsEnabled(string appId)
+    {
+        var list = _settings.Current.MediaApps;
+        if (list is null || list.Count == 0) return true;
+        foreach (var e in list)
+            if (string.Equals(e.Key, appId, StringComparison.OrdinalIgnoreCase)) return e.Enabled;
+        return true; // 未在列表中的程序默认启用（优先级低于已列出的）
+    }
+
+    /// <summary>媒体程序优先级：在 MediaApps 中的位置越靠前优先级越高；未列出则最后。</summary>
+    private int Priority(string appId)
+    {
+        var list = _settings.Current.MediaApps;
+        if (list is not null)
+        {
+            for (var i = 0; i < list.Count; i++)
+                if (string.Equals(list[i].Key, appId, StringComparison.OrdinalIgnoreCase)) return i;
+        }
+        return int.MaxValue;
+    }
     private static bool IsActive(GlobalSystemMediaTransportControlsSession s)
     {
         try

@@ -384,6 +384,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     {
         // 展开时收起胶囊行（紧凑封面/按钮不叠加在大封面上方），行高归零，再测量高度
         ContentGrid.RowDefinitions[0].Height = GridLength.Auto;
+        ContentGrid.VerticalAlignment = VerticalAlignment.Center;
         PillRow.Visibility = Visibility.Collapsed;
         ExpandedContent.Visibility = Visibility.Visible;
         ContentGrid.Measure(new System.Windows.Size(ExpandedWidth - 24, double.PositiveInfinity));
@@ -395,6 +396,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     {
         // 先恢复胶囊行（紧凑行占满并垂直居中），再缩回紧凑尺寸
         ContentGrid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Star);
+        ContentGrid.VerticalAlignment = VerticalAlignment.Top; // 收回时胶囊贴顶，避免被居中裁切到卡片外
         PillRow.Visibility = Visibility.Visible;
         AnimateCard(CompactWidth, CompactHeight, expand: false,
             onCompleted: () => ExpandedContent.Visibility = Visibility.Collapsed);
@@ -424,12 +426,12 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, 400, spring, contentDelay);
         AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, 400, smooth, contentDelay);
 
-        // 胶囊标题：展开后淡出（由大图区接管）；收起时立即恢复完全不透明，
+        // 胶囊行：展开后淡出（由大图区接管）；收起时立即恢复完全不透明，
         // 避免缩回瞬间胶囊内容还在淡入而出现“空内容”。
         if (expand)
-            AddAnim(sb, SongInfo, UIElement.OpacityProperty, 0, 180, smooth, TimeSpan.FromMilliseconds(40));
+            AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, 180, smooth, TimeSpan.FromMilliseconds(40));
         else
-            SongInfo.Opacity = 1;
+            PillRow.Opacity = 1;
 
         sb.Completed += (_, _) =>
         {

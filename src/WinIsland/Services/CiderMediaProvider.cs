@@ -19,6 +19,16 @@ public sealed class CiderMediaProvider : IDisposable
 
     public bool IsEnabled => _settings.Current.CiderEnabled;
 
+    /// <summary>媒体程序列表里若禁用 Cider（Cider.exe），则不检测。</summary>
+    private bool IsEnabledByMediaApps()
+    {
+        var list = _settings.Current.MediaApps;
+        if (list is null || list.Count == 0) return true;
+        foreach (var e in list)
+            if (string.Equals(e.Key, "Cider.exe", StringComparison.OrdinalIgnoreCase)) return e.Enabled;
+        return true;
+    }
+
     /// <summary>Try to connect (once per few seconds at most).</summary>
     public async Task EnsureConnectedAsync()
     {
@@ -49,7 +59,7 @@ public sealed class CiderMediaProvider : IDisposable
 
     public async Task<MediaSnapshot?> GetSnapshotAsync()
     {
-        if (!IsEnabled || !Client.IsConnected) return null;
+        if (!IsEnabled || !IsEnabledByMediaApps() || !Client.IsConnected) return null;
 
         var snap = await Client.GetSnapshotAsync(_cts.Token);
         if (snap is null)
