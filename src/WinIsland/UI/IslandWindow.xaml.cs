@@ -220,22 +220,24 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SliderThumbBrush)));
     }
 
-    /// <summary>按设置调整窗口与卡片尺寸（紧凑/展开），并重新定位。</summary>
+    /// <summary>按设置调整窗口与卡片尺寸（紧凑/展开）。仅当窗口尺寸真正变化时才重定位，
+    /// 避免上锁/其它设置变更把用户拖动后的位置弹回默认。</summary>
     public void ApplySize()
     {
         var w = Math.Max(ExpandedWidth, CompactWidth) + 24;
         var h = Math.Max(MaxExpandedHeight, CompactHeight) + 24;
-        if (Math.Abs(Width - w) > 0.5 || Math.Abs(Height - h) > 0.5)
+        var sizeChanged = Math.Abs(Width - w) > 0.5 || Math.Abs(Height - h) > 0.5;
+        if (sizeChanged)
         {
             Width = w;
             Height = h;
+            Dispatcher.BeginInvoke(Reposition, System.Windows.Threading.DispatcherPriority.Loaded);
         }
         if (!_vm.IsExpanded)
         {
             Card.Width = CompactWidth;
             Card.Height = CompactHeight;
         }
-        Dispatcher.BeginInvoke(Reposition, System.Windows.Threading.DispatcherPriority.Loaded);
     }
     private void ApplyCardAlignment()
     {

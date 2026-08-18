@@ -1,5 +1,7 @@
 ﻿using System.IO;
+using System.Text.Json;
 using System.Windows;
+using System.Windows.Threading;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Microsoft.Win32;
@@ -19,6 +21,8 @@ public partial class SettingsWindow : Window
     private readonly SettingsViewModel _vm;
     private readonly SettingsService _service;
     private readonly CiderMediaProvider? _cider;
+    private readonly DispatcherTimer _autoApply;
+    private string _lastAppliedJson;
 
     public SettingsWindow(SettingsViewModel vm, SettingsService service, CiderMediaProvider? cider)
     {
@@ -28,6 +32,32 @@ public partial class SettingsWindow : Window
         DataContext = vm;
         InitializeComponent();
         ApplyLocalization();
+
+        // 即时生效：轮询检测 Working 变化并立即应用（无保存按钮）
+        _lastAppliedJson = JsonSerializer.Serialize(_vm.Working);
+        _autoApply = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        _autoApply.Tick += (_, _) => AutoApply();
+        _autoApply.Start();
+
+        // 语言切换后立即刷新界面文案
+        Localization.LanguageChanged += (_, _) => ApplyLocalization();
+
+        // 关闭时兜底保存最后一次改动
+        Closed += (_, _) => { try { _vm.Save(); } catch { } };
+    }
+
+    private void AutoApply()
+    {
+        try
+        {
+            var j = JsonSerializer.Serialize(_vm.Working);
+            if (j != _lastAppliedJson)
+            {
+                _lastAppliedJson = j;
+                _vm.Save();
+            }
+        }
+        catch { /* ignore */ }
     }
 
     /// <summary>应用液态玻璃：亚克力模糊 + 圆角 + 明暗主题调色板。</summary>
@@ -151,8 +181,7 @@ public partial class SettingsWindow : Window
         BtnBrowse.Content = Localization.Get("Browse");
         BtnOpenConfig.Content = Localization.Get("OpenConfigFolder");
         BtnDiagnostics.Content = Localization.Get("Diagnostics");
-        BtnCancel.Content = Localization.Get("Cancel");
-        BtnSave.Content = Localization.Get("Save");
+
     }
 
     private void ColorSwatch_Click(object sender, RoutedEventArgs e)
@@ -259,12 +288,5 @@ public partial class SettingsWindow : Window
         }
     }
 
-    private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
 
-    private void Save_Click(object sender, RoutedEventArgs e)
-    {
-        _vm.Save();
-        DialogResult = true;
-        Close();
-    }
 }
