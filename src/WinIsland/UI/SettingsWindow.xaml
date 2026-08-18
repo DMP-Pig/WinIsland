@@ -347,7 +347,7 @@
                 </Button>
             </Grid>
 
-            <TabControl Grid.Row="1">
+            <TabControl Grid.Row="2">
                 <TabItem x:Name="TabGeneral" Header="通用">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10,6">
