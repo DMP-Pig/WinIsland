@@ -113,7 +113,10 @@ public static class Localization
         ["Comp_Note"] = "勾选要在灵动岛上显示的内容；同一组件在「无歌曲播放时」和「有歌曲播放时」可以同时勾选。用▲▼调整时间/天气的摆放顺序。天气组件需要填写城市并联网获取。",        ["Comp_OrderHint"] = "拖动调整摆放顺序",
         ["Comp_Song"] = "歌曲信息",
         ["Media_Apps"] = "媒体程序（可禁用或调整顺序）",
-        ["Media_Note"] = "取消勾选=禁用该媒体程序（不再检测）；列表越靠上优先级越高（多个程序同时在播放时优先显示靠上的）。首次运行后会自动列出检测到的媒体程序。"
+        ["Media_Note"] = "取消勾选=禁用该媒体程序（不再检测）；列表越靠上优先级越高（多个程序同时在播放时优先显示靠上的）。首次运行后会自动列出检测到的媒体程序。",
+        ["Settings_MediaInfo"] = "媒体信息展示",
+        ["MediaInfo_Show"] = "显示媒体播放信息（歌名/歌手/封面/歌词/进度条）",
+        ["MediaInfo_Note"] = "关闭后，灵动岛不显示歌曲相关的播放信息，只按组件设置显示时间/天气等内容；播放控制按钮仍可用。"
     };
 
     private static readonly Dictionary<string, string> En = new()
@@ -222,7 +225,10 @@ public static class Localization
         ["Comp_Note"] = "Check what to show on the island; a component can be shown both when idle and when playing. Use up/down to reorder time/weather. Weather needs a city and network.",        ["Comp_OrderHint"] = "Drag to reorder",
         ["Comp_Song"] = "Song info",
         ["Media_Apps"] = "Media apps (disable or reorder)",
-        ["Media_Note"] = "Uncheck to disable a media app (not detected); higher in the list = higher priority when several are playing. Detected media apps appear here automatically."
+        ["Media_Note"] = "Uncheck to disable a media app (not detected); higher in the list = higher priority when several are playing. Detected media apps appear here automatically.",
+        ["Settings_MediaInfo"] = "Media info display",
+        ["MediaInfo_Show"] = "Show media playback info (title/artist/cover/lyrics/progress)",
+        ["MediaInfo_Note"] = "When off, the island hides song-related playback info and only shows configured widgets (time/weather etc.); playback controls remain available."
     };
 
     private static string _current = "zh-CN";
