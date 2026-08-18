@@ -238,6 +238,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private string _weatherText = string.Empty;
     public string WeatherText { get => _weatherText; private set => Set(ref _weatherText, value); }
 
+    /// <summary>紧凑胶囊里的一个顺序组件。</summary>
+    public sealed record IslandComponent(string Kind); // "Time" | "Weather" | "Song"
     // 歌曲相关组件（封面/歌名/歌手/歌词/进度条）：只在播放时显示，固定开启
     public bool ShowCover => HasMedia;
     public bool ShowTitle => HasMedia;
@@ -250,20 +252,25 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool ShowIdleWeather => HasMedia ? _settings.Current.Components.WeatherWhenPlaying : _settings.Current.Components.WeatherWhenIdle;
     public bool ShowAnyWidget => ShowIdleTime || ShowIdleWeather;
 
-    // 组件摆放顺序（WidgetOrder 中的下标决定左右列）
-    public int TimeColumn => WidgetColumn("Time");
-    public int WeatherColumn => WidgetColumn("Weather");
+    private IReadOnlyList<IslandComponent> _compactItems = Array.Empty<IslandComponent>();
+    public IReadOnlyList<IslandComponent> CompactItems { get => _compactItems; private set => Set(ref _compactItems, value); }
 
-    private int WidgetColumn(string key)
+    /// <summary>按 WidgetOrder 重建紧凑胶囊组件顺序（播放时含歌曲信息，空闲时去掉）。</summary>
+    private void RebuildCompactItems()
     {
-        var order = (_settings.Current.WidgetOrder ?? string.Empty)
+        var order = (_settings.Current.WidgetOrder ?? "Time,Weather,Song")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var i = Array.IndexOf(order, key);
-        if (i < 0) i = key == "Time" ? 0 : 1;
-        return i % 2;
+        var items = new List<IslandComponent>();
+        foreach (var key in order)
+        {
+            if (key == "Time" && ShowIdleTime) items.Add(new IslandComponent("Time"));
+            else if (key == "Weather" && ShowIdleWeather) items.Add(new IslandComponent("Weather"));
+            else if (key == "Song" && HasMedia) items.Add(new IslandComponent("Song"));
+        }
+        CompactItems = items;
     }
 
-    // 播放时空间紧张，时间用小字号；空闲用大字号
+    // 组件摆放顺序（WidgetOrder 中的下标决定左右列）
     public double WidgetTimeFontSize => HasMedia ? 14 : 22;
 
     // ── Visibility / expansion ─────────────────────────────────
@@ -619,8 +626,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowIdleTime));
         OnPropertyChanged(nameof(ShowIdleWeather));
         OnPropertyChanged(nameof(ShowAnyWidget));
-        OnPropertyChanged(nameof(TimeColumn));
-        OnPropertyChanged(nameof(WeatherColumn));
+        RebuildCompactItems();
         OnPropertyChanged(nameof(WidgetTimeFontSize));
 
         IsVisible = show;

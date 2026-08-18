@@ -6,6 +6,13 @@ using System.IO;
 namespace WinIsland.Services;
 
 public enum IslandPosition { Center, Right }
+
+/// <summary>一个媒体程序的配置：是否启用 + 在列表中的位置即优先级。</summary>
+public class MediaAppEntry
+{
+    public string Key { get; set; } = "";   // SMTC SourceAppUserModelId（如 Cider.exe、Spotify.exe）
+    public bool Enabled { get; set; } = true;
+}
 public enum ThemeMode { Auto, Light, Dark }
 public enum MonitorSelection { Primary, All, Index }
 
@@ -85,6 +92,9 @@ public sealed class AppSettings
     // ── 组件（灵动岛显示内容，Idle/Playing 可分别勾选）──
     public ComponentFlags Components { get; set; } = new();
     public string WidgetOrder { get; set; } = "Time,Weather"; // 组件摆放顺序（逗号分隔的键）
+
+    // ── 媒体程序选择与顺序（空列表 = 全部启用，按默认优先级）──
+    public List<MediaAppEntry> MediaApps { get; set; } = new();
     // ── Notifications ──────────────────────────────────────────
     public bool BluetoothNotifyEnabled { get; set; } = false;   // 蓝牙设备连接/断开提示
     public bool NotificationTakeoverEnabled { get; set; } = false; // 接管 Windows 通知（尽力而为）

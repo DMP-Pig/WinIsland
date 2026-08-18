@@ -5,6 +5,32 @@ namespace WinIsland.UI;
 public sealed record EnumOption<T>(T Value, string Display);
 
 /// <summary>组件设置的一行：名称 + 空闲/播放两列勾选。</summary>
+/// <summary>媒体程序配置行：是否启用 + 顺序。</summary>
+public sealed class MediaAppRow : ObservableObject
+{
+    private readonly Action<MediaAppRow> _onChanged;
+    public string Key { get; }
+    public string Name { get; }
+    private bool _enabled;
+    public bool Enabled
+    {
+        get => _enabled;
+        set { if (Set(ref _enabled, value)) _onChanged(this); }
+    }
+    public MediaAppRow(string key, string name, bool enabled, Action<MediaAppRow> onChanged)
+    {
+        Key = key; Name = name; _enabled = enabled; _onChanged = onChanged;
+    }
+}
+/// <summary>顺序条里的一个组件（含歌曲信息）。</summary>
+public sealed class OrderItem : ObservableObject
+{
+    private readonly string _nameKey;
+    public string Key { get; }
+    public string Name => Localization.Get(_nameKey);
+    public OrderItem(string key, string nameKey) { Key = key; _nameKey = nameKey; }
+    public void RefreshName() => OnPropertyChanged(nameof(Name));
+}
 public sealed class ComponentRow : ObservableObject
 {
     private readonly string _nameKey;
@@ -38,7 +64,7 @@ public sealed class SettingsViewModel : ObservableObject
 {
     private readonly SettingsService _service;
 
-    public SettingsViewModel(SettingsService service)
+    public SettingsViewModel(SettingsService service, MediaAppRegistry? registry = null)
     {
         _service = service;
         Working = service.Current.Clone();
@@ -62,7 +88,9 @@ public sealed class SettingsViewModel : ObservableObject
             new EnumOption<MonitorSelection>(MonitorSelection.Index, Localization.Get("Appearance_MonitorIndex")),
         };
         _components = BuildComponents(Working.Components);
-        Localization.LanguageChanged += (_, _) => { foreach (var r in Components) r.RefreshName(); };
+        _orderItems = BuildOrderItems();
+        _mediaAppRows = BuildMediaApps(Working.MediaApps, registry);
+        Localization.LanguageChanged += (_, _) => { foreach (var r in Components) r.RefreshName(); foreach (var o in OrderItems) o.RefreshName(); };
 
         PresetColors = new[]
         {
@@ -88,8 +116,13 @@ public sealed class SettingsViewModel : ObservableObject
     public IReadOnlyList<EnumOption<MonitorSelection>> MonitorOptions { get; }
     public IReadOnlyList<string> PresetColors { get; }
     public IReadOnlyList<ComponentRow> Components => _components;
+    public IReadOnlyList<OrderItem> OrderItems => _orderItems;
+    public IReadOnlyList<MediaAppRow> MediaAppRows => _mediaAppRows;
+
+    private List<MediaAppRow> _mediaAppRows = new();
 
     private List<ComponentRow> _components = new();
+    private List<OrderItem> _orderItems = new();
 
     private List<ComponentRow> BuildComponents(ComponentFlags c) => new()
     {
@@ -97,7 +130,76 @@ public sealed class SettingsViewModel : ObservableObject
         new("Weather", "Comp_Weather", c, x => x.WeatherWhenIdle, (x, v) => x.WeatherWhenIdle = v, x => x.WeatherWhenPlaying, (x, v) => x.WeatherWhenPlaying = v),
     };
 
-    /// <summary>把组件移动到指定索引（拖拽排序用）。</summary>
+    private static readonly (string Key, string NameKey)[] OrderDefs =
+    {
+        ("Time", "Comp_Time"),
+        ("Weather", "Comp_Weather"),
+        ("Song", "Comp_Song"),
+    };
+
+    private List<OrderItem> BuildOrderItems()
+    {
+        var keys = (Working.WidgetOrder ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var used = new HashSet<string>();
+        var result = new List<OrderItem>();
+        foreach (var k in keys)
+        {
+            var d = Array.Find(OrderDefs, x => x.Key == k);
+            if (d.Key is not null && used.Add(d.Key)) result.Add(new OrderItem(d.Key, d.NameKey));
+        }
+        foreach (var d in OrderDefs) if (used.Add(d.Key)) result.Add(new OrderItem(d.Key, d.NameKey));
+        return result;
+    }
+
+    private List<MediaAppRow> BuildMediaApps(List<MediaAppEntry>? saved, MediaAppRegistry? registry)
+    {
+        var result = new List<MediaAppRow>();
+        void Add(string key, string name, bool enabled)
+        {
+            if (result.Any(r => r.Key == key)) return;
+            result.Add(new MediaAppRow(key, name, enabled, _ => SyncMediaApps()));
+        }
+
+        // 先按已保存的顺序/启用
+        if (saved is not null)
+            foreach (var e in saved) Add(e.Key, e.Key, e.Enabled);
+        // 再补上运行中发现的程序（默认启用）
+        if (registry is not null)
+            foreach (var (key, name) in registry.Known) Add(key, name, true);
+        return result;
+    }
+
+    private void SyncMediaApps()
+    {
+        Working.MediaApps = _mediaAppRows
+            .Select(r => new MediaAppEntry { Key = r.Key, Enabled = r.Enabled })
+            .ToList();
+    }
+
+    /// <summary>调整媒体程序顺序（优先级）。</summary>
+    public void MoveMediaApp(MediaAppRow row, int delta)
+    {
+        var i = _mediaAppRows.IndexOf(row);
+        var j = i + delta;
+        if (i < 0 || j < 0 || j >= _mediaAppRows.Count) return;
+        (_mediaAppRows[i], _mediaAppRows[j]) = (_mediaAppRows[j], _mediaAppRows[i]);
+        OnPropertyChanged(nameof(MediaAppRows));
+        SyncMediaApps();
+    }
+
+    public void MoveOrderItemTo(OrderItem item, int newIndex)
+    {
+        var i = _orderItems.IndexOf(item);
+        if (i < 0) return;
+        newIndex = Math.Clamp(newIndex, 0, _orderItems.Count - 1);
+        if (i == newIndex) return;
+        _orderItems.RemoveAt(i);
+        _orderItems.Insert(newIndex, item);
+        OnPropertyChanged(nameof(OrderItems));
+        Working.WidgetOrder = string.Join(",", _orderItems.Select(x => x.Key));
+    }
+
     public void MoveComponentTo(ComponentRow row, int newIndex)
     {
         var i = _components.IndexOf(row);
