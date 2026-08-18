@@ -3,8 +3,11 @@
 > macOS Dynamic Island 风格的 Windows 桌面悬浮窗：媒体控制、同步歌词、系统托盘常驻。
 > 基于 **.NET 8 + WPF**，适配 Windows 11（兼容 Windows 10，1809+）。
 
-![compact](docs/screenshot-compact.png) 
+![compact](docs/screenshot-compact.png)  ![expanded](docs/screenshot-expanded.png)
 
+> 截图由 `--demo` 模式生成（无真实媒体时也可预览界面）。
+
+---
 
 ## 目录
 
@@ -117,7 +120,7 @@ build/
 
 ## 快速开始
 
-> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.1/win-x64/WinIsland.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x86 / win-arm64 及 Windows 安装包）。
+> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.2/win-x64/WinIsland.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x86 / win-arm64 及 Windows 安装包）。
 ## 快速开始
 
 ### 环境要求
