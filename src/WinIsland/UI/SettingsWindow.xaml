@@ -454,19 +454,6 @@
                 <TabItem x:Name="TabComponents" Header="组件">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10,6">
-                            <Grid Margin="2,4,2,6">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="120"/>
-                                    <ColumnDefinition Width="120"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="LblCompName" Text="组件" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <TextBlock x:Name="LblCompIdle" Grid.Column="1" Text="无歌曲播放时" HorizontalAlignment="Center" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <TextBlock x:Name="LblCompPlaying" Grid.Column="2" Text="有歌曲播放时" HorizontalAlignment="Center" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            </Grid>
                             <TextBlock x:Name="LblCompOrder" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="2,2,2,4"/>
                             <Border CornerRadius="12" Background="{DynamicResource ControlBgBrush}"
                                     BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Padding="8,6" Margin="0,0,0,8" AllowDrop="True"
@@ -488,7 +475,21 @@
                             </Border>
                             <Border CornerRadius="12" Background="{DynamicResource ControlBgBrush}"
                                     BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Padding="4,2">
-                                <ItemsControl ItemsSource="{Binding Components}">
+                                <StackPanel>
+                                    <Grid Margin="2,6,2,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="120"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="LblCompName" Text="组件" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock x:Name="LblCompIdle" Grid.Column="1" Text="无歌曲播放时" HorizontalAlignment="Center" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock x:Name="LblCompPlaying" Grid.Column="2" Text="有歌曲播放时" HorizontalAlignment="Center" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding Components}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Grid Margin="2,4,2,4">
@@ -503,7 +504,8 @@
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                    </ItemsControl>
+                                </StackPanel>
                             </Border>
                             <TextBlock x:Name="TxtCompNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                        TextWrapping="Wrap" Margin="0,8,0,0"/>
@@ -546,6 +548,17 @@
                             </Border>
                             <TextBlock x:Name="TxtMediaNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                        TextWrapping="Wrap" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem x:Name="TabMediaInfo" Header="媒体信息展示">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10,6">
+                            <CheckBox x:Name="ChkShowMediaInfo" IsChecked="{Binding Working.ShowMediaInfo}"/>
+                            <TextBlock x:Name="TxtMediaInfoNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,8,0,0"/>
+
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>

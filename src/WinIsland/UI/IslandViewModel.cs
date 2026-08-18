@@ -265,7 +265,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         {
             if (key == "Time" && ShowIdleTime) items.Add(new IslandComponent("Time"));
             else if (key == "Weather" && ShowIdleWeather) items.Add(new IslandComponent("Weather"));
-            else if (key == "Song" && HasMedia) items.Add(new IslandComponent("Song"));
+            else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(new IslandComponent("Song"));
         }
         CompactItems = items;
     }

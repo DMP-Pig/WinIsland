@@ -54,6 +54,7 @@ public sealed class AppSettings
     public bool IsLocked { get; set; } = true;   // 上锁后不可拖动，解锁后可拖动
     public bool HideWhenNoMedia { get; set; } = true;
     public bool IslandAlwaysVisible { get; set; } = false;   // 常驻：始终显示（无视媒体/暂停）
+    public bool ShowMediaInfo { get; set; } = true;              // 是否显示媒体播放信息（歌名/封面/歌词等）
     public bool ShowWhenPaused { get; set; } = true;
     public bool StartWithWindows { get; set; } = false;
     public bool StartHidden { get; set; } = false;

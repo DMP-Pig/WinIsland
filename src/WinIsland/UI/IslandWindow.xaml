@@ -218,7 +218,7 @@
                         </ItemsControl.Resources>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <ContentControl Focusable="False">
+                                <ContentControl Focusable="False" Content="{Binding}">
                                     <ContentControl.Style>
                                         <Style TargetType="ContentControl">
                                             <Setter Property="ContentTemplate" Value="{StaticResource SongItem}"/>
