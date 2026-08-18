@@ -57,6 +57,11 @@ public sealed class AppSettings
     public double ExpandedWidth { get; set; } = 400;
     public double MaxExpandedHeight { get; set; } = 384;
 
+    // ── Idle widgets（无媒体时组件）──────────────────────────
+    public bool ShowWidgetsWhenNoMedia { get; set; } = false; // 无媒体时显示时间/天气等组件
+    public bool WidgetShowTime { get; set; } = true;
+    public bool WidgetShowWeather { get; set; } = false;
+    public string WeatherCity { get; set; } = "";             // 天气城市（Open-Meteo，需联网）
     // ── Notifications ──────────────────────────────────────────
     public bool BluetoothNotifyEnabled { get; set; } = false;   // 蓝牙设备连接/断开提示
     public bool NotificationTakeoverEnabled { get; set; } = false; // 接管 Windows 通知（尽力而为）

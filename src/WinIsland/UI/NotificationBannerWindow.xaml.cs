@@ -52,11 +52,11 @@ public partial class NotificationBannerWindow : Window
         var sb = new Storyboard();
         var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
 
-        var animLeft = new DoubleAnimation(_finalLeft, TimeSpan.FromMilliseconds(480)) { EasingFunction = smooth };
+        var animLeft = new DoubleAnimation(_finalLeft, TimeSpan.FromMilliseconds(560)) { EasingFunction = smooth };
         Storyboard.SetTarget(animLeft, this);
         Storyboard.SetTargetProperty(animLeft, new PropertyPath(Window.LeftProperty));
 
-        var animO = new DoubleAnimation(1, TimeSpan.FromMilliseconds(320)) { EasingFunction = smooth };
+        var animO = new DoubleAnimation(1, TimeSpan.FromMilliseconds(420)) { EasingFunction = smooth };
         Storyboard.SetTarget(animO, Card);
         Storyboard.SetTargetProperty(animO, new PropertyPath(UIElement.OpacityProperty));
 
@@ -76,11 +76,11 @@ public partial class NotificationBannerWindow : Window
         var sb = new Storyboard();
         var easeIn = new CubicEase { EasingMode = EasingMode.EaseIn };
 
-        var animLeft = new DoubleAnimation(area.Right + 8, TimeSpan.FromMilliseconds(420)) { EasingFunction = easeIn };
+        var animLeft = new DoubleAnimation(area.Right + 8, TimeSpan.FromMilliseconds(500)) { EasingFunction = easeIn };
         Storyboard.SetTarget(animLeft, this);
         Storyboard.SetTargetProperty(animLeft, new PropertyPath(Window.LeftProperty));
 
-        var animO = new DoubleAnimation(0, TimeSpan.FromMilliseconds(280)) { EasingFunction = easeIn };
+        var animO = new DoubleAnimation(0, TimeSpan.FromMilliseconds(380)) { EasingFunction = easeIn };
         Storyboard.SetTarget(animO, Card);
         Storyboard.SetTargetProperty(animO, new PropertyPath(UIElement.OpacityProperty));
 

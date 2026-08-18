@@ -431,6 +431,14 @@
                             <TextBlock x:Name="LblExpandedWidth" Style="{StaticResource Label}"/>
                             <Slider Minimum="340" Maximum="620" Value="{Binding Working.ExpandedWidth}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="2"/>
 
+                            <TextBlock x:Name="LblWidgets" Style="{StaticResource Label}"/>
+                            <CheckBox x:Name="ChkShowWidgets" IsChecked="{Binding Working.ShowWidgetsWhenNoMedia}"/>
+                            <CheckBox x:Name="ChkWidgetTime" IsChecked="{Binding Working.WidgetShowTime}"/>
+                            <CheckBox x:Name="ChkWidgetWeather" IsChecked="{Binding Working.WidgetShowWeather}"/>
+                            <TextBlock x:Name="LblWeatherCity" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="WeatherCityBox" Width="200" HorizontalAlignment="Left" Text="{Binding Working.WeatherCity}"/>
+                            <TextBlock x:Name="TxtWidgetNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+
                             <TextBlock x:Name="LblCompact" Style="{StaticResource Label}" Text="紧凑模式显示内容"/>
                             <CheckBox x:Name="ChkCompactArt" Content="封面" IsChecked="{Binding Working.CompactShowArt}"/>
                             <CheckBox x:Name="ChkCompactTitle" Content="歌名" IsChecked="{Binding Working.CompactShowTitle}"/>

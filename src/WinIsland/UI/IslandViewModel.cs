@@ -16,6 +16,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private readonly SettingsService _settings;
     private readonly LyricsService _lyricsService;
     private readonly DispatcherTimer _progressTimer;
+    private readonly DispatcherTimer _widgetTimer;
+    private readonly WeatherService _weather = new();
+    private int _weatherTick;
     private DateTime _trackStartTime = DateTime.UtcNow;
     private bool _useFreeClock;   // 播放器不报 SMTC 进度（如 Cider）时用本地时钟推进卡拉OK
 
@@ -72,6 +75,19 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _progressTimer.Tick += (_, _) => AdvanceProgress();
         _progressTimer.Start();
+
+        _widgetTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _widgetTimer.Tick += async (_, _) =>
+        {
+            if (!ShowIdleWidgets) return;
+            if (_settings.Current.WidgetShowTime) ClockText = DateTime.Now.ToString("HH:mm");
+            if (_settings.Current.WidgetShowWeather && ++_weatherTick % 60 == 1)
+            {
+                var w = await _weather.GetWeatherAsync(_settings.Current.WeatherCity);
+                if (WeatherText != w) WeatherText = w ?? string.Empty;
+            }
+        };
+        _widgetTimer.Start();
     }
 
     public event EventHandler? OpenSettingsRequested;
@@ -208,6 +224,19 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     /// <summary>紧凑态逐字卡拉OK已点亮字符数。</summary>
     private double _compactHighlightFraction;
     public double CompactHighlightFraction { get => _compactHighlightFraction; private set => Set(ref _compactHighlightFraction, value); }
+
+    // ── Idle widgets（无媒体时组件）───────────────────────────
+    private bool _hasMedia;
+    public bool HasMedia { get => _hasMedia; private set => Set(ref _hasMedia, value); }
+
+    private bool _showIdleWidgets;
+    public bool ShowIdleWidgets { get => _showIdleWidgets; private set => Set(ref _showIdleWidgets, value); }
+
+    private string _clockText = string.Empty;
+    public string ClockText { get => _clockText; private set => Set(ref _clockText, value); }
+
+    private string _weatherText = string.Empty;
+    public string WeatherText { get => _weatherText; private set => Set(ref _weatherText, value); }
 
     // ── Visibility / expansion ─────────────────────────────────
     public bool IsExpanded
@@ -537,9 +566,17 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public void UpdateVisibility()
     {
         var hasMedia = _snapshot is not null && Status is PlaybackStatus.Playing or PlaybackStatus.Paused;
-        var show = !_userHidden && (hasMedia || !_settings.Current.HideWhenNoMedia);
+        HasMedia = hasMedia;
+        var showWidgets = !hasMedia && _settings.Current.ShowWidgetsWhenNoMedia;
+        ShowIdleWidgets = showWidgets;
+
+        var show = !_userHidden && (hasMedia || showWidgets || !_settings.Current.HideWhenNoMedia);
         if (hasMedia && Status == PlaybackStatus.Paused && !_settings.Current.ShowWhenPaused)
             show = false;
+
+        // 无媒体组件显示时，重置天气缓存城市（切换城市立即生效）
+        if (showWidgets) { ClockText = DateTime.Now.ToString("HH:mm"); }
+        else WeatherText = string.Empty;
 
         IsVisible = show;
     }
@@ -719,6 +756,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _progressTimer.Stop();
+        _widgetTimer.Stop();
         _coordinator.SnapshotChanged -= OnSnapshotChanged;
         _coordinator.MediaEnded -= OnMediaEnded;
     }

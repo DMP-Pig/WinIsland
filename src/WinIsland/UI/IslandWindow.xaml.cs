@@ -375,22 +375,22 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         _currentStoryboard = null;
 
         var sb = new Storyboard();
-        var spring = new SpringEase { Damping = 11, Stiffness = 220, Mass = 1 };
+        var spring = new SpringEase { Damping = 13, Stiffness = 170, Mass = 1 }; // 更软更丝滑
         var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
 
-        // 卡片尺寸：弹簧曲线（展开 380ms / 收起 300ms，收起更快更干脆）
-        AddAnim(sb, Card, FrameworkElement.WidthProperty, width, expand ? 380 : 300, spring);
-        AddAnim(sb, Card, FrameworkElement.HeightProperty, height, expand ? 380 : 300, spring);
+        // 卡片尺寸：弹簧曲线（展开 520ms / 收起 380ms，更慢更丝滑）
+        AddAnim(sb, Card, FrameworkElement.WidthProperty, width, expand ? 520 : 380, spring);
+        AddAnim(sb, Card, FrameworkElement.HeightProperty, height, expand ? 520 : 380, spring);
 
         // 展开内容：错峰淡入 + 轻微缩放/位移（延迟 50ms，让尺寸先动、内容跟上）
         var contentDelay = TimeSpan.FromMilliseconds(expand ? 55 : 0);
-        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, expand ? 200 : 110, smooth, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, 320, spring, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, 320, spring, contentDelay);
-        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, 320, smooth, contentDelay);
+        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, expand ? 260 : 140, smooth, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, 400, spring, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, 400, spring, contentDelay);
+        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, 400, smooth, contentDelay);
 
         // 胶囊标题：展开后淡出（由大图区接管）
-        AddAnim(sb, PillText, UIElement.OpacityProperty, expand ? 0 : 1, 140, smooth, TimeSpan.FromMilliseconds(expand ? 30 : 0));
+        AddAnim(sb, PillText, UIElement.OpacityProperty, expand ? 0 : 1, 180, smooth, TimeSpan.FromMilliseconds(expand ? 40 : 0));
 
         sb.Completed += (_, _) =>
         {
