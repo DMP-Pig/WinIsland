@@ -207,7 +207,10 @@ public sealed class SettingsViewModel : ObservableObject
         var i = _mediaAppRows.IndexOf(row);
         var j = i + delta;
         if (i < 0 || j < 0 || j >= _mediaAppRows.Count) return;
-        (_mediaAppRows[i], _mediaAppRows[j]) = (_mediaAppRows[j], _mediaAppRows[i]);
+        // 必须返回新 List 实例，ItemsSource 引用变化才会触发 UI 刷新
+        var list = new List<MediaAppRow>(_mediaAppRows);
+        (list[i], list[j]) = (list[j], list[i]);
+        _mediaAppRows = list;
         OnPropertyChanged(nameof(MediaAppRows));
         SyncMediaApps();
     }
@@ -218,8 +221,11 @@ public sealed class SettingsViewModel : ObservableObject
         if (i < 0) return;
         newIndex = Math.Clamp(newIndex, 0, _orderItems.Count - 1);
         if (i == newIndex) return;
-        _orderItems.RemoveAt(i);
-        _orderItems.Insert(newIndex, item);
+        // 必须返回新 List 实例，ItemsSource 引用变化才会触发 UI 刷新（顺序条可见变化）
+        var list = new List<OrderItem>(_orderItems);
+        list.RemoveAt(i);
+        list.Insert(newIndex, item);
+        _orderItems = list;
         OnPropertyChanged(nameof(OrderItems));
 
         // 把新顺序写回 WidgetOrder：已显示项按新顺序在前，未勾选项按原顺序补在后面，
