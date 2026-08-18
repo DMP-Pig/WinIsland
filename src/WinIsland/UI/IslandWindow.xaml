@@ -172,39 +172,54 @@
                         </Grid>
                     </Border>
 
-                    <!-- 歌名/歌手/歌词：左对齐（贴封面），垂直居中 -->
-                    <StackPanel x:Name="PillText" Grid.Column="1" Margin="10,0,8,0" VerticalAlignment="Center"
-                                Visibility="{Binding HasMedia, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" TextAlignment="Left"
-                                   Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                   TextTrimming="CharacterEllipsis"
-                                   Visibility="{Binding ShowTitle, Converter={StaticResource BoolToVis}}"/>
-                        <TextBlock Text="{Binding Artist}" FontSize="11" Margin="0,1,0,0" TextAlignment="Left"
-                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
-                                   TextTrimming="CharacterEllipsis"
-                                   Visibility="{Binding ShowArtist, Converter={StaticResource BoolToVis}}"/>
-                        <!-- 当前歌词行：未悬停时也显示（左对齐，逐字卡拉OK） -->
-                        <karaoke:KaraokeTextBlock
-                            KaraokeText="{Binding CurrentLyricText}"
-                            HighlightFraction="{Binding CompactHighlightFraction}"
-                            IsPlaying="{Binding IsPlaying}"
-                            HighlightBrush="White"
-                            BaseBrush="#80FFFFFF"
-                            FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"
-                            Visibility="{Binding ShowLyrics, Converter={StaticResource BoolToVis}}"/>
-                        <!-- 紧凑进度条 -->
-                        <ProgressBar Height="3" Maximum="1" Value="{Binding Progress, Mode=OneWay}" Margin="0,4,0,0"
-                                     Visibility="{Binding ShowCompactProgress, Converter={StaticResource BoolToVis}}">
-                            <ProgressBar.Template>
-                                <ControlTemplate TargetType="ProgressBar">
-                                    <Grid>
-                                        <Border CornerRadius="2" Background="#33FFFFFF"/>
-                                        <Border x:Name="PART_Indicator" CornerRadius="2" HorizontalAlignment="Left"
-                                                Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"/>
-                                    </Grid>
-                                </ControlTemplate>
-                            </ProgressBar.Template>
-                        </ProgressBar>
+                    <!-- 中间：歌曲信息 + 时间/天气（按勾选与顺序显示） -->
+                    <StackPanel Grid.Column="1" Margin="10,0,8,0" VerticalAlignment="Center">
+                        <!-- 歌曲信息（播放时固定显示：歌名/歌手/歌词/进度条） -->
+                        <StackPanel x:Name="SongInfo" Visibility="{Binding HasMedia, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" TextAlignment="Left"
+                                       Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding Artist}" FontSize="11" Margin="0,1,0,0" TextAlignment="Left"
+                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <!-- 当前歌词行：未悬停时也显示（左对齐，逐字卡拉OK） -->
+                            <karaoke:KaraokeTextBlock
+                                KaraokeText="{Binding CurrentLyricText}"
+                                HighlightFraction="{Binding CompactHighlightFraction}"
+                                IsPlaying="{Binding IsPlaying}"
+                                HighlightBrush="White"
+                                BaseBrush="#80FFFFFF"
+                                FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"/>
+                            <!-- 紧凑进度条 -->
+                            <ProgressBar Height="3" Maximum="1" Value="{Binding Progress, Mode=OneWay}" Margin="0,4,0,0">
+                                <ProgressBar.Template>
+                                    <ControlTemplate TargetType="ProgressBar">
+                                        <Grid>
+                                            <Border CornerRadius="2" Background="#33FFFFFF"/>
+                                            <Border x:Name="PART_Indicator" CornerRadius="2" HorizontalAlignment="Left"
+                                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"/>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </ProgressBar.Template>
+                            </ProgressBar>
+                        </StackPanel>
+
+                        <!-- 时间/天气：按勾选（空闲/播放）与摆放顺序显示 -->
+                        <Grid x:Name="WidgetRow" HorizontalAlignment="Center" Margin="0,2,0,0"
+                              Visibility="{Binding ShowAnyWidget, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="{Binding TimeColumn}" Text="{Binding ClockText}"
+                                       FontSize="{Binding WidgetTimeFontSize}" FontWeight="Bold" VerticalAlignment="Center"
+                                       Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                       Visibility="{Binding ShowIdleTime, Converter={StaticResource BoolToVis}}"/>
+                            <TextBlock Grid.Column="{Binding WeatherColumn}" Text="{Binding WeatherText}" FontSize="12"
+                                       Margin="8,4,0,0" VerticalAlignment="Center"
+                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                       Visibility="{Binding ShowIdleWeather, Converter={StaticResource BoolToVis}}"/>
+                        </Grid>
                     </StackPanel>
 
                     <!-- 按钮靠右（组件模式隐藏） -->
@@ -218,16 +233,7 @@
                         </Button>
                     </StackPanel>
 
-                    <!-- 无媒体时组件：时间 / 天气（居中） -->
-                    <StackPanel x:Name="WidgetPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center"
-                                Visibility="{Binding ShowIdleWidgets, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="{Binding ClockText}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"
-                                   Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                   Visibility="{Binding ShowIdleTime, Converter={StaticResource BoolToVis}}"/>
-                        <TextBlock Text="{Binding WeatherText}" FontSize="12" Margin="10,5,0,0" VerticalAlignment="Center"
-                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
-                                   Visibility="{Binding ShowIdleWeather, Converter={StaticResource BoolToVis}}"/>
-                    </StackPanel>
+
                 </Grid>
 
                 <!-- ═══ 展开内容 ═══ -->

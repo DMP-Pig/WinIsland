@@ -84,6 +84,7 @@ public sealed class AppSettings
 
     // ── 组件（灵动岛显示内容，Idle/Playing 可分别勾选）──
     public ComponentFlags Components { get; set; } = new();
+    public string WidgetOrder { get; set; } = "Time,Weather"; // 组件摆放顺序（逗号分隔的键）
     // ── Notifications ──────────────────────────────────────────
     public bool BluetoothNotifyEnabled { get; set; } = false;   // 蓝牙设备连接/断开提示
     public bool NotificationTakeoverEnabled { get; set; } = false; // 接管 Windows 通知（尽力而为）

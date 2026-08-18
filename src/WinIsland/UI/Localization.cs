@@ -110,7 +110,8 @@ public static class Localization
         ["Comp_Artist"] = "歌手",
         ["Comp_Lyrics"] = "歌词",
         ["Comp_Progress"] = "进度条",
-        ["Comp_Note"] = "勾选要在灵动岛上显示的内容；同一组件在「无歌曲播放时」和「有歌曲播放时」可以同时勾选。天气组件需要填写城市并联网获取。",    };
+        ["Comp_Note"] = "勾选要在灵动岛上显示的内容；同一组件在「无歌曲播放时」和「有歌曲播放时」可以同时勾选。用▲▼调整时间/天气的摆放顺序。天气组件需要填写城市并联网获取。",        ["Comp_OrderHint"] = "拖动调整摆放顺序",
+    };
 
     private static readonly Dictionary<string, string> En = new()
     {
@@ -215,7 +216,8 @@ public static class Localization
         ["Comp_Artist"] = "Artist",
         ["Comp_Lyrics"] = "Lyrics",
         ["Comp_Progress"] = "Progress bar",
-        ["Comp_Note"] = "Check what to show on the island; a component can be shown both when idle and when playing. Weather needs a city and network.",    };
+        ["Comp_Note"] = "Check what to show on the island; a component can be shown both when idle and when playing. Use up/down to reorder time/weather. Weather needs a city and network.",        ["Comp_OrderHint"] = "Drag to reorder",
+    };
 
     private static string _current = "zh-CN";
 

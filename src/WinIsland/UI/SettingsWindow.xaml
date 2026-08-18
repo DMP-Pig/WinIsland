@@ -467,6 +467,25 @@
                                 <TextBlock x:Name="LblCompPlaying" Grid.Column="2" Text="有歌曲播放时" HorizontalAlignment="Center" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </Grid>
+                            <TextBlock x:Name="LblCompOrder" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="2,2,2,4"/>
+                            <Border CornerRadius="12" Background="{DynamicResource ControlBgBrush}"
+                                    BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Padding="8,6" Margin="0,0,0,8" AllowDrop="True"
+                                    PreviewDrop="OrderStrip_Drop" PreviewDragOver="OrderStrip_PreviewDragOver">
+                                <ItemsControl x:Name="OrderStrip" ItemsSource="{Binding Components}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border x:Name="Chip" CornerRadius="9" Padding="16,7" Margin="4" Cursor="Hand"
+                                                    Background="{DynamicResource ControlBgBrush}" BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1"
+                                                    PreviewMouseLeftButtonDown="Chip_PreviewMouseLeftButtonDown" PreviewMouseMove="Chip_PreviewMouseMove">
+                                                <TextBlock Text="{Binding Name}"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
                             <Border CornerRadius="12" Background="{DynamicResource ControlBgBrush}"
                                     BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Padding="4,2">
                                 <ItemsControl ItemsSource="{Binding Components}">

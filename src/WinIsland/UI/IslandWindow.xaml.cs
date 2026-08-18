@@ -425,7 +425,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, 400, smooth, contentDelay);
 
         // 胶囊标题：展开后淡出（由大图区接管）
-        AddAnim(sb, PillText, UIElement.OpacityProperty, expand ? 0 : 1, 180, smooth, TimeSpan.FromMilliseconds(expand ? 40 : 0));
+        AddAnim(sb, SongInfo, UIElement.OpacityProperty, expand ? 0 : 1, 180, smooth, TimeSpan.FromMilliseconds(expand ? 40 : 0));
 
         sb.Completed += (_, _) =>
         {

@@ -1,7 +1,12 @@
 ﻿using System.IO;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Threading;
+using Point = System.Windows.Point;
+using DragEventArgs = System.Windows.DragEventArgs;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using DragDropEffects = System.Windows.DragDropEffects;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Microsoft.Win32;
@@ -159,6 +164,7 @@ public partial class SettingsWindow : Window
         LblCompIdle.Text = Localization.Get("Comp_Header_Idle");
         LblCompPlaying.Text = Localization.Get("Comp_Header_Playing");
         TxtCompNote.Text = Localization.Get("Comp_Note");
+        LblCompOrder.Text = Localization.Get("Comp_OrderHint");
         TabLyrics.Header = Localization.Get("Settings_Lyrics");
         TabCider.Header = Localization.Get("Settings_Cider");
         TabAbout.Header = Localization.Get("Settings_About");
@@ -218,6 +224,53 @@ public partial class SettingsWindow : Window
 
     }
 
+    // ── 组件顺序：横向拖拽排序 ──
+    private Point _dragStart;
+    private ComponentRow? _dragRow;
+    private bool _dragActive;
+
+    private void Chip_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _dragStart = e.GetPosition(null);
+        _dragRow = (sender as FrameworkElement)?.DataContext as ComponentRow;
+        _dragActive = true;
+    }
+
+    private void Chip_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_dragActive || _dragRow is null) return;
+        var pos = e.GetPosition(null);
+        if (Math.Abs(pos.X - _dragStart.X) < 4 && Math.Abs(pos.Y - _dragStart.Y) < 4) return;
+        _dragActive = false;
+        try { DragDrop.DoDragDrop((DependencyObject)sender, _dragRow, DragDropEffects.Move); }
+        catch { /* ignore */ }
+    }
+
+    private void OrderStrip_PreviewDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = DragDropEffects.Move;
+        e.Handled = true;
+    }
+
+    private void OrderStrip_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(typeof(ComponentRow)) && e.Data.GetData(typeof(ComponentRow)) is ComponentRow row
+            && sender is System.Windows.Controls.ItemsControl ic)
+        {
+            var x = e.GetPosition(ic).X;
+            var target = _vm.Components.Count - 1;
+            for (var i = 0; i < _vm.Components.Count; i++)
+            {
+                if (ic.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement fe)
+                {
+                    var mid = fe.TransformToAncestor(ic).Transform(new Point(fe.ActualWidth / 2, 0)).X;
+                    if (x < mid) { target = i; break; }
+                    target = i;
+                }
+            }
+            _vm.MoveComponentTo(row, target);
+        }
+    }
     private void ColorSwatch_Click(object sender, RoutedEventArgs e)
     {
         if (sender is System.Windows.Controls.Button { Tag: string color })

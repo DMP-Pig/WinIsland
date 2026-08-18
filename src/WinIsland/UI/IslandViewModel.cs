@@ -238,14 +238,33 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private string _weatherText = string.Empty;
     public string WeatherText { get => _weatherText; private set => Set(ref _weatherText, value); }
 
-    // 组件显示（根据当前是播放还是空闲，读取 Components 对应列）
-    public bool ShowCover => HasMedia ? _settings.Current.Components.CoverWhenPlaying : _settings.Current.Components.CoverWhenIdle;
-    public bool ShowTitle => HasMedia ? _settings.Current.Components.TitleWhenPlaying : _settings.Current.Components.TitleWhenIdle;
-    public bool ShowArtist => HasMedia ? _settings.Current.Components.ArtistWhenPlaying : _settings.Current.Components.ArtistWhenIdle;
-    public bool ShowLyrics => HasMedia ? _settings.Current.Components.LyricsWhenPlaying : _settings.Current.Components.LyricsWhenIdle;
-    public bool ShowCompactProgress => HasMedia ? _settings.Current.Components.ProgressWhenPlaying : _settings.Current.Components.ProgressWhenIdle;
+    // 歌曲相关组件（封面/歌名/歌手/歌词/进度条）：只在播放时显示，固定开启
+    public bool ShowCover => HasMedia;
+    public bool ShowTitle => HasMedia;
+    public bool ShowArtist => HasMedia;
+    public bool ShowLyrics => HasMedia;
+    public bool ShowCompactProgress => HasMedia;
+
+    // 时间/天气：空闲与播放分别按勾选显示
     public bool ShowIdleTime => HasMedia ? _settings.Current.Components.TimeWhenPlaying : _settings.Current.Components.TimeWhenIdle;
     public bool ShowIdleWeather => HasMedia ? _settings.Current.Components.WeatherWhenPlaying : _settings.Current.Components.WeatherWhenIdle;
+    public bool ShowAnyWidget => ShowIdleTime || ShowIdleWeather;
+
+    // 组件摆放顺序（WidgetOrder 中的下标决定左右列）
+    public int TimeColumn => WidgetColumn("Time");
+    public int WeatherColumn => WidgetColumn("Weather");
+
+    private int WidgetColumn(string key)
+    {
+        var order = (_settings.Current.WidgetOrder ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var i = Array.IndexOf(order, key);
+        if (i < 0) i = key == "Time" ? 0 : 1;
+        return i % 2;
+    }
+
+    // 播放时空间紧张，时间用小字号；空闲用大字号
+    public double WidgetTimeFontSize => HasMedia ? 14 : 22;
 
     // ── Visibility / expansion ─────────────────────────────────
     public bool IsExpanded
@@ -599,6 +618,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowCompactProgress));
         OnPropertyChanged(nameof(ShowIdleTime));
         OnPropertyChanged(nameof(ShowIdleWeather));
+        OnPropertyChanged(nameof(ShowAnyWidget));
+        OnPropertyChanged(nameof(TimeColumn));
+        OnPropertyChanged(nameof(WeatherColumn));
+        OnPropertyChanged(nameof(WidgetTimeFontSize));
 
         IsVisible = show;
     }
