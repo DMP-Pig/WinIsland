@@ -10,7 +10,7 @@ namespace WinIsland.UI;
 
 /// <summary>
 /// 右上角弹出的玻璃通知横幅。
-/// 不加亚克力 DWM（避免透明窗口黑块）；整个窗口从屏幕右侧滑入，卡片完整、不贴边。
+/// 弹出：整个窗口从屏幕右侧滑入 + 淡入；消失：反向滑出到右侧 + 淡出。
 /// </summary>
 public partial class NotificationBannerWindow : Window
 {
@@ -18,6 +18,7 @@ public partial class NotificationBannerWindow : Window
     private readonly System.Windows.Forms.Screen _screen;
     private readonly int _stackIndex;
     private double _finalLeft;
+    private bool _closing;
 
     public NotificationBannerWindow(string title, string body, string glyph, int timeoutSeconds,
         System.Windows.Forms.Screen screen, int stackIndex)
@@ -30,33 +31,32 @@ public partial class NotificationBannerWindow : Window
         IconText.Text = glyph;
 
         var area = _screen.WorkingArea;
-        _finalLeft = area.Right - Width - 24; // 最终：距右边缘 24px（不贴边）
-        Left = area.Right + 8;                // 起始：完全在屏幕右侧外
+        _finalLeft = area.Right - Width - 24;
+        Left = area.Right + 8;      // 起始：完全在屏幕右侧外
         Card.Opacity = 0;
 
         ContentRendered += (_, _) =>
         {
-            // 稍往下一点（顶部 16px 起），带堆叠偏移
             Top = area.Top + 16 + _stackIndex * (ActualHeight + 12);
             AnimateIn();
         };
 
         _closeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(Math.Max(1, timeoutSeconds)) };
-        _closeTimer.Tick += (_, _) => { _closeTimer.Stop(); Close(); };
+        _closeTimer.Tick += (_, _) => CloseWithAnimation();
         _closeTimer.Start();
     }
 
-    /// <summary>整个窗口从右侧滑入 + 卡片淡入。</summary>
+    /// <summary>从右侧滑入 + 淡入（放慢，约 0.5s）。</summary>
     private void AnimateIn()
     {
         var sb = new Storyboard();
         var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
 
-        var animLeft = new DoubleAnimation(_finalLeft, TimeSpan.FromMilliseconds(320)) { EasingFunction = smooth };
+        var animLeft = new DoubleAnimation(_finalLeft, TimeSpan.FromMilliseconds(480)) { EasingFunction = smooth };
         Storyboard.SetTarget(animLeft, this);
         Storyboard.SetTargetProperty(animLeft, new PropertyPath(Window.LeftProperty));
 
-        var animO = new DoubleAnimation(1, TimeSpan.FromMilliseconds(220)) { EasingFunction = smooth };
+        var animO = new DoubleAnimation(1, TimeSpan.FromMilliseconds(320)) { EasingFunction = smooth };
         Storyboard.SetTarget(animO, Card);
         Storyboard.SetTargetProperty(animO, new PropertyPath(UIElement.OpacityProperty));
 
@@ -65,7 +65,32 @@ public partial class NotificationBannerWindow : Window
         sb.Begin();
     }
 
-    private void Card_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => Close();
+    /// <summary>反向动画滑出到右侧 + 淡出，然后关闭。</summary>
+    private void CloseWithAnimation()
+    {
+        if (_closing) return;
+        _closing = true;
+        _closeTimer.Stop();
+
+        var area = _screen.WorkingArea;
+        var sb = new Storyboard();
+        var easeIn = new CubicEase { EasingMode = EasingMode.EaseIn };
+
+        var animLeft = new DoubleAnimation(area.Right + 8, TimeSpan.FromMilliseconds(420)) { EasingFunction = easeIn };
+        Storyboard.SetTarget(animLeft, this);
+        Storyboard.SetTargetProperty(animLeft, new PropertyPath(Window.LeftProperty));
+
+        var animO = new DoubleAnimation(0, TimeSpan.FromMilliseconds(280)) { EasingFunction = easeIn };
+        Storyboard.SetTarget(animO, Card);
+        Storyboard.SetTargetProperty(animO, new PropertyPath(UIElement.OpacityProperty));
+
+        sb.Children.Add(animLeft);
+        sb.Children.Add(animO);
+        sb.Completed += (_, _) => Close();
+        sb.Begin();
+    }
+
+    private void Card_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => CloseWithAnimation();
 
     protected override void OnClosed(EventArgs e)
     {
