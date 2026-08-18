@@ -424,8 +424,12 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, 400, spring, contentDelay);
         AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, 400, smooth, contentDelay);
 
-        // 胶囊标题：展开后淡出（由大图区接管）
-        AddAnim(sb, SongInfo, UIElement.OpacityProperty, expand ? 0 : 1, 180, smooth, TimeSpan.FromMilliseconds(expand ? 40 : 0));
+        // 胶囊标题：展开后淡出（由大图区接管）；收起时立即恢复完全不透明，
+        // 避免缩回瞬间胶囊内容还在淡入而出现“空内容”。
+        if (expand)
+            AddAnim(sb, SongInfo, UIElement.OpacityProperty, 0, 180, smooth, TimeSpan.FromMilliseconds(40));
+        else
+            SongInfo.Opacity = 1;
 
         sb.Completed += (_, _) =>
         {
