@@ -385,6 +385,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         // 展开时收起胶囊行（紧凑封面/按钮不叠加在大封面上方），行高归零，再测量高度
         ContentGrid.RowDefinitions[0].Height = GridLength.Auto;
         ContentGrid.VerticalAlignment = VerticalAlignment.Center;
+        PillRow.BeginAnimation(UIElement.OpacityProperty, null);
+        ExpandedContent.BeginAnimation(UIElement.OpacityProperty, null);
         PillRow.Visibility = Visibility.Collapsed;
         ExpandedContent.Visibility = Visibility.Visible;
         ContentGrid.Measure(new System.Windows.Size(ExpandedWidth - 24, double.PositiveInfinity));
@@ -397,9 +399,16 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         // 先恢复胶囊行（紧凑行占满并垂直居中），再缩回紧凑尺寸
         ContentGrid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Star);
         ContentGrid.VerticalAlignment = VerticalAlignment.Top; // 收回时胶囊贴顶，避免被居中裁切到卡片外
+
+        // 清除展开动画的残留（HoldEnd 会把 PillRow.Opacity 锁在 0，直接设本地值无效）
+        PillRow.BeginAnimation(UIElement.OpacityProperty, null);
+        ExpandedContent.BeginAnimation(UIElement.OpacityProperty, null);
         PillRow.Visibility = Visibility.Visible;
+        PillRow.Opacity = 1;
+        ExpandedContent.Visibility = Visibility.Collapsed; // 立即隐藏展开内容，避免残留覆盖
+
         AnimateCard(CompactWidth, CompactHeight, expand: false,
-            onCompleted: () => ExpandedContent.Visibility = Visibility.Collapsed);
+            onCompleted: () => { Card.Width = CompactWidth; Card.Height = CompactHeight; });
     }
 
     /// <summary>
