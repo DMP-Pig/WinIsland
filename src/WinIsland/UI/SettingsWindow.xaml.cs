@@ -114,6 +114,12 @@ public partial class SettingsWindow : Window
         LblCompactWidth.Text = Localization.Get("Appearance_CompactWidth");
         LblCompactHeight.Text = Localization.Get("Appearance_CompactHeight");
         LblExpandedWidth.Text = Localization.Get("Appearance_ExpandedWidth");
+        LblWidgets.Text = Localization.Get("Appearance_Widgets");
+        ChkShowWidgets.Content = Localization.Get("Appearance_ShowWidgets");
+        ChkWidgetTime.Content = Localization.Get("Appearance_WidgetTime");
+        ChkWidgetWeather.Content = Localization.Get("Appearance_WidgetWeather");
+        LblWeatherCity.Text = Localization.Get("Appearance_WeatherCity");
+        TxtWidgetNote.Text = Localization.Get("Appearance_WidgetNote");
         LblCompact.Text = Localization.Get("Appearance_Compact");
         LblLyricsFolder.Text = Localization.Get("Lyrics_Folder");
         LblCiderPort.Text = Localization.Get("Cider_Port");

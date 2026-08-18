@@ -92,7 +92,12 @@ public static class Localization
         ["Appearance_IslandSize"] = "灵动岛尺寸",
         ["Appearance_CompactWidth"] = "紧凑宽度",
         ["Appearance_CompactHeight"] = "紧凑高度",
-        ["Appearance_ExpandedWidth"] = "展开宽度",    };
+        ["Appearance_ExpandedWidth"] = "展开宽度",        ["Appearance_Widgets"] = "无媒体时组件",
+        ["Appearance_ShowWidgets"] = "无媒体播放时显示组件（时间 / 天气）",
+        ["Appearance_WidgetTime"] = "显示时间",
+        ["Appearance_WidgetWeather"] = "显示天气",
+        ["Appearance_WeatherCity"] = "天气城市（需联网，Open-Meteo）",
+        ["Appearance_WidgetNote"] = "天气使用 Open-Meteo 免费接口，仅在你开启并填写城市时联网；城市名可用中文或英文。",    };
 
     private static readonly Dictionary<string, string> En = new()
     {
@@ -179,7 +184,12 @@ public static class Localization
         ["Appearance_IslandSize"] = "Island size",
         ["Appearance_CompactWidth"] = "Compact width",
         ["Appearance_CompactHeight"] = "Compact height",
-        ["Appearance_ExpandedWidth"] = "Expanded width",    };
+        ["Appearance_ExpandedWidth"] = "Expanded width",        ["Appearance_Widgets"] = "Idle widgets",
+        ["Appearance_ShowWidgets"] = "Show widgets when no media (time / weather)",
+        ["Appearance_WidgetTime"] = "Show time",
+        ["Appearance_WidgetWeather"] = "Show weather",
+        ["Appearance_WeatherCity"] = "Weather city (requires network, Open-Meteo)",
+        ["Appearance_WidgetNote"] = "Weather uses the free Open-Meteo API; it only goes online when enabled with a city.",    };
 
     private static string _current = "zh-CN";
 
