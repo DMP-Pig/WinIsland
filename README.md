@@ -1,10 +1,7 @@
 ﻿# WinIsland — Windows 灵动岛
 
-> macOS Dynamic Island 风格的 Windows 桌面悬浮窗：媒体控制、同步歌词、系统托盘常驻。
+> macOS Dynamic Island 风格的 Windows 桌面悬浮窗：媒体控制、同步歌词、自定义组件、通知中心、系统托盘常驻。
 > 基于 **.NET 8 + WPF**，适配 Windows 11（兼容 Windows 10，1809+）。
-
-
-> 截图由 `--demo` 模式生成（无真实媒体时也可预览界面）。
 
 ---
 
@@ -46,15 +43,31 @@
 - **系统托盘**：常驻图标，右键菜单（显示/隐藏、独立歌词窗口、开机自启、设置、退出），双击切换显示。
 
 ### P1（已实现）
-- 多显示器：主屏幕 / 所有屏幕 / 指定屏幕编号。
-- 高 DPI：PerMonitorV2，120/150/200% 缩放下不错位。
-- 自定义配置：位置、偏移、不透明度、主题色、紧凑模式内容、无媒体时隐藏等。
-- 无媒体播放时自动隐藏灵动岛（可关闭）。
+- **组件系统（自定义灵动岛内容）**：设置 → 组件，可分别勾选「无歌曲播放时 / 有歌曲播放时」显示哪些组件，并拖拽调整摆放顺序：
+  - 时间、天气（Open-Meteo，需填写城市并联网）、日期、CPU 占用、内存占用、网络速度、电量；
+  - 歌曲信息（封面/歌名/歌手/歌词/进度条，仅播放时显示，顺序条中始终保留）。
+  - 顺序条只显示已勾选的组件；列表与顺序条支持鼠标滚轮和滚动条。
+- **展开卡片内容自定义**：封面+标题、进度条、控制按钮与音量、歌词区可分别开关。
+- **通知系统（右上角玻璃横幅，带 macOS 风格滑入/滑出动画）**：
+  - 蓝牙设备连接/断开提示；
+  - 接管 Windows 通知（尽力而为，UI 自动化镜像通知中心）；
+  - 正在播放通知（切歌时弹出）；
+  - 低电量提醒（阈值可调，每充电周期提醒一次）；
+  - 通知历史：最近 50 条记录，设置中可查看/清空。
+- **全局快捷键**：`Ctrl+Alt+P` 播放/暂停 · `Ctrl+Alt+←/→` 上一首/下一首 · `Ctrl+Alt+I` 显示/隐藏（可关闭）。
+- **减少动态效果**（无障碍 / 省电）：一键关闭弹簧动画，瞬时切换。
+- **灵动岛尺寸调节**：设置 → 外观，可调紧凑长度/宽度、展开长度。
+- **灵动岛常驻**：即使无媒体播放也始终显示（显示配置的组件）。
+- **多显示器**：主屏幕 / 所有屏幕 / 指定屏幕编号。
+- **高 DPI**：PerMonitorV2，120/150/200% 缩放下不错位。
+- **自定义配置**：位置、偏移、不透明度、主题色、紧凑模式内容、无媒体时隐藏等，改动即时生效。
+- **无媒体播放时自动隐藏灵动岛**（可关闭）。
 
-### P2（部分实现）
+### P2（已实现）
 - 简体中文 + English 界面切换。
 - 导出 / 导入 JSON 配置文件。
-- 尚未实现：Windows 通知接入（来电/日历/电量）。
+- Windows 通知接入（蓝牙 / 系统通知接管 / 正在播放 / 低电量）。
+- 待定：来电 / 日历提醒（未实现）。
 
 ---
 
@@ -94,6 +107,15 @@ src/WinIsland/
 │   ├── AppSettings.cs         # JSON 配置读写（%APPDATA%\WinIsland\settings.json）
 │   ├── SingleInstance.cs      # 命名互斥体 + 命名管道（二次启动显示灵动岛）
 │   ├── AutoStart.cs           # HKCU Run 键自启
+│   ├── GlobalHotkeyService.cs # 全局快捷键（Win32 RegisterHotKey）
+│   ├── NotificationService.cs # 右上角玻璃通知横幅
+│   ├── NotificationHistoryService.cs # 通知历史（最近 50 条，JSON 持久化）
+│   ├── BluetoothMonitor.cs    # 蓝牙设备连接/断开监控
+│   ├── SystemNotificationMonitor.cs # 接管 Windows 通知（UI 自动化镜像）
+│   ├── MediaAppRegistry.cs    # 媒体程序注册表（启用/禁用/排序）
+│   ├── WeatherService.cs      # 天气组件（Open-Meteo，需联网）
+│   ├── PlaybackStateStore.cs  # 播放位置持久化（退出/暂停后恢复）
+│   ├── CiderTokenAutoDetect.cs # Cider API Token 自动检测
 │   └── AppLogger.cs           # 轻量文件日志
 ├── UI/
 │   ├── IslandWindow.xaml(.cs) # 灵动岛窗口（动画、亚克力、定位、悬停交互）
@@ -119,7 +141,7 @@ build/
 
 ## 快速开始
 
-> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.3/win-x64/WinIsland.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x86 / win-arm64 及 Windows 安装包）。
+> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.3/win-x64/WinIsland.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x64 / win-arm64 便携版及通用安装包）。
 ## 快速开始
 
 ### 环境要求
@@ -149,9 +171,9 @@ dotnet run --project src\WinIsland -c Debug
 ### 安装包（可选）
 安装 [Inno Setup 6](https://jrsoftware.org/isinfo.php) 后：
 ```powershell
-iscc.exe build\release-1.0.1.iss
+iscc.exe build\release-1.0.3.iss
 ```
-生成 `releases\<版本>\WinIsland-Setup-<版本>.exe`（如 `WinIsland-Setup-1.0.3-win-x64.exe`）。
+生成 `releases\1.0.3\WinIsland-Setup-1.0.3.exe`（通用安装包，同时支持 x64 与 ARM64，自动按架构安装）。
 
 ---
 
@@ -162,9 +184,11 @@ iscc.exe build\release-1.0.1.iss
    - 网易云、QQ音乐、Spotify、Apple Music 官方版等 → 自动通过系统媒体会话显示；
    - Cider → 详见 [Cider 集成](#cider-集成)；
    - 其它播放器 → 兜底窗口标题识别（仅展示）。
-3. 悬停灵动岛展开完整卡片：进度拖拽 seek、播放控制、音量、同步歌词。
+3. **点击**灵动岛展开完整卡片（悬停不展开）：进度拖拽 seek、播放控制、音量、同步歌词；再点一下收回（移出卡片后 700ms 自动收回）。
 4. 托盘菜单：显示/隐藏、独立歌词窗口、开机自启、设置、退出。**关闭主窗口不会退出进程**（仅托盘化）。
-5. 常用命令行参数：
+5. 全局快捷键：`Ctrl+Alt+P` 播放/暂停 · `Ctrl+Alt+←/→` 上一首/下一首 · `Ctrl+Alt+I` 显示/隐藏灵动岛（可在设置中关闭）。
+6. 通知与提示（蓝牙 / Windows 通知 / 正在播放 / 低电量）默认在屏幕右上角弹出玻璃横幅，可在设置 → 通知中开关。
+7. 常用命令行参数：
    ```powershell
    WinIsland.exe --demo       # 演示模式（无媒体时预览界面 + 示例歌词）
    WinIsland.exe --diagnose   # 输出诊断报告到 %APPDATA%\WinIsland\diagnostics.txt
@@ -175,7 +199,7 @@ iscc.exe build\release-1.0.1.iss
 
 ## 配置项说明
 
-配置文件：`%APPDATA%\WinIsland\settings.json`（JSON，修改后重启生效；设置界面可导出/导入）。
+配置文件：`%APPDATA%\WinIsland\settings.json`（JSON；设置界面改动即时生效，可导出/导入）。
 
 | 键 | 默认 | 说明 |
 | --- | --- | --- |
@@ -200,8 +224,25 @@ iscc.exe build\release-1.0.1.iss
 | `StandaloneLyricsWindow` | `false` | 独立歌词小窗 |
 | `KaraokeHighlight` | `true` | 逐字卡拉OK高亮（当前句按字符点亮） |
 | `UseSystemVolume` | `true` | 非 Cider 来源时用系统音量条 |
+| `IsLocked` | `true` | 上锁（不可拖动）；右键菜单可解锁/上锁/居中对齐 |
+| `IslandAlwaysVisible` | `false` | 灵动岛常驻（无媒体时也显示组件） |
+| `ShowMediaInfo` | `true` | 显示媒体播放信息（歌名/封面/歌词等） |
+| `ReduceMotion` | `false` | 减少动态效果（关闭弹簧动画，无障碍/省电） |
+| `GlobalHotkeysEnabled` | `true` | 全局快捷键开关 |
+| `LowBatteryThreshold` | `20` | 低电量提醒阈值（%），0 关闭 |
+| `ExpandedShowArtTitle/Progress/Controls/Lyrics` | `true` | 展开卡片各区块（封面+标题/进度条/控制与音量/歌词）开关 |
+| `Components` | 对象 | 组件勾选：`Time/Weather/Date/Cpu/Ram/Net/Battery` 各有 `WhenIdle`/`WhenPlaying` 两列；`Cover/Title/Artist/Lyrics/Progress` 播放时显示 |
+| `WidgetOrder` | `Time,Weather,...` | 组件摆放顺序（逗号分隔键名，含 `Song`） |
+| `MediaApps` | `[]` | 媒体程序启用/禁用与优先级（空=全部启用） |
+| `CompactWidth` / `CompactHeight` | `360` / `72` | 紧凑长度 / 紧凑宽度 |
+| `ExpandedWidth` / `MaxExpandedHeight` | `400` / `384` | 展开长度 / 展开最大高度 |
+| `BluetoothNotifyEnabled` | `false` | 蓝牙连接/断开提示 |
+| `NotificationTakeoverEnabled` | `false` | 接管 Windows 通知（尽力而为） |
+| `NotificationTimeoutSeconds` | `6` | 通知横幅显示时长（秒） |
+| `NotificationPosition` | `TopRight` | 通知弹出位置（右上角） |
 
 ---
+
 
 ## Cider 集成
 
@@ -239,13 +280,17 @@ Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已�
 
 ---
 
-## 通知与提示（1.0.2beta1 起）
+## 通知与提示（1.0.2 起，1.0.3 完善）
 
-- **灵动岛尺寸调节**：设置 → 外观，可调紧凑宽度/高度、展开宽度。
-- **蓝牙连接提示**：设置 → 通知，开启后蓝牙设备连接/断开时在屏幕右上角弹出玻璃横幅。
-- **接管 Windows 通知**：设置 → 通知，开启后通过 UI 自动化尽力镜像通知中心内容到右上角横幅。
+所有通知均为**右上角玻璃横幅**，带 macOS 风格滑入（从右侧滑出 + 淡入）与滑出动画，显示时长可配置（3~15 秒）。
+
+- **蓝牙连接提示**：设置 → 通知，开启后蓝牙设备连接/断开时弹出。
+- **接管 Windows 通知**：设置 → 通知，开启后通过 UI 自动化尽力镜像通知中心内容（QQ 等应用的通知）到右上角横幅。
   > ⚠️ Windows 未提供公开的“拦截其它应用通知”API，此功能为尽力而为（best effort），部分通知可能无法捕获；不影响主流程。
-- **通知显示时长**可配置（3~15 秒）；横幅默认在屏幕右上角弹出。
+- **正在播放通知**：切换歌曲时自动弹出「正在播放 - 歌名」横幅（1.0.3 起）。
+- **低电量提醒**：电量低于阈值（默认 20%，0~50 可调）时弹出，每个充电周期提醒一次（1.0.3 起）。
+- **通知历史**：最近 50 条通知记录，设置 → 通知 页可查看 / 清空（1.0.3 起）。
+- **灵动岛尺寸调节**：设置 → 外观，可调紧凑长度/宽度、展开长度。
 
 ---
 ## 播放状态恢复
@@ -285,7 +330,7 @@ Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已�
 
 - **逐字卡拉OK依赖歌词来源与进度**：无歌词或播放器不提供真实进度时，逐字效果降级为整句高亮（本地时钟推进）。
 - **播放器偶发回退进度**（如 Cider/SMTC 瞬间上报 0 或过期位置）：已做位置守卫——瞬间回退会被忽略，保持当前进度推进，不会把歌词/进度条打回开头；持续回退超过约 4 秒才判定为真正的重播或播放器端 seek。
-- **Windows 通知接入**（来电/日历/低电量）：未实现（P2 可选）。低电量提示实现成本低但价值有限，暂缓。
+- **来电 / 日历提醒**：未实现（P2 可选）。已实现：蓝牙提示、Windows 通知接管（尽力而为）、正在播放通知、低电量提醒。
 - **SMTC 覆盖范围**：依赖播放器是否注册全局媒体会话；个别旧播放器不注册时仅能通过窗口标题兜底（无控制按钮）。
 - **Cider 1.x（端口 9000 旧 API）**：未适配，仅支持 2.x 及以上。
 
@@ -298,7 +343,7 @@ Cider（Apple Music 第三方客户端）提供本地 HTTP API。WinIsland 已�
 | 场景 | 状态 |
 | --- | --- |
 | SMTC 会话枚举（`--diagnose` 可见会话列表） | ✅ 已实测（检测到 Bilibili 等真实会话） |
-| 灵动岛自动显示/隐藏、悬停展开收起、进度插值 | ✅ 已实测（demo + 真实暂停会话） |
+| 灵动岛自动显示/隐藏、点击展开收起、进度插值 | ✅ 已实测（demo + 真实暂停会话） |
 | 播放/暂停/切歌/seek（真实播放器） | ⚠️ 需配合测试（代码路径与 SMTC 控制 API 直接对应） |
 | Cider API 连接与控制 | ⚠️ 需本机安装 Cider 并开启外部控制后验证 |
 | 本地 .lrc 歌词同步滚动 | ✅ LRC 解析已单测；端到端需真实歌曲验证 |
