@@ -27,5 +27,6 @@
 > 1.0.2 已包含：灵动岛尺寸调节、蓝牙连接提示、接管 Windows 通知（右上角弹出 + macOS 风格动画）、现代化设置界面、组件系统（勾选 + 顺序拖拽）、媒体来源选择与顺序等。
 
 ## 📦 下载
-- **Windows x64**：便携版（zip） / 安装包（Setup exe）
-- **Windows ARM64**：便携版（zip） / 安装包（Setup exe）
+- **Windows x64 便携版**：`WinIsland-1.0.3-win-x64.zip`（免安装，解压即用）
+- **Windows ARM64 便携版**：`WinIsland-1.0.3-win-arm64.zip`（免安装，解压即用）
+- **Windows 通用安装包**：`WinIsland-Setup-1.0.3.exe`（同时支持 x64 与 ARM64，自动按架构安装）
