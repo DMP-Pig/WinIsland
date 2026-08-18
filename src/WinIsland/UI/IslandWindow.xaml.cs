@@ -244,19 +244,32 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private void ApplyMenuTheme()
     {
         void Add(string key, Brush b) { b.Freeze(); Resources[key] = b; }
+        SolidColorBrush bg, border, text, hover;
         if (_theme.IsDark)
         {
-            Add("MenuBgBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xEE, 0x1B, 0x1B, 0x26)));
-            Add("MenuBorderBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x59, 0xFF, 0xFF, 0xFF)));
-            Add("MenuTextBrush", new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF2, 0xF2, 0xF7)));
-            Add("MenuHoverBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)));
+            bg = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xEE, 0x1B, 0x1B, 0x26));
+            border = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x59, 0xFF, 0xFF, 0xFF));
+            text = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF2, 0xF2, 0xF7));
+            hover = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF));
         }
         else
         {
-            Add("MenuBgBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xEE, 0xF5, 0xF5, 0xFA)));
-            Add("MenuBorderBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF)));
-            Add("MenuTextBrush", new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1D, 0x1D, 0x24)));
-            Add("MenuHoverBrush", new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x18, 0x00, 0x00, 0x00)));
+            bg = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xEE, 0xF5, 0xF5, 0xFA));
+            border = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF));
+            text = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1D, 0x1D, 0x24));
+            hover = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x18, 0x00, 0x00, 0x00));
+        }
+        Add("MenuBgBrush", bg);
+        Add("MenuBorderBrush", border);
+        Add("MenuTextBrush", text);
+        Add("MenuHoverBrush", hover);
+
+        // 直接设置菜单背景/前景，保证即使资源查找失败也不会出现白底
+        if (IslandMenu is not null)
+        {
+            IslandMenu.Background = bg;
+            IslandMenu.Foreground = text;
+            IslandMenu.BorderBrush = border;
         }
     }
     private void ApplyCardAlignment()

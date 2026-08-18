@@ -179,6 +179,14 @@ public sealed class TrayIcon : IDisposable
             e.Graphics.FillRectangle(b, e.AffectedBounds);
         }
 
+        // 覆盖图标区（左侧）渲染，避免默认浅色渐变造成“大白块”
+        protected override void OnRenderImageMargin(System.Windows.Forms.ToolStripRenderEventArgs e)
+        {
+            var c = _dark ? System.Drawing.Color.FromArgb(0xFF, 0x1B, 0x1B, 0x26) : System.Drawing.Color.FromArgb(0xFF, 0xF5, 0xF5, 0xFA);
+            using var b = new System.Drawing.SolidBrush(c);
+            e.Graphics.FillRectangle(b, e.AffectedBounds);
+        }
+
         protected override void OnRenderMenuItemBackground(System.Windows.Forms.ToolStripItemRenderEventArgs e)
         {
             if (e.Item.Selected || e.Item.Pressed)
