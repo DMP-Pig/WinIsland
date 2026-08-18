@@ -3,7 +3,6 @@
 > macOS Dynamic Island 风格的 Windows 桌面悬浮窗：媒体控制、同步歌词、系统托盘常驻。
 > 基于 **.NET 8 + WPF**，适配 Windows 11（兼容 Windows 10，1809+）。
 
-![compact](docs/screenshot-compact.png)  ![expanded](docs/screenshot-expanded.png)
 
 > 截图由 `--demo` 模式生成（无真实媒体时也可预览界面）。
 
