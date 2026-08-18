@@ -154,6 +154,11 @@ public partial class SettingsWindow : Window
         TabGeneral.Header = Localization.Get("Settings_General");
         TabAppearance.Header = Localization.Get("Settings_Appearance");
         TabMedia.Header = Localization.Get("Settings_Media");
+        TabComponents.Header = Localization.Get("Settings_Components");
+        LblCompName.Text = Localization.Get("Comp_Header_Name");
+        LblCompIdle.Text = Localization.Get("Comp_Header_Idle");
+        LblCompPlaying.Text = Localization.Get("Comp_Header_Playing");
+        TxtCompNote.Text = Localization.Get("Comp_Note");
         TabLyrics.Header = Localization.Get("Settings_Lyrics");
         TabCider.Header = Localization.Get("Settings_Cider");
         TabAbout.Header = Localization.Get("Settings_About");

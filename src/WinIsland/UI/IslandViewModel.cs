@@ -79,9 +79,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _widgetTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _widgetTimer.Tick += async (_, _) =>
         {
-            if (!ShowIdleWidgets) return;
-            if (_settings.Current.WidgetShowTime) ClockText = DateTime.Now.ToString("HH:mm");
-            if (_settings.Current.WidgetShowWeather && ++_weatherTick % 60 == 1)
+            if (!IsVisible) return;
+            ClockText = DateTime.Now.ToString("HH:mm");
+            if (ShowIdleWeather && ++_weatherTick % 60 == 1)
             {
                 var w = await _weather.GetWeatherAsync(_settings.Current.WeatherCity);
                 if (WeatherText != w) WeatherText = w ?? string.Empty;
@@ -237,6 +237,15 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
 
     private string _weatherText = string.Empty;
     public string WeatherText { get => _weatherText; private set => Set(ref _weatherText, value); }
+
+    // 组件显示（根据当前是播放还是空闲，读取 Components 对应列）
+    public bool ShowCover => HasMedia ? _settings.Current.Components.CoverWhenPlaying : _settings.Current.Components.CoverWhenIdle;
+    public bool ShowTitle => HasMedia ? _settings.Current.Components.TitleWhenPlaying : _settings.Current.Components.TitleWhenIdle;
+    public bool ShowArtist => HasMedia ? _settings.Current.Components.ArtistWhenPlaying : _settings.Current.Components.ArtistWhenIdle;
+    public bool ShowLyrics => HasMedia ? _settings.Current.Components.LyricsWhenPlaying : _settings.Current.Components.LyricsWhenIdle;
+    public bool ShowCompactProgress => HasMedia ? _settings.Current.Components.ProgressWhenPlaying : _settings.Current.Components.ProgressWhenIdle;
+    public bool ShowIdleTime => HasMedia ? _settings.Current.Components.TimeWhenPlaying : _settings.Current.Components.TimeWhenIdle;
+    public bool ShowIdleWeather => HasMedia ? _settings.Current.Components.WeatherWhenPlaying : _settings.Current.Components.WeatherWhenIdle;
 
     // ── Visibility / expansion ─────────────────────────────────
     public bool IsExpanded
@@ -568,18 +577,28 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         var hasMedia = _snapshot is not null && Status is PlaybackStatus.Playing or PlaybackStatus.Paused;
         HasMedia = hasMedia;
         var alwaysVisible = _settings.Current.IslandAlwaysVisible;
-        // 常驻或开启无媒体组件时，无媒体也显示（内容为时间/天气组件）
-        var showWidgets = !hasMedia && (_settings.Current.ShowWidgetsWhenNoMedia || alwaysVisible);
-        ShowIdleWidgets = showWidgets;
+        var comp = _settings.Current.Components;
+        // 空闲时是否有任意组件（或常驻/旧开关）需要显示
+        var anyIdleComp = comp.TimeWhenIdle || comp.WeatherWhenIdle || comp.CoverWhenIdle
+            || comp.TitleWhenIdle || comp.ArtistWhenIdle || comp.LyricsWhenIdle || comp.ProgressWhenIdle;
+        var showWidgets = !hasMedia && (_settings.Current.ShowWidgetsWhenNoMedia || alwaysVisible || anyIdleComp);
+        ShowIdleWidgets = !hasMedia; // 空闲面板可见性（内部按组件勾选）
 
         var show = !_userHidden && (hasMedia || showWidgets || !_settings.Current.HideWhenNoMedia);
         // 常驻时不因暂停而隐藏
         if (!alwaysVisible && hasMedia && Status == PlaybackStatus.Paused && !_settings.Current.ShowWhenPaused)
             show = false;
 
-        // 无媒体组件显示时，重置天气缓存城市（切换城市立即生效）
-        if (showWidgets) { ClockText = DateTime.Now.ToString("HH:mm"); }
-        else WeatherText = string.Empty;
+        if (!showWidgets) WeatherText = string.Empty;
+
+        // 通知界面组件可见性变化
+        OnPropertyChanged(nameof(ShowCover));
+        OnPropertyChanged(nameof(ShowTitle));
+        OnPropertyChanged(nameof(ShowArtist));
+        OnPropertyChanged(nameof(ShowLyrics));
+        OnPropertyChanged(nameof(ShowCompactProgress));
+        OnPropertyChanged(nameof(ShowIdleTime));
+        OnPropertyChanged(nameof(ShowIdleWeather));
 
         IsVisible = show;
     }
