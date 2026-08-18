@@ -258,10 +258,14 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     /// <summary>按 WidgetOrder 重建紧凑胶囊组件顺序（播放时含歌曲信息，空闲时去掉）。</summary>
     private void RebuildCompactItems()
     {
-        var order = (_settings.Current.WidgetOrder ?? "Time,Weather,Song")
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        // 读取顺序，并补齐缺失的已知组件（兼容旧配置里只有 Time,Weather 的情况）
+        var keys = (_settings.Current.WidgetOrder ?? "Time,Weather,Song")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        foreach (var known in new[] { "Time", "Weather", "Song" })
+            if (!keys.Contains(known)) keys.Add(known);
+
         var items = new List<IslandComponent>();
-        foreach (var key in order)
+        foreach (var key in keys)
         {
             if (key == "Time" && ShowIdleTime) items.Add(new IslandComponent("Time"));
             else if (key == "Weather" && ShowIdleWeather) items.Add(new IslandComponent("Weather"));
