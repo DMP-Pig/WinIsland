@@ -180,28 +180,28 @@
                                     <Border Width="40" Height="40" CornerRadius="12" Margin="0,0,10,0"
                                             Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
                                         <Grid>
-                                            <Image Source="{Binding Artwork, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="UniformToFill"
-                                                   Visibility="{Binding Artwork, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource NullToVis}}"/>
+                                            <Image Source="{Binding DataContext.Artwork, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="UniformToFill"
+                                                   Visibility="{Binding DataContext.Artwork, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource NullToVis}}"/>
                                             <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                       Visibility="{Binding Artwork, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource NullToVisInvert}}"/>
+                                                       Visibility="{Binding DataContext.Artwork, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource NullToVisInvert}}"/>
                                         </Grid>
                                     </Border>
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="13" FontWeight="SemiBold"
+                                        <TextBlock Text="{Binding DataContext.Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="13" FontWeight="SemiBold"
                                                    Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
                                                    TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Artist, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="11" Margin="0,1,0,0"
+                                        <TextBlock Text="{Binding DataContext.Artist, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="11" Margin="0,1,0,0"
                                                    Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <karaoke:KaraokeTextBlock
-                                            KaraokeText="{Binding CurrentLyricText, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            HighlightFraction="{Binding CompactHighlightFraction, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            IsPlaying="{Binding IsPlaying, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            KaraokeText="{Binding DataContext.CurrentLyricText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            HighlightFraction="{Binding DataContext.CompactHighlightFraction, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}}"
                                             HighlightBrush="White" BaseBrush="#80FFFFFF"
                                             FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"/>
                                         <ProgressBar Height="3" Maximum="1"
-                                                     Value="{Binding Progress, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" Margin="0,4,0,0">
+                                                     Value="{Binding DataContext.Progress, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" Margin="0,4,0,0">
                                             <ProgressBar.Template>
                                                 <ControlTemplate TargetType="ProgressBar">
                                                     <Grid>
