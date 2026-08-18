@@ -48,6 +48,7 @@ public sealed class NotificationService
             win.Closed += (_, _) => _active.Remove(win);
             _active.Add(win);
             win.Show();
+            AppLogger.Info(string.Format("Banner shown: '{0}'", title));
 
             // 超过上限时收起最早的一条
             while (_active.Count > MaxVisible)
