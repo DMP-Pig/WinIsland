@@ -25,7 +25,8 @@ public sealed class ClipboardHistoryService : IDisposable
     private readonly DispatcherTimer _timer;
     private readonly List<ClipboardEntry> _entries = new();
     private string _last = string.Empty;
-    private bool _enabled;
+    private bool _enabled;    // 是否记录剪贴板历史
+    private bool _polling;     // 独立轮询开关（复制提示不需要历史记录也能检测复制）
 
     public ClipboardHistoryService()
     {
@@ -49,15 +50,36 @@ public sealed class ClipboardHistoryService : IDisposable
 
     public event Action? Changed;
 
+    /// <summary>检测到新复制的文本（无论是否记录历史都会触发，供「已复制/验证码/复制进度」提示使用）。</summary>
+    public event Action<ClipboardEntry>? EntryAdded;
+
     /// <summary>保留条数上限（由设置同步，默认 15）。</summary>
     public int MaxEntries { get; set; } = 15;
 
     public void SetEnabled(bool enabled)
     {
         _enabled = enabled;
-        if (enabled && !_timer.IsEnabled) _timer.Start();
-        else if (!enabled && _timer.IsEnabled) _timer.Stop();
+        UpdatePolling();
         if (enabled) Poll();
+    }
+
+    /// <summary>设置是否轮询剪贴板（与历史记录解耦：复制提示开启时也需轮询）。</summary>
+    public void SetPolling(bool polling)
+    {
+        _polling = polling;
+        UpdatePolling();
+    }
+
+    private void UpdatePolling()
+    {
+        if (_enabled || _polling)
+        {
+            if (!_timer.IsEnabled) _timer.Start();
+        }
+        else if (_timer.IsEnabled)
+        {
+            _timer.Stop();
+        }
     }
 
     public void CopyToClipboard(string text)
@@ -78,7 +100,7 @@ public sealed class ClipboardHistoryService : IDisposable
 
     private void Poll()
     {
-        if (!_enabled) return;
+        if (!_enabled && !_polling) return;
         try
         {
             if (!System.Windows.Clipboard.ContainsText()) return;
@@ -86,15 +108,20 @@ public sealed class ClipboardHistoryService : IDisposable
             if (string.IsNullOrWhiteSpace(text) || text.Length > 20000) return;
             if (text == _last) return;
             _last = text;
-            lock (_entries)
+            var entry = new ClipboardEntry(DateTime.Now, text);
+            if (_enabled)
             {
-                _entries.RemoveAll(e => e.Text == text);
-                _entries.Insert(0, new ClipboardEntry(DateTime.Now, text));
-                var max = Math.Clamp(MaxEntries, 3, 200);
-                while (_entries.Count > max) _entries.RemoveAt(_entries.Count - 1);
-                SaveCore();
+                lock (_entries)
+                {
+                    _entries.RemoveAll(e => e.Text == text);
+                    _entries.Insert(0, entry);
+                    var max = Math.Clamp(MaxEntries, 3, 200);
+                    while (_entries.Count > max) _entries.RemoveAt(_entries.Count - 1);
+                    SaveCore();
+                }
+                Changed?.Invoke();
             }
-            Changed?.Invoke();
+            EntryAdded?.Invoke(entry);
         }
         catch (Exception ex)
         {

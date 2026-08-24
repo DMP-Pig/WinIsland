@@ -114,4 +114,35 @@ public static class LrcParser
         var ms = frac.Length == 0 ? 0 : (int)(double.Parse("0." + frac, CultureInfo.InvariantCulture) * 1000);
         return new TimeSpan(0, hours, minutes, seconds, ms);
     }
+
+    /// <summary>双语歌词配对：一行主句 + 紧跟其后的翻译句（时间戳几乎相同）。</summary>
+    public sealed record LyricPair(LyricLine Main, string? Translation)
+    {
+        public bool HasTranslation => !string.IsNullOrEmpty(Translation);
+        public override string ToString() => HasTranslation ? $"{Main.Text} / {Translation}" : Main.Text;
+    }
+
+    /// <summary>
+    /// 把原始歌词行配对成「主句 + 翻译」。当相邻两行时间戳差 ≤ maxGap 且文本不同时，
+    /// 把后一行视为前一行的翻译（主流双语 LRC 的常见布局），便于界面并排展示。
+    /// enable=false 时直接逐行返回（不合并）。
+    /// </summary>
+    public static List<LyricPair> PairLines(IReadOnlyList<LyricLine> lines, TimeSpan maxGap, bool enable)
+    {
+        var result = new List<LyricPair>(lines.Count);
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var main = lines[i];
+            string? translation = null;
+            if (enable && i + 1 < lines.Count
+                && lines[i + 1].Time - main.Time <= maxGap
+                && !string.Equals(lines[i + 1].Text, main.Text, StringComparison.Ordinal))
+            {
+                translation = lines[i + 1].Text;
+                i++; // 已把翻译行并入主句，跳过
+            }
+            result.Add(new LyricPair(main, translation));
+        }
+        return result;
+    }
 }

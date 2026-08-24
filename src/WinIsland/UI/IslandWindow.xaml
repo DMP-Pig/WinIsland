@@ -176,7 +176,11 @@
                                 <TextBlock Text="{Binding ActivePushTitle}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                                            Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
                                            TextTrimming="CharacterEllipsis" MaxWidth="150"/>
-                            </StackPanel>
+                                                            </StackPanel>
+                            <TextBlock Text="{Binding ActivePushSubtitle}" FontSize="10.5" Margin="0,2,0,0"
+                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                       TextTrimming="CharacterEllipsis" MaxWidth="150"
+                                       Visibility="{Binding ActivePushHasSubtitle, Converter={StaticResource BoolToVis}}"/>
                             <TextBlock Text="{Binding ActivePushBody}" FontSize="11.5" Margin="0,5,0,0" TextWrapping="Wrap" MaxWidth="420"
                                        Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                        Visibility="{Binding PushShowBody, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
@@ -310,6 +314,14 @@
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                 </StackPanel>
                             </DataTemplate>
+                            <DataTemplate x:Key="HolidayItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.HolidayText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
                             <DataTemplate x:Key="SongItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Border Width="40" Height="40" CornerRadius="12" Margin="0,0,10,0"
@@ -424,6 +436,9 @@
                                                 <DataTrigger Binding="{Binding Kind}" Value="Schedule">
                                                     <Setter Property="ContentTemplate" Value="{StaticResource ScheduleItem}"/>
                                                 </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Holiday">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource HolidayItem}"/>
+                                                </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </ContentControl.Style>
@@ -484,7 +499,6 @@
                     </StackPanel>
                 </Grid>
 
-
                 <!-- ═══ 展开内容 ═══ -->
                 <ScrollViewer x:Name="ExpandedContent" Grid.Row="0" Grid.RowSpan="2" Margin="0,10,0,0"
                               Visibility="Collapsed" Opacity="0" VerticalScrollBarVisibility="Hidden"
@@ -507,6 +521,10 @@
                                            Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
                                            TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
+                            <TextBlock Text="{Binding ActivePushSubtitle}" FontSize="11.5" Margin="0,2,0,0"
+                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Visibility="{Binding ActivePushHasSubtitle, Converter={StaticResource BoolToVis}}"/>
                             <TextBlock Text="{Binding ActivePushBody}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
                                        Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                        Visibility="{Binding ActivePushHasBody, Converter={StaticResource BoolToVis}}"/>
@@ -537,7 +555,6 @@
                             </ItemsControl>
                         </StackPanel>
                     </Border>
-
 
                     <!-- 大封面 + 标题/歌手/专辑 -->
                     <Grid Visibility="{Binding ExpandedShowArtTitle, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
@@ -679,22 +696,7 @@
                     </StackPanel>
                 </ScrollViewer>
                 </Grid>
-                <!-- 未读通知角标：卡片右上角红点（展开后查看会清零） -->
-                <Border x:Name="BadgeDot" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,10,0"
-                        MinWidth="16" Height="16" CornerRadius="8" Padding="4,0" Background="#E81123"
-                        BorderBrush="#66FFFFFF" BorderThickness="1"
-                        Visibility="{Binding ShowBadge, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="{Binding BadgeText}" FontSize="9" FontWeight="Bold" Foreground="White"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
             </Grid>
         </Border>
     </Grid>
 </Window>
-
-
-
-
-
-
-

@@ -70,4 +70,43 @@ public class LrcParserTests
         Assert.True(LrcParser.Parse("   \n  ").IsEmpty);
         Assert.True(LrcParser.Parse("plain text without timestamps").IsEmpty);
     }
+
+    [Fact]
+    public void PairLines_Merges_Adjacent_Translation()
+    {
+        LyricLine[] lines =
+        {
+            new LyricLine(TimeSpan.FromSeconds(1), "Hello"),
+            new LyricLine(TimeSpan.FromMilliseconds(1150), "你好"),
+            new LyricLine(TimeSpan.FromSeconds(5), "World"),
+        };
+
+        var pairs = LrcParser.PairLines(lines, TimeSpan.FromMilliseconds(250), true);
+
+        Assert.Equal(2, pairs.Count);
+        Assert.True(pairs[0].HasTranslation);
+        Assert.Equal("你好", pairs[0].Translation);
+        Assert.Equal("Hello", pairs[0].Main.Text);
+        Assert.False(pairs[1].HasTranslation);
+        Assert.Equal("World", pairs[1].Main.Text);
+    }
+
+    [Fact]
+    public void PairLines_Disabled_Or_Far_Apart_Keeps_Every_Line()
+    {
+        LyricLine[] lines =
+        {
+            new LyricLine(TimeSpan.FromSeconds(1), "one"),
+            new LyricLine(TimeSpan.FromSeconds(10), "two"),
+            new LyricLine(TimeSpan.FromSeconds(11), "two"),
+        };
+
+        var disabled = LrcParser.PairLines(lines, TimeSpan.FromMilliseconds(250), false);
+        Assert.Equal(3, disabled.Count);
+        Assert.All(disabled, p => Assert.False(p.HasTranslation));
+
+        var enabled = LrcParser.PairLines(lines, TimeSpan.FromMilliseconds(250), true);
+        Assert.Equal(3, enabled.Count);
+        Assert.All(enabled, p => Assert.False(p.HasTranslation));
+    }
 }

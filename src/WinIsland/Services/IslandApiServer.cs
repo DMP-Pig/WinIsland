@@ -27,6 +27,8 @@ public sealed class IslandApiServer : IDisposable
     private CancellationTokenSource _cts = new();
     private Task? _loop;
     private readonly ConcurrentDictionary<string, IslandPush> _active = new();
+    private readonly ConcurrentDictionary<string, long> _order = new();   // id -> 入队序号（同 id 更新保持原位）
+    private long _seq;   // 入队序号计数器
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
     public IslandApiServer(SettingsService settings)
@@ -42,7 +44,10 @@ public sealed class IslandApiServer : IDisposable
     public bool IsRunning { get; private set; }
 
     public IReadOnlyList<IslandPush> ActivePushes
-        => _active.Values.OrderBy(p => p.ExpiresAt ?? DateTime.MaxValue).ToList();
+        => _active.Values
+            .OrderByDescending(p => p.PriorityRank)
+            .ThenBy(p => _order.TryGetValue(p.Id, out var s) ? s : long.MaxValue)
+            .ToList();
 
     public void Start()
     {
@@ -140,16 +145,8 @@ public sealed class IslandApiServer : IDisposable
                     await WriteJsonAsync(ctx, 400, new { error = "title is required" }, ct);
                     return;
                 }
-                if (string.IsNullOrWhiteSpace(push.Id)) push.Id = Guid.NewGuid().ToString("N");
-
-                // 显示时长：推送方可自定义，留空用全局默认
-                var seconds = push.DurationSeconds ?? Math.Max(1, _settings.Current.IslandApiDefaultDuration);
-                push.DurationSeconds = seconds;
-                push.ExpiresAt = DateTime.UtcNow.AddSeconds(seconds);
-
-                _active[push.Id] = push;
-                _ = Task.Run(() => PushReceived?.Invoke(push));
-                await WriteJsonAsync(ctx, 200, new { id = push.Id, expires_at = push.ExpiresAt }, ct);
+                var added = AddOrUpdate(push);
+                await WriteJsonAsync(ctx, 200, new { id = added.Id, position = PositionOf(added.Id), expires_at = added.ExpiresAt }, ct);
                 return;
             }
 
@@ -157,6 +154,7 @@ public sealed class IslandApiServer : IDisposable
             {
                 var id = Uri.UnescapeDataString(path.Substring("/v1/island/push/".Length));
                 _active.TryRemove(id, out _);
+                _order.TryRemove(id, out _);
                 _ = Task.Run(() => PushRemoved?.Invoke(id));
                 await WriteJsonAsync(ctx, 200, new { ok = true }, ct);
                 return;
@@ -172,10 +170,47 @@ public sealed class IslandApiServer : IDisposable
         }
     }
 
+    /// <summary>新增或更新推送（供 HTTP 处理与测试复用）。同 id 保留原过期时间与队列位置。</summary>
+    public IslandPush AddOrUpdate(IslandPush push)
+    {
+        if (string.IsNullOrWhiteSpace(push.Id)) push.Id = Guid.NewGuid().ToString("N");
+
+        if (_active.ContainsKey(push.Id))
+        {
+            // 同 id 更新：刷新内容、保留原过期时间与队列位置（位置不变）
+            if (_active[push.Id].ExpiresAt is DateTime oldExp) push.ExpiresAt = oldExp;
+        }
+        else
+        {
+            // 新推送：显示时长可自定义，留空用全局默认；分配入队序号
+            var seconds = push.DurationSeconds ?? Math.Max(1, _settings.Current.IslandApiDefaultDuration);
+            push.DurationSeconds = seconds;
+            push.ExpiresAt = DateTime.UtcNow.AddSeconds(seconds);
+            _order[push.Id] = Interlocked.Increment(ref _seq);
+        }
+
+        _active[push.Id] = push;
+        _ = Task.Run(() => PushReceived?.Invoke(push));
+        return push;
+    }
+
     /// <summary>移除指定推送（过期/点击后）。</summary>
     public void Remove(string id)
     {
-        if (_active.TryRemove(id, out _)) PushRemoved?.Invoke(id);
+        if (_active.TryRemove(id, out _))
+        {
+            _order.TryRemove(id, out _);
+            PushRemoved?.Invoke(id);
+        }
+    }
+
+    /// <summary>推送在显示队列中的位置（从 1 开始；不在队列中返回 0），用于 POST push 响应。</summary>
+    private int PositionOf(string id)
+    {
+        var list = ActivePushes;
+        for (var i = 0; i < list.Count; i++)
+            if (string.Equals(list[i].Id, id, StringComparison.Ordinal)) return i + 1;
+        return 0;
     }
 
     private static async Task WriteJsonAsync(HttpListenerContext ctx, int code, object payload, CancellationToken ct)

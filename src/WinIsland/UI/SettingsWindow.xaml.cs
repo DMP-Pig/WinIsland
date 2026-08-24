@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -36,6 +37,7 @@ public partial class SettingsWindow : Window
     private readonly UpdaterService? _updater;
     private string _lastAppliedJson;
     private bool _sizeSlidersInitialized; // 初始化期间不触发"手动调整关闭自动"
+    private bool _audioOutputLoading;     // 音频输出下拉初始化期间不触发切换
 
     public SettingsWindow(SettingsViewModel vm, SettingsService service, CiderMediaProvider? cider,
         NotificationHistoryService? history = null,
@@ -56,8 +58,14 @@ public partial class SettingsWindow : Window
         _updater = updater;
         DataContext = vm;
         InitializeComponent();
+
+        // 初始化完成后显式设置初始选中页（不在 XAML 里用 IsSelected，避免解析期提前触发事件）
+        NavList.SelectedIndex = 0;
+        MainTabs.SelectedIndex = 0;
+
         ApplyLocalization();
         RefreshHistory();
+        InitAudioOutput();
         if (_history is not null) _history.Changed += (_, _) => RefreshHistory();
 
         // 效率工具：初值 + 变动刷新
@@ -92,6 +100,40 @@ public partial class SettingsWindow : Window
 
         // 初始化完成后才允许"手动调整关闭自动"
         Loaded += (_, _) => _sizeSlidersInitialized = true;
+    }
+
+    /// <summary>填充音频输出设备下拉框（默认选中系统当前默认设备）。</summary>
+    private void InitAudioOutput()
+    {
+        try
+        {
+            if (CboAudioOutput is null) return;
+            var devices = SystemVolume.GetDevices();
+            CboAudioOutput.ItemsSource = devices;
+            _audioOutputLoading = true;
+            CboAudioOutput.SelectedItem = devices.FirstOrDefault(d => d.IsDefault) ?? devices.FirstOrDefault();
+            _audioOutputLoading = false;
+        }
+        catch (Exception ex)
+        {
+            _audioOutputLoading = false;
+            AppLogger.Warn($"初始化音频输出列表失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>切换系统默认输出设备（IPolicyConfig 为未公开接口，已打开的播放器需重启后生效）。</summary>
+    private void AudioOutput_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_audioOutputLoading || CboAudioOutput.SelectedItem is not SystemVolume.AudioDeviceInfo dev) return;
+        try
+        {
+            if (SystemVolume.SetDefaultDevice(dev.Id) && TxtAudioOutputNote is not null)
+                TxtAudioOutputNote.Text = Localization.Get("Media_AudioOutputApplied");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"切换音频输出失败: {ex.Message}");
+        }
     }
 
     /// <summary>滚轮滚动当前页签的 ScrollViewer（避免被 ComboBox/Slider 拦截）。</summary>
@@ -177,12 +219,14 @@ public partial class SettingsWindow : Window
             Add("GlassBorderBrush", new SolidColorBrush(Color.FromArgb(0x48, 0xFF, 0xFF, 0xFF)));
             Add("TextPrimaryBrush", new SolidColorBrush(Color.FromRgb(0xF2, 0xF2, 0xF7)));
             Add("TextSecondaryBrush", new SolidColorBrush(Color.FromArgb(0xB8, 0xE0, 0xE0, 0xEA)));
-            Add("HoverBrush", new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)));
+            Add("HoverBrush", new SolidColorBrush(Color.FromArgb(0x4D, 0xFF, 0xFF, 0xFF)));
             Add("ControlBgBrush", new SolidColorBrush(Color.FromArgb(0x24, 0xFF, 0xFF, 0xFF)));
             Add("ControlBorderBrush", new SolidColorBrush(Color.FromArgb(0x3C, 0xFF, 0xFF, 0xFF)));
             Add("TrackBrush", new SolidColorBrush(Color.FromArgb(0x5E, 0xFF, 0xFF, 0xFF)));
             Add("ScrollTrackBrush", new SolidColorBrush(Color.FromArgb(0x2A, 0xFF, 0xFF, 0xFF)));
             Add("ScrollThumbBrush", new SolidColorBrush(Color.FromArgb(0x9A, 0xFF, 0xFF, 0xFF)));
+            Add("SidebarBrush", new SolidColorBrush(Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF)));
+            Add("NavSelectedBrush", new SolidColorBrush(Color.FromArgb(0x3C, 0xFF, 0xFF, 0xFF)));
         }
         else
         {
@@ -191,16 +235,23 @@ public partial class SettingsWindow : Window
             Add("GlassBorderBrush", new SolidColorBrush(Color.FromArgb(0x6E, 0xFF, 0xFF, 0xFF)));
             Add("TextPrimaryBrush", new SolidColorBrush(Color.FromRgb(0x1D, 0x1D, 0x24)));
             Add("TextSecondaryBrush", new SolidColorBrush(Color.FromArgb(0xB0, 0x48, 0x48, 0x52)));
-            Add("HoverBrush", new SolidColorBrush(Color.FromArgb(0x18, 0x00, 0x00, 0x00)));
+            Add("HoverBrush", new SolidColorBrush(Color.FromArgb(0x2E, 0x00, 0x00, 0x00)));
             Add("ControlBgBrush", new SolidColorBrush(Color.FromArgb(0xD9, 0xFF, 0xFF, 0xFF)));
             Add("ControlBorderBrush", new SolidColorBrush(Color.FromArgb(0x30, 0x00, 0x00, 0x00)));
             Add("TrackBrush", new SolidColorBrush(Color.FromArgb(0x50, 0x00, 0x00, 0x00)));
             Add("ScrollTrackBrush", new SolidColorBrush(Color.FromArgb(0x18, 0x00, 0x00, 0x00)));
             Add("ScrollThumbBrush", new SolidColorBrush(Color.FromArgb(0x66, 0x00, 0x00, 0x00)));
+            Add("SidebarBrush", new SolidColorBrush(Color.FromArgb(0x66, 0xF2, 0xF2, 0xF7)));
+            Add("NavSelectedBrush", new SolidColorBrush(Color.FromArgb(0x59, 0x1D, 0x1D, 0x24)));
         }
 
         Add("AccentBrush", new SolidColorBrush(accent));
         Add("AccentSoftBrush", new SolidColorBrush(Color.FromArgb(0x3D, accent.R, accent.G, accent.B)));
+
+        // 根治文字颜色：Window.Foreground 的 DynamicResource 在属性继承链上可能不刷新，
+        // 导致深色模式下继承了默认黑色前景的文字看不清。资源构建完成后直接写入确定的前景色
+        // （深色主题=白 #F2F2F7，浅色主题=深 #1D1D24），所有依赖继承的文本立即生效。
+        Foreground = (Brush)Resources["TextPrimaryBrush"];
     }
 
     private void TitleBar_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -212,6 +263,43 @@ public partial class SettingsWindow : Window
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+    /// <summary>左侧导航对应的本地化键（与 TabItem 顺序一致，用于页标题）。</summary>
+    private static readonly string[] NavKeys =
+    {
+        "Settings_General", "Settings_Appearance", "Settings_Components", "Settings_Media",
+        "Settings_MediaInfo", "Settings_Lyrics", "Settings_Cider", "Settings_Island",
+        "Settings_Productivity", "Settings_Update", "Settings_About", "Settings_Notifications", "Settings_Rules",
+    };
+
+    /// <summary>左侧导航选中 → 同步切换右侧页面。</summary>
+    private void NavList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        // 防御：XAML 解析期间 MainTabs 可能尚未初始化完成
+        if (MainTabs is null || MainTabs.Items.Count == 0) return;
+        if (NavList.SelectedIndex >= 0 && NavList.SelectedIndex < MainTabs.Items.Count)
+            MainTabs.SelectedIndex = NavList.SelectedIndex;
+    }
+
+    /// <summary>右侧页面切换 → 同步左侧导航高亮，并更新页标题。</summary>
+    private void MainTabs_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        // 防御：XAML 解析期间 NavList 可能尚未初始化完成
+        if (NavList is null) return;
+        var idx = MainTabs.SelectedIndex;
+        if (NavList.SelectedIndex != idx && idx >= 0)
+            NavList.SelectedIndex = idx;
+        UpdatePageTitle();
+    }
+
+    /// <summary>把页标题更新为当前分类名。</summary>
+    private void UpdatePageTitle()
+    {
+        var idx = MainTabs.SelectedIndex;
+        if (idx < 0 || idx >= NavKeys.Length) return;
+        PageTitle.Text = Localization.Get(NavKeys[idx]);
+        PageSubtitle.Text = string.Empty;
+    }
 
     /// <summary>手动拖动尺寸滑杆时，若该尺寸处于"自动调整"状态则自动关闭自动调整（自动/手动二选一）。</summary>
     private void SizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -251,6 +339,23 @@ public partial class SettingsWindow : Window
         TabAbout.Header = Localization.Get("Settings_About");
         TabNotify.Header = Localization.Get("Settings_Notifications");
         TabIsland.Header = Localization.Get("Settings_Island");
+        TabRules.Header = Localization.Get("Settings_Rules");
+        LblRulesIntro.Text = Localization.Get("Rules_Intro");
+        BtnAddRule.Content = Localization.Get("Rules_Add");
+        NavGeneral.Text = Localization.Get("Settings_General");
+        NavAppearance.Text = Localization.Get("Settings_Appearance");
+        NavComponents.Text = Localization.Get("Settings_Components");
+        NavMedia.Text = Localization.Get("Settings_Media");
+        NavMediaInfo.Text = Localization.Get("Settings_MediaInfo");
+        NavLyrics.Text = Localization.Get("Settings_Lyrics");
+        NavCider.Text = Localization.Get("Settings_Cider");
+        NavIsland.Text = Localization.Get("Settings_Island");
+        NavProductivity.Text = Localization.Get("Settings_Productivity");
+        NavUpdate.Text = Localization.Get("Settings_Update");
+        NavAbout.Text = Localization.Get("Settings_About");
+        NavNotify.Text = Localization.Get("Settings_Notifications");
+        NavRules.Text = Localization.Get("Settings_Rules");
+        UpdatePageTitle();
         ChkIslandApi.Content = Localization.Get("Island_Enabled");
         LblIslandPort.Text = Localization.Get("Island_Port");
         LblIslandToken.Text = Localization.Get("Island_Token");
@@ -292,16 +397,27 @@ public partial class SettingsWindow : Window
         ChkShowWhenPaused.Content = Localization.Get("General_ShowWhenPaused");
         ChkAlwaysVisible.Content = Localization.Get("General_AlwaysVisible");
         ChkReduceMotion.Content = Localization.Get("General_ReduceMotion");
+        ChkLowPower.Content = Localization.Get("General_LowPower");
         ChkGlobalHotkeys.Content = Localization.Get("General_GlobalHotkeys");
         TxtHotkeysHint.Text = Localization.Get("General_HotkeysHint");
+        LblHotkeyToggle.Text = Localization.Get("General_HotkeyToggle");
+        LblHotkeyPlayPause.Text = Localization.Get("General_HotkeyPlayPause");
+        LblHotkeyNext.Text = Localization.Get("General_HotkeyNext");
+        LblHotkeyPrev.Text = Localization.Get("General_HotkeyPrev");
+        LblHotkeyExpand.Text = Localization.Get("General_HotkeyExpand");
         LblLowBattery.Text = Localization.Get("General_LowBattery");
         TxtLowBatteryHint.Text = Localization.Get("General_LowBatteryHint");
         LblHistory.Text = Localization.Get("Notifications_History");
         TxtHistoryEmpty.Text = Localization.Get("Notifications_HistoryEmpty");
         BtnClearHistory.Content = Localization.Get("Notifications_HistoryClear");
+        BtnMarkAllRead.Content = Localization.Get("Notifications_MarkAllRead");
+        ChkNotifyFold.Content = Localization.Get("Notifications_Fold");
         ChkUseSystemVolume.Content = Localization.Get("Media_UseSystemVolume");
+        LblAudioOutput.Text = Localization.Get("Media_AudioOutput");
+        TxtAudioOutputNote.Text = Localization.Get("Media_AudioOutputNote");
         ChkOnlineLyrics.Content = Localization.Get("Lyrics_Online");
         ChkStandaloneLyrics.Content = Localization.Get("Lyrics_StandaloneWindow");
+        ChkBilingual.Content = Localization.Get("MediaInfo_Bilingual");
         ChkCiderEnabled.Content = Localization.Get("Cider_Enabled");
         ChkBluetoothNotify.Content = Localization.Get("Notifications_Bluetooth");
         ChkNotifyTakeover.Content = Localization.Get("Notifications_Takeover");
@@ -311,6 +427,7 @@ public partial class SettingsWindow : Window
         ChkCompactTitle.Content = Localization.Get("Appearance_CompactTitle");
         ChkCompactProgress.Content = Localization.Get("Appearance_CompactProgress");
         ChkSingleLine.Content = Localization.Get("Appearance_SingleLine");
+        ChkMiniPlayer.Content = Localization.Get("Appearance_MiniPlayer");
 
         TxtLyricsNote.Text = Localization.Get("Lyrics_CopyrightNote");
         TxtCiderHint.Text = Localization.Get("Cider_HowTo");
@@ -329,10 +446,10 @@ public partial class SettingsWindow : Window
         TabUpdate.Header = Localization.Get("Settings_Update");
         LblKeyCaps.Text = Localization.Get("General_KeyCaps");
         LblThemePreset.Text = Localization.Get("Appearance_ThemePreset");
+        LblAnimationStyle.Text = Localization.Get("Appearance_AnimStyle");
         LblFontFamily.Text = Localization.Get("Appearance_FontFamily");
         LblFontScale.Text = Localization.Get("Appearance_FontScale");
         LblCornerRadius.Text = Localization.Get("Appearance_CornerRadius");
-        ChkBadge.Content = Localization.Get("Appearance_Badge");
         ChkCoverTint.Content = Localization.Get("Appearance_CoverTint");
         ChkWave.Content = Localization.Get("Wave_Enabled");
         ChkWaveSync.Content = Localization.Get("Wave_Sync");
@@ -345,10 +462,16 @@ public partial class SettingsWindow : Window
         LblDndStart.Text = Localization.Get("Dnd_Start");
         LblDndEnd.Text = Localization.Get("Dnd_End");
         TxtDndNote.Text = Localization.Get("Dnd_Note");
+        LblDndAllowlist.Text = Localization.Get("Dnd_Allowlist");
         LblProdClipboard.Text = Localization.Get("Prod_Clipboard");
         ChkClipboardEnabled.Content = Localization.Get("Prod_ClipboardEnabled");
         LblClipboardMax.Text = Localization.Get("Prod_ClipboardMax");
         TxtClipboardNote.Text = Localization.Get("Prod_ClipboardNote");
+        ChkCopyToast.Content = Localization.Get("Clipboard_Toast");
+        ChkCodeToast.Content = Localization.Get("Clipboard_Code");
+        ChkCopyProgress.Content = Localization.Get("Clipboard_Progress");
+        LblCopyThreshold.Text = Localization.Get("Clipboard_Threshold");
+        TxtCopyNote.Text = Localization.Get("Clipboard_ToastNote");
         LblProdPomodoro.Text = Localization.Get("Prod_Pomodoro");
         ChkPomodoroEnabled.Content = Localization.Get("Prod_PomodoroEnabled");
         LblWorkMinutes.Text = Localization.Get("Prod_WorkMinutes");
@@ -600,4 +723,73 @@ public partial class SettingsWindow : Window
         RefreshHistory();
     }
 
+    /// <summary>通知中心"全部已读"。</summary>
+    private void MarkAllRead_Click(object sender, RoutedEventArgs e)
+    {
+        _history?.MarkAllRead();
+        RefreshHistory();
+    }
+
+    /// <summary>通知历史单条删除。</summary>
+    private void DeleteHistoryItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: NotificationHistoryEntry entry })
+        {
+            _history?.Remove(entry);
+        }
+    }
+
+    /// <summary>点击历史条目：打开来源应用（12 通知一键处理）。</summary>
+    private void HistoryItem_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: NotificationHistoryEntry entry })
+        {
+            OpenSourceApp(entry.Source);
+        }
+    }
+
+    /// <summary>打开通知来源应用：优先唤起已运行的进程窗口，否则按名称/URL 启动。</summary>
+    private static void OpenSourceApp(string? source)
+    {
+        if (string.IsNullOrWhiteSpace(source)) return;
+        var name = source.Trim();
+        try
+        {
+            if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                var baseName = Path.GetFileNameWithoutExtension(name);
+                foreach (var p in Process.GetProcessesByName(baseName))
+                {
+                    if (p.MainWindowHandle != IntPtr.Zero)
+                    {
+                        NativeUser32.SetForegroundWindow(p.MainWindowHandle);
+                        return;
+                    }
+                }
+            }
+            Process.Start(new ProcessStartInfo(name) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"Open notification source failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>新增一条规则（规则引擎设置页）。</summary>
+    private void AddRule_Click(object sender, RoutedEventArgs e) => _vm.AddRule();
+
+    /// <summary>删除指定规则行。</summary>
+    private void RuleRemove_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is RuleRow row) _vm.RemoveRule(row);
+    }
+
 }
+
+    /// <summary>唤起来源应用窗口所需的少量 Win32 互操作。</summary>
+internal static class NativeUser32
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    internal static extern bool SetForegroundWindow(IntPtr hWnd);
+}
+

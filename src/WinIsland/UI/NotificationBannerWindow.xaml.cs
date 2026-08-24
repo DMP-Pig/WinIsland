@@ -14,17 +14,23 @@ namespace WinIsland.UI;
 /// </summary>
 public partial class NotificationBannerWindow : Window
 {
-    private readonly DispatcherTimer _closeTimer;
+    private DispatcherTimer _closeTimer;
     private readonly System.Windows.Forms.Screen _screen;
     private readonly int _stackIndex;
     private double _finalLeft;
     private bool _closing;
+    private int _foldCount = 1;
+    private readonly bool _progressMode;
+
+    /// <summary>折叠键：来源 + 标题，相同的活动横幅复用更新（11 通知折叠）。</summary>
+    public string FoldKey { get; }
 
     public NotificationBannerWindow(string title, string body, string glyph, int timeoutSeconds,
-        System.Windows.Forms.Screen screen, int stackIndex)
+        System.Windows.Forms.Screen screen, int stackIndex, string foldKey = "", bool progressMode = false)
     {
         _screen = screen;
         _stackIndex = stackIndex;
+        FoldKey = foldKey;
         InitializeComponent();
         TitleText.Text = title;
         BodyText.Text = body;
@@ -41,9 +47,66 @@ public partial class NotificationBannerWindow : Window
             AnimateIn();
         };
 
-        _closeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(Math.Max(1, timeoutSeconds)) };
+        _progressMode = progressMode;
+        if (progressMode)
+            ProgressHost.Visibility = Visibility.Visible; // 进度模式：先显示进度，完成后由 Complete() 接管
+
+        _closeTimer = new DispatcherTimer();
         _closeTimer.Tick += (_, _) => CloseWithAnimation();
+        if (!progressMode)
+        {
+            _closeTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, timeoutSeconds));
+            _closeTimer.Start();
+        }
+    }
+
+    /// <summary>进度模式：更新进度条（0~1）。</summary>
+    public void SetProgress(double value01)
+    {
+        try
+        {
+            if (!_progressMode) return;
+            if (ProgressHost.ActualWidth <= 0) ProgressHost.UpdateLayout();
+            ProgressFill.Width = Math.Max(0, ProgressHost.ActualWidth) * Math.Clamp(value01, 0, 1);
+        }
+        catch { /* 布局未就绪时忽略 */ }
+    }
+
+    /// <summary>进度完成：切换为结果文案并开始自动关闭计时。</summary>
+    public void Complete(string title, string body, string glyph, int timeoutSeconds)
+    {
+        if (_progressMode)
+        {
+            TitleText.Text = title;
+            BodyText.Text = body;
+            IconText.Text = glyph;
+            ProgressHost.Visibility = Visibility.Collapsed;
+        }
+        _closeTimer.Stop();
+        _closeTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, timeoutSeconds));
         _closeTimer.Start();
+    }
+
+    /// <summary>折叠更新：同来源同标题的新通知复用本横幅，刷新文本并重置计时。</summary>
+    public void Refresh(string title, string body, string glyph, int timeoutSeconds)
+    {
+        if (_progressMode)
+        {
+            // 进度横幅命中折叠：直接重置为新进度（不累加数量）
+            TitleText.Text = title;
+            IconText.Text = glyph;
+            BodyText.Text = body;
+            SetProgress(0);
+            return;
+        }
+        _foldCount++;
+        TitleText.Text = title;
+        IconText.Text = glyph;
+        BodyText.Text = _foldCount > 1 ? body + $"  (+{_foldCount})" : body;
+        _closeTimer.Stop();
+        _closeTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, timeoutSeconds));
+        _closeTimer.Start();
+        Topmost = true;
     }
 
     /// <summary>从右侧滑入 + 淡入（放慢，约 0.5s）。</summary>

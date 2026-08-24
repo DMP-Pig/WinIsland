@@ -33,3 +33,25 @@ public sealed class SpringEase : Freezable, IEasingFunction
         return value;
     }
 }
+
+/// <summary>
+/// 柔和弹簧（Soft 动效皮肤，33 动效皮肤）：阻尼更大、刚度更低，回弹更少、收尾更软，
+/// 适合需要“更丝滑、少弹跳”的动效皮肤。
+/// </summary>
+public sealed class SoftSpringEase : Freezable, IEasingFunction
+{
+    /// <summary>阻尼系数，越大回弹越少、越“肉”。</summary>
+    public double Damping { get; set; } = 16;
+
+    /// <summary>刚度，越大动画越快。</summary>
+    public double Stiffness { get; set; } = 150;
+
+    /// <summary>质量，越大越慢。</summary>
+    public double Mass { get; set; } = 1;
+
+    protected override Freezable CreateInstanceCore() =>
+        new SoftSpringEase { Damping = Damping, Stiffness = Stiffness, Mass = Mass };
+
+    public double Ease(double normalizedTime) =>
+        new SpringEase { Damping = Damping, Stiffness = Stiffness, Mass = Mass }.Ease(normalizedTime);
+}

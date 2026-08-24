@@ -55,6 +55,8 @@ public sealed class ComponentFlags
     public bool TimerWhenPlaying { get; set; } = false;
     public bool ScheduleWhenIdle { get; set; } = true;
     public bool ScheduleWhenPlaying { get; set; } = false;
+    public bool HolidayWhenIdle { get; set; } = true;   // 节假日倒计时：空闲时显示
+    public bool HolidayWhenPlaying { get; set; } = false;
 }
 /// <summary>Persisted user configuration. JSON at %APPDATA%\WinIsland\settings.json.</summary>
 public sealed class AppSettings
@@ -79,6 +81,16 @@ public sealed class AppSettings
     public bool ShowMediaInfo { get; set; } = true;              // 是否显示媒体播放信息（歌名/封面/歌词等）
     public bool ReduceMotion { get; set; } = false;             // 减少动态效果（无障碍/省电）
     public bool GlobalHotkeysEnabled { get; set; } = true;         // 全局快捷键
+    // -- 动效与性能（33 动效皮肤 / 37 低功耗模式）--
+    public string AnimationStyle { get; set; } = "Spring";   // Spring | Soft | Elastic | Fade（动效皮肤）
+    public bool LowPowerMode { get; set; } = false;          // 低功耗模式：空闲降帧渲染波纹、简化动画
+
+    // -- 全局快捷键（自定义组合键，格式如 Ctrl+Alt+I；35 全局快捷键大全）--
+    public string HotkeyToggleVisible { get; set; } = "Ctrl+Alt+I";
+    public string HotkeyPlayPause { get; set; } = "Ctrl+Alt+P";
+    public string HotkeyNext { get; set; } = "Ctrl+Alt+Right";
+    public string HotkeyPrev { get; set; } = "Ctrl+Alt+Left";
+    public string HotkeyExpand { get; set; } = "Ctrl+Alt+Space";
     public int LowBatteryThreshold { get; set; } = 20;             // 低电量提醒阈值（%）
     public bool ShowWhenPaused { get; set; } = true;
     public bool StartWithWindows { get; set; } = false;
@@ -106,6 +118,8 @@ public sealed class AppSettings
     public string LyricsFolder { get; set; } = string.Empty; // extra .lrc folder; empty = auto (Music)
     public bool StandaloneLyricsWindow { get; set; } = false;
     public bool KaraokeHighlight { get; set; } = true;
+    public bool BilingualLyrics { get; set; } = true;   // 双语歌词：自动合并相邻时间戳的翻译行（可关闭）
+
 
     // ── Volume ─────────────────────────────────────────────────
     public bool UseSystemVolume { get; set; } = true;   // for non-Cider sources, control system volume
@@ -121,6 +135,12 @@ public sealed class AppSettings
     public bool CompactHeightAuto { get; set; } = true;
     public bool ExpandedWidthAuto { get; set; } = true;
     public bool MaxExpandedHeightAuto { get; set; } = true;
+
+    // ── 迷你播放器（独立小窗口，始终置顶，随媒体自动显示/隐藏）──
+    public bool MiniPlayerEnabled { get; set; } = false;
+    public double? MiniPlayerLeft { get; set; } = null; // null = 尚未拖动过，使用自动定位
+    public double? MiniPlayerTop { get; set; } = null;
+
 
     // ── Idle widgets（无媒体时组件）──────────────────────────
     public bool ShowWidgetsWhenNoMedia { get; set; } = false; // 无媒体时显示组件（旧开关）
@@ -139,6 +159,7 @@ public sealed class AppSettings
     public bool NotificationTakeoverEnabled { get; set; } = false; // 接管 Windows 通知（尽力而为）
     public int NotificationTimeoutSeconds { get; set; } = 6;      // 横幅显示时长
     public string NotificationPosition { get; set; } = "TopRight"; // TopRight = 右上角
+    public bool NotifyFoldEnabled { get; set; } = true;           // 通知折叠：同来源同标题只保留一条并累加数量
 
     // ── 上岛 API（其他软件推送信息到灵动岛）──
     public bool IslandApiEnabled { get; set; } = true;           // 启用本地上岛 API
@@ -146,12 +167,14 @@ public sealed class AppSettings
     public string IslandApiToken { get; set; } = "";             // 可选 Token（防局域网误连）
     public int IslandApiDefaultDuration { get; set; } = 30;      // 默认显示时长（秒），推送方可按条覆盖
 
-    // ── 外观增强（主题预设 / 字体 / 字号 / 圆角 / 角标 / 封面取色）──
+    // ── 显示规则（条件规则引擎）──
+    public List<AppRule> Rules { get; set; } = new();   // 条件满足时自动隐藏/收起/强制显示
+
+    // ── 外观增强（主题预设 / 字体 / 字号 / 圆角 / 封面取色）──
     public string ThemePreset { get; set; } = "Default";   // Default | Ocean | Forest | Sunset | Neon | Mono | Grape
     public string FontFamily { get; set; } = "Segoe UI";   // 界面字体
     public double FontScale { get; set; } = 1.0;           // 字号缩放 0.8 ~ 1.4
     public double CornerRadius { get; set; } = 28;         // 胶囊圆角 16 ~ 40
-    public bool BadgeEnabled { get; set; } = true;         // 未读通知角标
     public bool CoverTintBackground { get; set; } = true;  // 展开背景随专辑封面取色
 
     // ── 波纹可视化（媒体按钮左侧，随声音/播放波动）──
@@ -165,10 +188,15 @@ public sealed class AppSettings
     public bool DoNotDisturbManual { get; set; } = false;    // 手动开关勿扰
     public int DoNotDisturbStartHour { get; set; } = 22;
     public int DoNotDisturbEndHour { get; set; } = 8;
+    public List<string> DnDAllowlist { get; set; } = new();   // 勿扰白名单：来源 exe/AppName（大小写不敏感），白名单内的来源仍弹横幅
 
     // ── 效率工具 ──
     public bool ClipboardHistoryEnabled { get; set; } = false;  // 剪贴板历史（默认关，随需开启）
     public int ClipboardHistoryMax { get; set; } = 15;
+    public bool CopyToastEnabled { get; set; } = true;       // 复制文本时提示「已复制」
+    public bool CodeToastEnabled { get; set; } = true;       // 识别短信验证码并高亮提示
+    public bool CopyProgressEnabled { get; set; } = true;    // 大文本复制显示进度（估算）
+    public int CopyProgressThreshold { get; set; } = 4000;   // 触发进度提示的最小字符数
     public bool PomodoroEnabled { get; set; } = false;          // 番茄钟/计时器
     public int PomodoroWorkMinutes { get; set; } = 25;
     public int PomodoroBreakMinutes { get; set; } = 5;
@@ -177,7 +205,18 @@ public sealed class AppSettings
 
     public string ActiveProfile { get; set; } = "Default";   // 当前配置档案名
 
-    public AppSettings Clone() => (AppSettings)MemberwiseClone();
+    public AppSettings Clone()
+    {
+        var c = (AppSettings)MemberwiseClone();
+        c.DnDAllowlist = new List<string>(DnDAllowlist);
+        c.MediaApps = new List<MediaAppEntry>(MediaApps);
+        c.Rules = Rules.Where(r => r is not null).Select(r => new AppRule
+        {
+            Enabled = r.Enabled, Name = r.Name, Condition = r.Condition,
+            StartHour = r.StartHour, EndHour = r.EndHour, AppMatch = r.AppMatch, Action = r.Action,
+        }).ToList();
+        return c;
+    }
 }
 
 /// <summary>Loads / saves <see cref="AppSettings"/> as JSON.</summary>

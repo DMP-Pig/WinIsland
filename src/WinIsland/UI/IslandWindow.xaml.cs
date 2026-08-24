@@ -119,6 +119,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _collapseTimer;
     private readonly DispatcherTimer _compactRestoreTimer;
     private bool _waveRendering;                  // 波纹渲染中（已挂接合成帧事件）
+    private DispatcherTimer? _waveTimer;                  // 低功耗模式：波纹降帧定时器（~30fps）
     private double _lastWaveTime;                 // 上一帧时间（秒），用于帧率无关平滑
     private readonly System.Diagnostics.Stopwatch _waveClock = System.Diagnostics.Stopwatch.StartNew();
     private readonly List<ScaleTransform> _waveBarsExpanded = new();
@@ -266,12 +267,35 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         if (!_mouseDownOnCard) return;
         _mouseDownOnCard = false;
 
-        // 点击按钮/滑块不触发展开切换
+        // 点击按钮/滑块不触发展开切换（按钮自己处理点击）
         if (IsInteractiveElement(e.OriginalSource)) return;
+
+        // 上岛推送整卡点击回跳：点在推送卡片上且配置了 click 时，执行回跳而不展开
+        if (_vm.ActivePushHasClick && IsWithinPushCard(e.OriginalSource))
+        {
+            _vm.ExecutePushClick();
+            e.Handled = true;
+            return;
+        }
 
         _collapseTimer.Stop();
         _vm.IsExpanded = !_vm.IsExpanded;
         e.Handled = true;
+    }
+
+    /// <summary>判断点击源是否位于上岛推送卡片内部。</summary>
+    private bool IsWithinPushCard(object source)
+    {
+        var d = source as DependencyObject;
+        while (d is not null)
+        {
+            if (ReferenceEquals(d, CompactPushCard) || ReferenceEquals(d, ExpandedPushCard))
+                return true;
+            d = d is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D
+                ? VisualTreeHelper.GetParent(d)
+                : LogicalTreeHelper.GetParent(d);
+        }
+        return false;
     }
 
     private static bool IsInteractiveElement(object source)
@@ -430,10 +454,12 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         if (!IsLoaded) return;
         if (_vm.IsExpanded) { ApplySize(); return; }
         EnsureWindowSizeFits(); // 先扩宽窗口，避免卡片动画期间超出窗口被裁剪
-        var spring = new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 };
+        var (styleEase, styleMs) = GetSizeAnimationStyle(expand: false);
+        var lm = _settings.Current.LowPowerMode ? 0.6 : 1.0;
+        var dur = (int)Math.Clamp(460 * (styleMs / 760.0), 300, 640) * lm;
         var sb = new Storyboard();
-        AddAnim(sb, Card, FrameworkElement.WidthProperty, CompactWidth, 460, spring);
-        AddAnim(sb, Card, FrameworkElement.HeightProperty, CompactHeight, 460, spring);
+        AddAnim(sb, Card, FrameworkElement.WidthProperty, CompactWidth, (int)dur, styleEase);
+        AddAnim(sb, Card, FrameworkElement.HeightProperty, CompactHeight, (int)dur, styleEase);
         sb.Begin();
     }
 
@@ -444,11 +470,13 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         CompactPushCard.Opacity = 0;
         CompactPushScale.ScaleX = CompactPushScale.ScaleY = 0.94;
         var sb = new Storyboard();
-        var spring = new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 };
+        var (styleEase, styleMs) = GetSizeAnimationStyle(expand: true);
         var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
-        AddAnim(sb, CompactPushCard, UIElement.OpacityProperty, 1, 320, smooth);
-        AddAnim(sb, CompactPushScale, ScaleTransform.ScaleXProperty, 1, 440, spring);
-        AddAnim(sb, CompactPushScale, ScaleTransform.ScaleYProperty, 1, 440, spring);
+        var lm = _settings.Current.LowPowerMode ? 0.6 : 1.0;
+        var scaleDur = (int)(Math.Min(440, styleMs) * lm);
+        AddAnim(sb, CompactPushCard, UIElement.OpacityProperty, 1, (int)(320 * lm), smooth);
+        AddAnim(sb, CompactPushScale, ScaleTransform.ScaleXProperty, 1, scaleDur, styleEase);
+        AddAnim(sb, CompactPushScale, ScaleTransform.ScaleYProperty, 1, scaleDur, styleEase);
         sb.Begin();
     }
     /// <summary>右键菜单主题色（圆角液态玻璃）。</summary>
@@ -540,15 +568,27 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private void RefreshWave()
     {
         var on = HasWave;
-        if (on && !_waveRendering)
+        var lowPower = _settings.Current.LowPowerMode;
+        // 三态：关闭 / 普通（CompositionTarget 60fps）/ 低功耗定时器（~30fps）
+        var wantTimer = on && lowPower;
+        var wantComposition = on && !lowPower;
+        var isTimer = _waveTimer is not null;
+        var isComposition = _waveRendering && !isTimer;
+        if (wantTimer != isTimer || wantComposition != isComposition)
         {
-            _waveRendering = true;
-            CompositionTarget.Rendering += OnWaveFrame;
-        }
-        else if (!on && _waveRendering)
-        {
-            _waveRendering = false;
-            CompositionTarget.Rendering -= OnWaveFrame;
+            StopWaveRender();
+            if (wantTimer)
+            {
+                _waveRendering = true;
+                _waveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+                _waveTimer.Tick += (_, _) => OnWaveFrame(null, EventArgs.Empty);
+                _waveTimer.Start();
+            }
+            else if (wantComposition)
+            {
+                _waveRendering = true;
+                CompositionTarget.Rendering += OnWaveFrame;
+            }
         }
         if (!on)
         {
@@ -557,7 +597,17 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasWave)));
     }
-
+    /// <summary>停止波纹渲染（摘除合成帧事件 + 停止降帧定时器）。</summary>
+    private void StopWaveRender()
+    {
+        _waveRendering = false;
+        if (_waveTimer is not null)
+        {
+            _waveTimer.Stop();
+            _waveTimer = null;
+        }
+        CompositionTarget.Rendering -= OnWaveFrame;
+    }
     /// <summary>合成帧回调：按帧间隔指数平滑，随真实音频电平起伏，动画连贯不卡顿。</summary>
     private void OnWaveFrame(object? sender, EventArgs e)
     {
@@ -823,20 +873,21 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         }
 
         var sb = new Storyboard();
-        // iOS 风格弹簧：快启动 + 轻微弹性回弹 + 慢收尾（低阻尼、高刚度）
-        var spring = new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 };
+        // 动效皮肤（33）：Spring= iOS 弹簧（默认）/ Soft=柔和 / Elastic=弹性 / Fade=简洁渐隐
+        var (styleEase, styleSizeMs) = GetSizeAnimationStyle(expand);
         var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var lm = _settings.Current.LowPowerMode ? 0.6 : 1.0; // 低功耗模式（37）：动画时间缩短，更快进入空闲
 
-        // 卡片尺寸：弹簧曲线（展开 880ms / 收起 760ms）
-        AddAnim(sb, Card, FrameworkElement.WidthProperty, width, expand ? 880 : 760, spring);
-        AddAnim(sb, Card, FrameworkElement.HeightProperty, height, expand ? 880 : 760, spring);
+        // 卡片尺寸：动效皮肤曲线（展开/收起时长由皮肤决定）
+        AddAnim(sb, Card, FrameworkElement.WidthProperty, width, (int)(styleSizeMs * lm), styleEase);
+        AddAnim(sb, Card, FrameworkElement.HeightProperty, height, (int)(styleSizeMs * lm), styleEase);
 
         // 展开内容：错峰淡入 + 轻微缩放/位移（展开延迟 95ms，让尺寸先动、内容跟上）
-        var contentDelay = TimeSpan.FromMilliseconds(expand ? 95 : 0);
-        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, expand ? 480 : 300, smooth, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, expand ? 720 : 640, spring, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, expand ? 720 : 640, spring, contentDelay);
-        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, expand ? 720 : 640, smooth, contentDelay);
+        var contentDelay = TimeSpan.FromMilliseconds((expand ? 95 : 0) * lm);
+        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, (int)((expand ? 480 : 300) * lm), smooth, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, (int)((expand ? 720 : 640) * lm), styleEase, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, (int)((expand ? 720 : 640) * lm), styleEase, contentDelay);
+        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, (int)((expand ? 720 : 640) * lm), smooth, contentDelay);
 
         // 胶囊行：展开后淡出（由大图区接管）；收起时立即恢复完全不透明，
         // 避免缩回瞬间胶囊内容还在淡入而出现"空内容"
@@ -874,6 +925,30 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         sb.Begin();
     }
 
+    /// <summary>
+    /// 动效皮肤（33）：返回 (尺寸缓动, 基准时长毫秒) 元组。
+    /// Spring = iOS 阻尼弹簧（默认，轻微过冲回弹）；Soft = 柔和弹簧（回弹更少更软）；
+    /// Elastic = 弹性回弹（明显弹跳）；Fade = 简洁渐隐（无回弹，最克制）。
+    /// </summary>
+    private (IEasingFunction Easing, int SizeMs) GetSizeAnimationStyle(bool expand)
+    {
+        switch (_settings.Current.AnimationStyle)
+        {
+            case "Soft":
+                return (new SoftSpringEase(), expand ? 1050 : 920);
+            case "Elastic":
+                return (new ElasticEase
+                {
+                    Oscillations = 1,
+                    Springiness = 6,
+                    EasingMode = EasingMode.EaseOut,
+                }, expand ? 960 : 830);
+            case "Fade":
+                return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? 620 : 520);
+            default: // Spring
+                return (new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 }, expand ? 880 : 760);
+        }
+    }
     private void AddAnim(Storyboard sb, DependencyObject target, DependencyProperty prop, double to, int ms, IEasingFunction easing, TimeSpan? beginTime = null)
     {
         var anim = new DoubleAnimation(to, TimeSpan.FromMilliseconds(ms))
@@ -891,13 +966,13 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     public void Reposition()
     {
         if (!IsLoaded) return;
-        var pos = ScreenHelper.ComputePosition(_screen, _settings.Current.Position,
-            ActualWidth, ActualHeight, _settings.Current.OffsetX, _settings.Current.OffsetY);
+        var s = _settings.Current;
+        var pos = ScreenHelper.ComputePosition(_screen, s.Position,
+            ActualWidth, ActualHeight, s.OffsetX, s.OffsetY);
         Left = pos.X;
         Top = pos.Y;
         ApplyCardAlignment();
     }
-
     // ── 歌词自动滚动 ──────────────────────────────────────────
 
     private bool _lyricsScrollQueued;

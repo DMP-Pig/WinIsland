@@ -39,10 +39,14 @@ public sealed class MediaCoordinator : IDisposable
 
     /// <summary>Raised on the UI thread when there is no active media anymore.</summary>
     public event EventHandler? MediaEnded;
+    /// <summary>可用媒体会话列表变化（多播放器选择器）。</summary>
+    public event EventHandler? SessionsChanged;
+
 
     public void Start()
     {
         _ = _smtc.StartAsync(_cts.Token);
+        _smtc.SessionsChanged += (_, _) => PublishSessions();
         _timer = new System.Threading.Timer(_ => _ = TickAsync(), null, TimeSpan.FromMilliseconds(400), TimeSpan.FromSeconds(1));
     }
 
@@ -228,6 +232,45 @@ public sealed class MediaCoordinator : IDisposable
 
     /// <summary>Force an immediate refresh (e.g. after user interaction).</summary>
     public Task RefreshNowAsync() => TickAsync();
+
+
+    /// <summary>当前可用媒体会话（SMTC 全部 + Cider 伪会话优先），供多播放器选择器。</summary>
+    public IReadOnlyList<MediaSessionInfo> GetAvailableSessions()
+    {
+        var list = _smtc.GetSessions().ToList();
+        // Cider 已连接时作为最高优先级伪会话（允许用户切回 Cider）
+        if (_cider.IsEnabled && _cider.Client.IsConnected)
+        {
+            var isCurrent = Current?.Source == MediaSourceKind.Cider;
+            list.Insert(0, new MediaSessionInfo("Cider", "Cider",
+                isCurrent ? PlaybackStatus.Playing : PlaybackStatus.Opened, isCurrent));
+        }
+        return list;
+    }
+
+    /// <summary>切换到指定媒体会话（多播放器选择器）。</summary>
+    public async Task<bool> SwitchSessionAsync(string appId)
+    {
+        if (string.IsNullOrWhiteSpace(appId)) return false;
+        if (string.Equals(appId, "Cider", StringComparison.OrdinalIgnoreCase))
+        {
+            // Cider 始终是最高优先级来源：立即刷新一次即可生效
+            await RefreshNowAsync();
+            return _cider.IsEnabled && _cider.Client.IsConnected;
+        }
+
+        var ok = _smtc.SwitchSession(appId);
+        if (ok) await RefreshNowAsync();
+        return ok;
+    }
+
+    private void PublishSessions()
+    {
+        if (_dispatcher.CheckAccess())
+            SessionsChanged?.Invoke(this, EventArgs.Empty);
+        else
+            _dispatcher.BeginInvoke(() => SessionsChanged?.Invoke(this, EventArgs.Empty));
+    }
 
     public void Dispose()
     {

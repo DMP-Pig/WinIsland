@@ -20,13 +20,14 @@ public static class AppPaths
         }
     }
 
-    public static string SettingsFile { get; } = Path.Combine(AppDataDir, "settings.json");
+    // Note: computed (not cached) so tests/runtime can redirect via WINISLAND_APPDATA.
+    public static string SettingsFile => Path.Combine(AppDataDir, "settings.json");
 
-    public static string LogsDir { get; } = Path.Combine(AppDataDir, "logs");
+    public static string LogsDir => Path.Combine(AppDataDir, "logs");
 
-    public static string ThumbCacheDir { get; } = Path.Combine(AppDataDir, "thumbcache");
+    public static string ThumbCacheDir => Path.Combine(AppDataDir, "thumbcache");
 
-    public static string LyricsDir { get; } = Path.Combine(AppDataDir, "Lyrics");
+    public static string LyricsDir => Path.Combine(AppDataDir, "Lyrics");
 
     public static string ExePath { get; } = Environment.ProcessPath ?? string.Empty;
 

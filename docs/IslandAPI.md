@@ -32,7 +32,13 @@
 | `progress` | 否 | number | 进度 0~1（展开态显示进度条） |
 | `duration_seconds` | 否 | number | 显示时长（秒），**覆盖** WinIsland 全局默认 |
 | `buttons` | 否 | array | 按钮列表 |
-| `id` | 否 | string | 自定义 ID；同 ID 重复推送会**更新**原卡片（并延长显示） |
+| `id` | 否 | string | 自定义 ID；同 ID 重复推送会**更新**原卡片（并保持队列位置不变） |
+| `subtitle` | 否 | string | 副标题（标题下方小字，紧凑/展开均显示） |
+| `type` | 否 | string | 内容类型：`info`（默认）/ `success` / `warning` / `error`，用于提示色 |
+| `priority` | 否 | string | 优先级：`high` / `normal`（默认）/ `low`；多条并存时高优先级排前 |
+| `accent` | 否 | string | 自定义强调色 `#RRGGBB` 或 `#AARRGGBB`，覆盖类型默认色 |
+| `click` | 否 | object | 整卡点击回跳（结构同 `buttons[]` 项）：点击卡片执行该动作 |
+| `expires_at` | 否 | string | 服务端计算（返回用）；请求时忽略 |
 
 `buttons[]` 每项：
 
@@ -46,10 +52,32 @@
 
 成功返回 JSON：
 ```json
-{ "id": "abc123", "expires_at": "2026-08-23T15:05:30Z" }
+{ "id": "abc123", "position": 1, "expires_at": "2026-08-23T15:05:30Z" }
 ```
 
+| 字段 | 说明 |
+|---|---|
+| `id` | 本次推送的 ID（未传时服务端生成） |
+| `position` | 该卡片在显示队列中的位置（从 1 开始）；同 ID 重复更新时位置保持不变 |
+| `expires_at` | 过期时间（UTC）。同 ID 更新保留原过期时间，不会续期 |
+
 ## 三、各语言示例
+
+仓库内提供可直接运行的示例脚本（见 `docs/sdk-examples/`）：
+`push.bat` / `pull.bat`（curl）、`push.ps1`（PowerShell）、`push.py` / `pull.py`（Python 标准库）。
+
+```bash
+# Windows
+docs\sdk-examples\push.bat 9840
+docs\sdk-examples\pull.bat 9840
+
+# PowerShell
+powershell -ExecutionPolicy Bypass -File docs\sdk-examples\push.ps1 -Port 9840
+
+# Python
+python docs/sdk-examples/push.py 9840
+```
+
 
 ### PowerShell
 ```powershell

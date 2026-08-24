@@ -2,6 +2,7 @@
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using System.Collections.ObjectModel;
 using WinIsland.Services;
 
 namespace WinIsland.UI;
@@ -46,37 +47,38 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private PlaybackStatus _restoredStatus = PlaybackStatus.Closed; // 上次退出的状态（用于启动恢复）
 
     // ── 上岛推送（第三方软件推送到灵动岛）──
+    private readonly List<IslandPush> _pushes = new();
     private IslandPush? _activePush;
 
-    // ── 效率工具 / 波纹 / 键盘指示灯 / 通知角标 ──
+    // ── 效率工具 / 波纹 / 键盘指示灯 ──
     private readonly AudioWaveService _wave;
     private readonly KeyboardIndicatorMonitor _keyboard;
     private readonly ClipboardHistoryService _clipboard;
     private readonly TodoService _todo;
     private readonly ScheduleService _schedule;
     private readonly PomodoroService _pomodoro;
-    private readonly NotificationHistoryService _history;
     private int _capsLockSecondsLeft;   // 键盘指示灯剩余显示秒数（由 _widgetTimer 每秒递减）
-
+    // ── 多播放器选择器（迷你播放器 / 设置中切换媒体来源）──
+    private readonly ObservableCollection<MediaSessionItem> _mediaSessions = new();
+    private MediaSessionItem? _selectedMediaSession;
+    private bool _suppressSessionSwitch;
 
     public IslandViewModel(MediaCoordinator coordinator, SettingsService settings, LyricsService lyricsService,
         AudioWaveService? wave = null, KeyboardIndicatorMonitor? keyboard = null,
         ClipboardHistoryService? clipboard = null, TodoService? todo = null,
-        ScheduleService? schedule = null, PomodoroService? pomodoro = null,
-        NotificationHistoryService? history = null)
+        ScheduleService? schedule = null, PomodoroService? pomodoro = null)
     {
         _coordinator = coordinator;
         _settings = settings;
         _lyricsService = lyricsService;
 
-        // 效率工具 / 波纹 / 键盘指示灯 / 通知角标：默认自建实例（App 可注入共享实例）
+        // 效率工具 / 波纹 / 键盘指示灯：默认自建实例（App 可注入共享实例）
         _wave = wave ?? new AudioWaveService();
         _keyboard = keyboard ?? new KeyboardIndicatorMonitor();
         _clipboard = clipboard ?? new ClipboardHistoryService();
         _todo = todo ?? new TodoService();
         _schedule = schedule ?? new ScheduleService();
         _pomodoro = pomodoro ?? new PomodoroService();
-        _history = history ?? new NotificationHistoryService();
         _wave.Start();
         _wave.SetPlaying(false);
         _keyboard.StateChanged += OnKeyboardStateChanged;
@@ -85,7 +87,6 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _schedule.Changed += RefreshScheduleSummary;
         _pomodoro.Tick += RefreshTimerText;
         _pomodoro.Completed += OnPomodoroCompleted;
-        _history.Changed += (_, _) => RefreshUnreadCount();
 
         // 启动时恢复上次退出的播放位置（暂停后重启不跳回开头）
         var restored = PlaybackStateStore.Load();
@@ -109,6 +110,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
 
         _coordinator.SnapshotChanged += OnSnapshotChanged;
         _coordinator.MediaEnded += OnMediaEnded;
+        _coordinator.SessionsChanged += (_, _) => RefreshMediaSessions();
+        RefreshMediaSessions();
         Localization.LanguageChanged += (_, _) => RaiseAllText();
 
         _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
@@ -139,6 +142,64 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
 
     public event EventHandler? OpenSettingsRequested;
     public event EventHandler? ToggleLyricsWindowRequested;
+
+    // ── 多播放器选择器 ────────────────────────────────────────
+    /// <summary>当前可用媒体会话（SMTC 全部 + Cider 伪会话），供迷你播放器/设置切换来源。</summary>
+    public ObservableCollection<MediaSessionItem> MediaSessions => _mediaSessions;
+
+    public MediaSessionItem? SelectedMediaSession
+    {
+        get => _selectedMediaSession;
+        set
+        {
+            if (!Set(ref _selectedMediaSession, value)) return;
+            if (_suppressSessionSwitch || value is null) return;
+            _ = SwitchSelectedSessionAsync(value.AppId);
+        }
+    }
+
+    /// <summary>刷新媒体会话列表并保持当前选中（不会触发切换）。</summary>
+    public void RefreshMediaSessions()
+    {
+        try
+        {
+            var sessions = _coordinator.GetAvailableSessions();
+            var selectedId = _selectedMediaSession?.AppId;
+            _suppressSessionSwitch = true;
+            try
+            {
+                _mediaSessions.Clear();
+                foreach (var s in sessions)
+                    _mediaSessions.Add(new MediaSessionItem(s.AppId, s.AppName, s.IsCurrent));
+
+                _selectedMediaSession = _mediaSessions.FirstOrDefault(x => x.AppId == selectedId)
+                    ?? _mediaSessions.FirstOrDefault(x => x.IsCurrent)
+                    ?? _mediaSessions.FirstOrDefault();
+            }
+            finally
+            {
+                _suppressSessionSwitch = false;
+            }
+            OnPropertyChanged(nameof(SelectedMediaSession));
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"刷新媒体会话列表失败: {ex.Message}");
+        }
+    }
+
+    private async Task SwitchSelectedSessionAsync(string appId)
+    {
+        try
+        {
+            await _coordinator.SwitchSessionAsync(appId);
+            RefreshMediaSessions();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"切换媒体来源失败: {ex.Message}");
+        }
+    }
 
     // ── Commands ───────────────────────────────────────────────
     public AsyncRelayCommand PlayPauseCommand { get; }
@@ -309,10 +370,11 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool ShowIdleTodo => HasMedia ? _settings.Current.Components.TodoWhenPlaying : _settings.Current.Components.TodoWhenIdle;
     public bool ShowIdleTimer => HasMedia ? _settings.Current.Components.TimerWhenPlaying : _settings.Current.Components.TimerWhenIdle;
     public bool ShowIdleSchedule => HasMedia ? _settings.Current.Components.ScheduleWhenPlaying : _settings.Current.Components.ScheduleWhenIdle;
+    public bool ShowIdleHoliday => HasMedia ? _settings.Current.Components.HolidayWhenPlaying : _settings.Current.Components.HolidayWhenIdle;
     public bool ShowAnyWidget => ShowIdleTime || ShowIdleWeather || ShowIdleDate
         || ShowIdleCpu || ShowIdleRam || ShowIdleNet || ShowIdleBattery
         || ShowIdleVolume || ShowIdleCapsLock || ShowIdleClipboard || ShowIdleTodo
-        || ShowIdleTimer || ShowIdleSchedule;
+        || ShowIdleTimer || ShowIdleSchedule || ShowIdleHoliday;
 
     // ── 效率工具 / 波纹 / 角标 文本 ──
     /// <summary>波纹强度（0..1），由 AudioWaveService 实时采集/模拟，UI 轮询。</summary>
@@ -331,12 +393,6 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private string _scheduleSummary = string.Empty;
     public string ScheduleSummary { get => _scheduleSummary; private set => Set(ref _scheduleSummary, value); }
 
-    private int _unreadCount;
-    /// <summary>未读通知数（展开灵动岛后清零）。</summary>
-    public int UnreadCount { get => _unreadCount; private set => Set(ref _unreadCount, value); }
-    public bool ShowBadge => _settings.Current.BadgeEnabled && UnreadCount > 0;
-    public string BadgeText => UnreadCount > 99 ? "99+" : UnreadCount.ToString();
-
     private IReadOnlyList<IslandComponent> _compactItems = Array.Empty<IslandComponent>();
     public IReadOnlyList<IslandComponent> CompactItems { get => _compactItems; private set => Set(ref _compactItems, value); }
 
@@ -346,7 +402,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         // 读取顺序，并补齐缺失的已知组件（兼容旧配置里只有 Time,Weather 的情况）
         var keys = (_settings.Current.WidgetOrder ?? "Time,Weather,Song")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-        foreach (var known in new[] { "Time", "Weather", "Date", "Cpu", "Ram", "Net", "Battery", "Song", "Volume", "CapsLock", "Clipboard", "Todo", "Timer", "Schedule" })
+        foreach (var known in new[] { "Time", "Weather", "Date", "Cpu", "Ram", "Net", "Battery", "Song", "Volume", "CapsLock", "Clipboard", "Todo", "Timer", "Schedule", "Holiday" })
             if (!keys.Contains(known)) keys.Add(known);
 
         var items = new List<IslandComponent>();
@@ -365,6 +421,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             else if (key == "Todo" && ShowIdleTodo && !string.IsNullOrEmpty(TodoSummary)) items.Add(new IslandComponent("Todo"));
             else if (key == "Timer" && ShowIdleTimer && !string.IsNullOrEmpty(TimerText)) items.Add(new IslandComponent("Timer"));
             else if (key == "Schedule" && ShowIdleSchedule && !string.IsNullOrEmpty(ScheduleSummary)) items.Add(new IslandComponent("Schedule"));
+            else if (key == "Holiday" && ShowIdleHoliday && !string.IsNullOrEmpty(HolidayText)) items.Add(new IslandComponent("Holiday"));
         }
 
         // 内容未变化时不重建，避免每个快照（每秒）都重创建组件导致闪烁
@@ -452,10 +509,17 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                 else NetText = string.Empty;
             }
             catch { NetText = string.Empty; }
+
+            // 节假日倒计时（仅勾选显示时计算，纯本地）
+            if (ShowIdleHoliday)
+            {
+                var (hName, hDays) = NextHolidayInfo();
+                HolidayText = hDays < 0 ? string.Empty : hDays == 0 ? $"今日 {hName}" : $"{hName} {hDays} 天后";
+            }
+            else if (HolidayText.Length > 0) HolidayText = string.Empty;
         }
         catch { /* 忽略性能计数器/电量异常 */ }
     }
-
 
     // 组件摆放顺序（WidgetOrder 中的下标决定左右列）
     public double WidgetTimeFontSize => HasMedia ? 14 : 16; // 空闲时钟字号适中，启动不突兀
@@ -477,7 +541,37 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     /// <summary>低电量触发（参数：电量百分比）。</summary>
     public event Action<int>? LowBatteryRequested;
     private bool _lowBatteryNotified;
+    private string _holidayText = string.Empty;
+    public string HolidayText { get => _holidayText; private set => Set(ref _holidayText, value); }
+
+    /// <summary>内置节假日表（年份+公历/农历日期整理，纯本地不联网；如需可自行补充条目）。</summary>
+    private static readonly (string Name, int Year, int Month, int Day)[] HolidayTable =
+    {
+        ("元旦", 2026, 1, 1), ("春节", 2026, 2, 17), ("清明", 2026, 4, 5), ("劳动节", 2026, 5, 1),
+        ("端午", 2026, 6, 19), ("中秋", 2026, 9, 25), ("国庆", 2026, 10, 1),
+        ("元旦", 2027, 1, 1), ("春节", 2027, 2, 6), ("清明", 2027, 4, 5), ("劳动节", 2027, 5, 1),
+        ("端午", 2027, 6, 9), ("中秋", 2027, 9, 15), ("国庆", 2027, 10, 1),
+    };
+
+    /// <summary>下一个节假日名称与剩余天数（今天为 0；找不到返回空）。</summary>
+    private static (string Name, int Days) NextHolidayInfo()
+    {
+        var today = DateTime.Today;
+        var best = ("", -1);
+        foreach (var h in HolidayTable)
+        {
+            DateTime d;
+            try { d = new DateTime(h.Year, h.Month, h.Day); } catch { continue; }
+            if (d < today) continue;
+            var days = (int)(d - today).TotalDays;
+            if (best.Item2 < 0 || days < best.Item2) best = (h.Name, days);
+        }
+        return best;
+    }
+
     // ── 上岛推送（第三方软件推送到灵动岛）──────────────────
+    public IReadOnlyList<IslandPush> ActivePushes => _pushes;
+
     public IslandPush? ActivePush
     {
         get => _activePush;
@@ -487,12 +581,16 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(HasActivePush));
             OnPropertyChanged(nameof(ActivePushIcon));
             OnPropertyChanged(nameof(ActivePushTitle));
+            OnPropertyChanged(nameof(ActivePushSubtitle));
+            OnPropertyChanged(nameof(ActivePushHasSubtitle));
             OnPropertyChanged(nameof(ActivePushBody));
             OnPropertyChanged(nameof(ActivePushHasBody));
             OnPropertyChanged(nameof(ActivePushHasProgress));
             OnPropertyChanged(nameof(ActivePushProgress));
             OnPropertyChanged(nameof(ActivePushHasButtons));
             OnPropertyChanged(nameof(ActivePushButtons));
+            OnPropertyChanged(nameof(ActivePushHasClick));
+            OnPropertyChanged(nameof(ActivePushAccent));
             UpdateVisibility(); // 上岛卡片显示/消失影响灵动岛可见性
         }
     }
@@ -500,6 +598,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool HasActivePush => ActivePush is not null;
     public string ActivePushIcon => string.IsNullOrEmpty(ActivePush?.Icon) ? "\uE7F4" : ActivePush!.Icon;
     public string ActivePushTitle => ActivePush?.Title ?? string.Empty;
+    public string ActivePushSubtitle => ActivePush?.Subtitle ?? string.Empty;
+    public bool ActivePushHasSubtitle => !string.IsNullOrEmpty(ActivePush?.Subtitle);
     public string ActivePushBody => ActivePush?.Body ?? string.Empty;
     public bool ActivePushHasBody => !string.IsNullOrEmpty(ActivePush?.Body);
     public bool ActivePushHasProgress => ActivePush?.Progress is not null;
@@ -507,6 +607,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool ActivePushHasButtons => ActivePush?.Buttons is { Count: > 0 };
     public IReadOnlyList<IslandPushButton> ActivePushButtons
         => (IReadOnlyList<IslandPushButton>)(ActivePush?.Buttons ?? new List<IslandPushButton>());
+    /// <summary>整卡点击回跳（click）是否已配置。</summary>
+    public bool ActivePushHasClick => ActivePush?.Click is not null;
+    /// <summary>强调色（#RRGGBB / #AARRGGBB），未配置时为空字符串，由 UI 用类型默认色。</summary>
+    public string ActivePushAccent => ActivePush?.Accent ?? string.Empty;
 
     /// <summary>估算文本宽度：中文/全角按 cjkPx，ASCII 按 asciiPx。</summary>
     private static double MeasureText(string s, double cjkPx, double asciiPx)
@@ -533,6 +637,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                     case "Ram": w += MeasureText(RamText, 11, 6) + 16; break;
                     case "Net": w += MeasureText(NetText, 11, 6) + 16; break;
                     case "Battery": w += MeasureText(BatteryText, 11, 6) + 16; break;
+                    case "Holiday": w += Math.Min(MeasureText(HolidayText, 12, 6.5) + 8, 120); break;
                     case "Song":
                         w += 40 + 6
                             + Math.Min(MeasureText(Title, 13, 7), 140)
@@ -625,6 +730,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             if (ActivePush is null) return _settings.Current.CompactHeight;
             if (_settings.Current.SingleLineMode) return Math.Max(46, _settings.Current.CompactHeight);
             double h = 46; // 图标/标题行 + 内边距
+            if (!string.IsNullOrEmpty(ActivePush.Subtitle)) h += 15; // 副标题行
             if (!string.IsNullOrEmpty(ActivePush.Body))
             {
                 var bodyW = Math.Min(MeasureText(ActivePush.Body, 13.5, 7), 460);
@@ -638,31 +744,53 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>上岛 API 收到推送：更新当前上岛卡片（同 id 覆盖），并按条显示时长安排过期。</summary>
+    /// <summary>上岛 API 收到推送：加入/更新推送队列（同 id 覆盖、保留原过期时间），并按优先级刷新显示。</summary>
     public void PushIsland(IslandPush push)
     {
-        // 若当前已有同 id 推送则保留原过期时间基础；否则用新计算的 ExpiresAt
-        var existing = ActivePush;
-        if (existing is not null && string.Equals(existing.Id, push.Id, StringComparison.Ordinal) && existing.ExpiresAt is DateTime e)
+        var idx = _pushes.FindIndex(p => string.Equals(p.Id, push.Id, StringComparison.Ordinal));
+        if (idx >= 0)
         {
             // 更新内容，保持原过期时间
-            push.ExpiresAt = e;
+            if (_pushes[idx].ExpiresAt is DateTime e) push.ExpiresAt = e;
+            _pushes[idx] = push;
         }
-        ActivePush = push;
-        AppLogger.Info($"Island push: '{push.Title}' (id={push.Id})");
+        else
+        {
+            _pushes.Add(push);
+        }
+        RecomputeActivePush();
+        AppLogger.Info($"Island push: '{push.Title}' (id={push.Id}, priority={push.Priority ?? "normal"})");
     }
 
     /// <summary>上岛 API 移除/过期指定推送。</summary>
     public void RemoveIslandPush(string id)
     {
-        if (ActivePush is not null && string.Equals(ActivePush.Id, id, StringComparison.Ordinal))
-            ActivePush = null;
+        var removed = _pushes.RemoveAll(p => string.Equals(p.Id, id, StringComparison.Ordinal)) > 0;
+        if (removed) RecomputeActivePush();
     }
 
-    /// <summary>用户点击/关闭当前上岛卡片。</summary>
+    /// <summary>用户点击/关闭当前上岛卡片：只关闭当前条，队列中还有推送则继续显示。</summary>
     public void DismissActivePush()
     {
-        if (ActivePush is not null) ActivePush = null;
+        if (ActivePush is null) return;
+        _pushes.RemoveAll(p => ReferenceEquals(p, ActivePush));
+        RecomputeActivePush();
+    }
+
+    /// <summary>按 优先级高→低、入队 早→晚 重排队列并选出当前显示项（过期项同时清除）。</summary>
+    private void RecomputeActivePush()
+    {
+        _pushes.RemoveAll(p => p.ExpiresAt is DateTime e && e <= DateTime.UtcNow);
+        // 稳定排序：优先级高→低，同级保持入队顺序（早→晚）
+        var sorted = _pushes
+            .Select((p, i) => (p, i))
+            .OrderByDescending(t => t.p.PriorityRank)
+            .ThenBy(t => t.i)
+            .Select(t => t.p)
+            .ToList();
+        _pushes.Clear();
+        _pushes.AddRange(sorted);
+        ActivePush = _pushes.FirstOrDefault();
     }
 
     // ── 效率工具组件刷新（服务事件 → 摘要文本 → 重建组件）─────────
@@ -712,12 +840,6 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         RefreshTimerText();
         PomodoroCompletedRequested?.Invoke(phase);
     }
-    private void RefreshUnreadCount()
-    {
-        UnreadCount = _history.Entries.Count;
-        OnPropertyChanged(nameof(ShowBadge));
-        OnPropertyChanged(nameof(BadgeText));
-    }
 
     /// <summary>执行上岛卡片按钮动作（打开 URL / 启动程序）。</summary>
     public void ExecutePushAction(IslandPushButton button)
@@ -737,11 +859,19 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>执行整卡点击回跳动作（推送配置了 click 时），执行后关闭该条推送。</summary>
+    public void ExecutePushClick()
+    {
+        if (ActivePush?.Click is not IslandPushButton click || string.IsNullOrWhiteSpace(click.Value)) return;
+        ExecutePushAction(click);
+        DismissActivePush();
+    }
+
     /// <summary>每秒检查上岛推送是否过期（由 _widgetTimer 调用）。</summary>
     private void CheckPushExpiry()
     {
-        if (ActivePush?.ExpiresAt is DateTime expiry && DateTime.UtcNow >= expiry)
-            ActivePush = null;
+        if (_pushes.Any(p => p.ExpiresAt is DateTime e && e <= DateTime.UtcNow))
+            RecomputeActivePush();
     }
 
     // ── Visibility / expansion ─────────────────────────────────
@@ -752,13 +882,6 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         {
             if (!Set(ref _expanded, value)) return;
             OnPropertyChanged(nameof(ExpandedContentVisibility));
-            if (value)
-            {
-                // 展开即视为已读：清掉角标
-                UnreadCount = 0;
-                OnPropertyChanged(nameof(ShowBadge));
-                OnPropertyChanged(nameof(BadgeText));
-            }
         }
     }
 
@@ -968,7 +1091,16 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         var result = await _lyricsService.GetLyricsAsync(snapshot);
         if (_lyricsKey != key) return; // track changed while loading
         _lyrics = result;
-        LyricLines = result.Document.Lines.Select(l => new LyricLineViewModel(l)).ToList();
+        if (_settings.Current.BilingualLyrics)
+        {
+            // 双语歌词：相邻时间戳的翻译行自动合并到主句下方显示
+            var pairs = LrcParser.PairLines(result.Document.Lines, TimeSpan.FromMilliseconds(250), enable: true);
+            LyricLines = pairs.Select(x => new LyricLineViewModel(x.Main, x.Translation)).ToList();
+        }
+        else
+        {
+            LyricLines = result.Document.Lines.Select(l => new LyricLineViewModel(l)).ToList();
+        }
         if (LyricLines.Count > 0)
         {
             // 直接按当前（已恢复的）位置定位当前句，避免启动瞬间先显示第 0 行再跳
@@ -981,7 +1113,6 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             LyricIndex = -1;
             CurrentLyricText = string.Empty;
         }
-
 
         LyricsStatus = result.Source switch
         {
@@ -1100,6 +1231,12 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         if (!alwaysVisible && hasMedia && Status == PlaybackStatus.Paused && !_settings.Current.ShowWhenPaused)
             show = false;
 
+        // 条件规则引擎：隐藏/强制显示/强制收起（多个规则叠加，隐藏优先）
+        var ruleEval = RuleEngine.Evaluate(_settings.Current, hasMedia, _snapshot?.Track.SourceAppId);
+        if (ruleEval.ForceHide) show = false;
+        else if (ruleEval.ForceShow) show = true;
+        if (ruleEval.ForceCollapse && IsExpanded) IsExpanded = false;
+
         if (!ShowIdleWeather) WeatherText = string.Empty; // 仅天气组件不显示时才清空
 
         // 通知界面组件可见性变化
@@ -1124,9 +1261,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowIdleTodo));
         OnPropertyChanged(nameof(ShowIdleTimer));
         OnPropertyChanged(nameof(ShowIdleSchedule));
+        OnPropertyChanged(nameof(ShowIdleHoliday));
+        OnPropertyChanged(nameof(HolidayText));
         OnPropertyChanged(nameof(VolumeText));
-        OnPropertyChanged(nameof(ShowBadge));
-        OnPropertyChanged(nameof(BadgeText));
 
         IsVisible = show;
     }
@@ -1319,6 +1456,24 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     }
 }
 
+/// <summary>多播放器选择器中的一行（AppId + 名称 + 是否当前跟随）。</summary>
+public sealed class MediaSessionItem : ObservableObject
+{
+    private bool _isCurrent;
 
+    public string AppId { get; }
+    public string AppName { get; }
 
+    public bool IsCurrent
+    {
+        get => _isCurrent;
+        set => Set(ref _isCurrent, value);
+    }
 
+    public MediaSessionItem(string appId, string appName, bool isCurrent)
+    {
+        AppId = appId;
+        AppName = appName;
+        _isCurrent = isCurrent;
+    }
+}

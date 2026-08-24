@@ -33,6 +33,9 @@ public sealed class SmtcMediaProvider : IDisposable
     }
 
     public bool IsAvailable { get; private set; }
+    /// <summary>会话列表变化（多播放器选择器刷新用）。</summary>
+    public event EventHandler? SessionsChanged;
+
 
     /// <summary>Most recently published snapshot (null when nothing is active).</summary>
     public MediaSnapshot? LastSnapshot { get; private set; }
@@ -125,6 +128,8 @@ public sealed class SmtcMediaProvider : IDisposable
         {
             AppLogger.Warn($"SMTC RefreshSession failed: {ex.Message}");
         }
+
+        SessionsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>该媒体程序是否启用：在 MediaApps 中则按它的 Enabled，否则默认启用。</summary>
@@ -479,6 +484,50 @@ public sealed class SmtcMediaProvider : IDisposable
         catch (Exception ex) { AppLogger.Warn($"SMTC seek failed: {ex.Message}"); return false; }
     }
 
+
+    /// <summary>当前全部活跃的 SMTC 会话（含状态与是否当前跟随）。</summary>
+    public IReadOnlyList<MediaSessionInfo> GetSessions()
+    {
+        var list = new List<MediaSessionInfo>();
+        if (_manager is null) return list;
+        try
+        {
+            var currentId = _session?.SourceAppUserModelId;
+            foreach (var s in _manager.GetSessions())
+            {
+                var id = s.SourceAppUserModelId;
+                if (string.IsNullOrWhiteSpace(id)) continue;
+                list.Add(new MediaSessionInfo(id, SourceAppName(id), PlaybackStatusOf(s),
+                    string.Equals(id, currentId, StringComparison.OrdinalIgnoreCase)));
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"SMTC GetSessions failed: {ex.Message}");
+        }
+        return list;
+    }
+
+    /// <summary>切换到指定应用（AppId）的媒体会话（多播放器选择器）。</summary>
+    public bool SwitchSession(string appId)
+    {
+        if (_manager is null || string.IsNullOrWhiteSpace(appId)) return false;
+        try
+        {
+            var target = _manager.GetSessions().FirstOrDefault(s =>
+                string.Equals(s.SourceAppUserModelId, appId, StringComparison.OrdinalIgnoreCase));
+            if (target is null) return false;
+            Attach(target);
+            SessionsChanged?.Invoke(this, EventArgs.Empty);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"SMTC SwitchSession failed: {ex.Message}");
+            return false;
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -506,6 +555,10 @@ public sealed class SmtcMediaProvider : IDisposable
         _cts.Dispose();
     }
 }
+
+/// <summary>一个 SMTC 媒体会话（供多播放器选择器展示/切换）。</summary>
+public sealed record MediaSessionInfo(string AppId, string AppName, PlaybackStatus Status, bool IsCurrent);
+
 
 
 

@@ -21,6 +21,7 @@ public partial class App : Application
     private IslandViewModel? _vm;
     private readonly List<IslandWindow> _windows = new();
     private LyricsWindow? _lyricsWindow;
+    private MiniPlayerWindow? _miniPlayer;
     private TrayIcon? _tray;
     private SingleInstance? _singleInstance;
     private AppSettings? _lastPositionSettings;
@@ -104,10 +105,10 @@ public partial class App : Application
         _notificationHistory = new NotificationHistoryService();
         _notifications = new NotificationService(Dispatcher, _settings, _notificationHistory);
         _bluetooth = new BluetoothMonitor();
-        _bluetooth.DeviceConnected += (_, name) => _notifications.Show("蓝牙设备已连接", name, "\uE702");
-        _bluetooth.DeviceDisconnected += (_, name) => _notifications.Show("蓝牙设备已断开", name, "\uE702");
+        _bluetooth.DeviceConnected += (_, name) => _notifications.Show("蓝牙设备已连接", name, "\uE702", "Bluetooth");
+        _bluetooth.DeviceDisconnected += (_, name) => _notifications.Show("蓝牙设备已断开", name, "\uE702", "Bluetooth");
         _systemNotifications = new SystemNotificationMonitor();
-        _systemNotifications.NotificationCaptured += (_, n) => _notifications.Show(n.Title, n.Body, "\uE945");
+        _systemNotifications.NotificationCaptured += (_, n) => _notifications.Show(n.Title, n.Body, "\uE945", n.AppName);
 
         // ── 效率工具 / 波纹 / 更新服务 ──
         _wave = new AudioWaveService();
@@ -122,22 +123,25 @@ public partial class App : Application
         _wave.SetSensitivity(_settings.Current.WaveSensitivity);
         _clipboard.SetEnabled(_settings.Current.ClipboardHistoryEnabled);
         _clipboard.MaxEntries = _settings.Current.ClipboardHistoryMax;
-        _schedule.Reminder += item => _notifications?.Show("日程提醒", item.Title, "\uE8B7");
+        // 复制提示（14 已复制 / 15 验证码 / 27 复制进度）：独立于剪贴板历史，任何一项开启即轮询
+        _clipboard.EntryAdded += OnClipboardEntryAdded;
+        UpdateClipboardPolling();
+        _schedule.Reminder += item => _notifications?.Show("日程提醒", item.Title, "\uE8B7", "WinIsland");
 
         _vm = new IslandViewModel(_coordinator, _settings, _lyrics,
-            _wave, _keyboard, _clipboard, _todo, _schedule, _pomodoro, _notificationHistory);
+            _wave, _keyboard, _clipboard, _todo, _schedule, _pomodoro);
         // 番茄钟到点提醒
         _vm.PomodoroCompletedRequested += phase =>
             _notifications?.Show("番茄钟结束",
                 phase == PomodoroPhase.Work ? "工作阶段结束，休息一下吧" : "休息结束，开始新的专注吧",
-                "\uE823");
+                "\uE823", "WinIsland");
         _vm.OpenSettingsRequested += (_, _) => OpenSettings();
         _vm.ToggleLyricsWindowRequested += (_, _) => ToggleLyricsWindow();
         // 播放媒体时不弹「正在播放」通知（用户要求；蓝牙/低电量/系统通知等仍保留）
         // _vm.NowPlayingRequested += (title, artist) =>
         //     _notifications?.Show(Localization.Get("NowPlaying_Title"), string.IsNullOrEmpty(artist) ? title : $"{title} - {artist}", "\uE8D6");
         _vm.LowBatteryRequested += percent =>
-            _notifications?.Show(Localization.Get("LowBattery_Title"), $"{percent}%", "\uEBA0");
+            _notifications?.Show(Localization.Get("LowBattery_Title"), $"{percent}%", "\uEBA0", "WinIsland");
 
         // ── 上岛 API：第三方软件推送信息到灵动岛 ──
         _islandApi = new IslandApiServer(_settings);
@@ -147,6 +151,14 @@ public partial class App : Application
 
         // ── Island windows (one per selected monitor) ──
         RecreateWindows();
+
+        // ── 迷你播放器（独立悬浮小窗，跟随媒体状态自动显隐）──
+        _miniPlayer = new MiniPlayerWindow(_vm, _theme, _settings);
+        _vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(IslandViewModel.HasMedia)) UpdateMiniPlayerVisibility();
+        };
+        UpdateMiniPlayerVisibility();
 
         // ── Tray ──
         _tray = new TrayIcon(_settings);
@@ -184,12 +196,16 @@ public partial class App : Application
         };
         _tray.ExitRequested += (_, _) => Shutdown();
 
-        // ── 全局快捷键（Ctrl+Alt+P/←/→/I）──
-        _hotkeys = new GlobalHotkeyService();
+        // ── 全局快捷键（35 全局快捷键大全：组合键可在设置中自定义，见 GlobalHotkeyService）──
+        _hotkeys = new GlobalHotkeyService(_settings.Current);
         _hotkeys.PlayPausePressed += () => _vm?.PlayPauseCommand.Execute(null);
         _hotkeys.NextPressed += () => _ = _coordinator?.NextAsync();
         _hotkeys.PreviousPressed += () => _ = _coordinator?.PreviousAsync();
         _hotkeys.ToggleVisibilityPressed += () => _vm?.ToggleUserVisible();
+        _hotkeys.ExpandPressed += () =>
+        {
+            if (_vm is not null) _vm.IsExpanded = !_vm.IsExpanded; // 展开/收起
+        };
         _hotkeys.SetEnabled(_settings.Current.GlobalHotkeysEnabled);
 
         // ── Settings changed → re-apply live ──
@@ -220,8 +236,8 @@ public partial class App : Application
             if (s.BluetoothNotifyEnabled) _bluetooth?.Start(); else _bluetooth?.Stop();
             if (s.NotificationTakeoverEnabled) _systemNotifications?.Start(); else _systemNotifications?.Stop();
 
-            // 全局快捷键开关
-            _hotkeys?.SetEnabled(s.GlobalHotkeysEnabled);
+            // 全局快捷键：组合键 / 开关变化实时重新注册
+            _hotkeys?.Apply(s);
 
             // 上岛 API：启用/端口变化时重启
             if (_islandApi is not null)
@@ -236,17 +252,19 @@ public partial class App : Application
             _wave?.SetSyncEnabled(s.WaveSyncEnabled);
             _wave?.SetSensitivity(s.WaveSensitivity);
 
-            // 剪贴板历史开关与保留条数
+            // 剪贴板历史开关与保留条数；复制提示（已复制/验证码/进度）无需历史也可轮询
             if (_clipboard is not null)
             {
                 _clipboard.SetEnabled(s.ClipboardHistoryEnabled);
                 _clipboard.MaxEntries = s.ClipboardHistoryMax;
             }
+            UpdateClipboardPolling();
 
             // 尺寸设置变更 → 应用到灵动岛
             foreach (var w in _windows) w.ApplySize();
 
             _vm?.UpdateVisibility();
+            UpdateMiniPlayerVisibility();
         };
 
         // Sync registry state once at startup (in case settings were edited externally).
@@ -379,11 +397,110 @@ public partial class App : Application
         _tray?.SetLyricsChecked(true);
     }
 
+    /// <summary>迷你播放器显隐策略：开关开启且正在播放媒体时显示，否则隐藏并保存位置。</summary>
+    private void UpdateMiniPlayerVisibility()
+    {
+        if (_miniPlayer is null || _settings is null || _vm is null) return;
+        var s = _settings.Current;
+        if (s.MiniPlayerEnabled && _vm.HasMedia)
+        {
+            if (!_miniPlayer.IsVisible)
+            {
+                _miniPlayer.PositionFromSettings();
+                _miniPlayer.Show();
+            }
+        }
+        else if (_miniPlayer.IsVisible)
+        {
+            SaveMiniPlayerPosition();
+            _miniPlayer.Hide();
+        }
+    }
+
+    /// <summary>持久化迷你播放器位置（直接写 Current 并落盘，不触发 Changed 避免递归）。</summary>
+    private void SaveMiniPlayerPosition()
+    {
+        if (_miniPlayer is null || _settings is null) return;
+        try
+        {
+            _settings.Current.MiniPlayerLeft = _miniPlayer.Left;
+            _settings.Current.MiniPlayerTop = _miniPlayer.Top;
+            _settings.Save();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"保存迷你播放器位置失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>根据设置决定剪贴板轮询：历史记录或任一复制提示开启时轮询。</summary>
+    private void UpdateClipboardPolling()
+    {
+        if (_clipboard is null || _settings is null) return;
+        var s = _settings.Current;
+        var copyUi = s.CopyToastEnabled || s.CodeToastEnabled || s.CopyProgressEnabled;
+        _clipboard.SetPolling(s.ClipboardHistoryEnabled || copyUi);
+    }
+
+    /// <summary>剪贴板新增内容 → 已复制 / 验证码 / 大文本进度提示（14/15/27）。</summary>
+    private void OnClipboardEntryAdded(ClipboardEntry entry)
+    {
+        try
+        {
+            if (_notifications is null || _settings is null) return;
+            var s = _settings.Current;
+            var text = entry.Text;
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            // 验证码高亮提示优先（短信场景，通常很短）
+            if (s.CodeToastEnabled && VerificationCodeDetector.TryExtract(text, out var code))
+            {
+                _notifications.Show(Localization.Get("Clipboard_CodeTitle"),
+                    Localization.Get("Clipboard_CodeBody").Replace("{code}", code),
+                    "", "Clipboard");
+                return;
+            }
+
+            // 大文本：复制进度（Windows 不暴露真实进度，按长度估算动画）
+            if (s.CopyProgressEnabled && text.Length >= Math.Max(500, s.CopyProgressThreshold))
+            {
+                var estimatedMs = Math.Clamp(400 + text.Length / 60, 400, 1800);
+                _notifications.ShowCopyProgress(
+                    Localization.Get("Clipboard_CopyingTitle"),
+                    Localization.Get("Clipboard_CopyingBody"),
+                    estimatedMs,
+                    Localization.Get("Clipboard_CopiedTitle"),
+                    ClipboardPreview(text),
+                    "", "Clipboard");
+                return;
+            }
+
+            // 普通复制：已复制提示
+            if (s.CopyToastEnabled)
+                _notifications.Show(Localization.Get("Clipboard_CopiedTitle"), ClipboardPreview(text), "", "Clipboard");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"剪贴板提示失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>剪贴板预览：取首行、截断 45 字符。</summary>
+    private static string ClipboardPreview(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+        var t = text.Trim();
+        var nl = t.IndexOfAny(new[] { '\r', '\n' });
+        if (nl >= 0) t = t.Substring(0, nl);
+        return t.Length <= 45 ? t : t.Substring(0, 42) + "…";
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
         AppLogger.Info("WinIsland exiting.");
         try
         {
+            SaveMiniPlayerPosition();
             _settings?.Save();
             _vm?.SavePlaybackState(); // 退出前保存播放位置，重启后恢复（暂停时不再跳回开头）
             _vm?.Dispose();
@@ -400,6 +517,7 @@ public partial class App : Application
             _islandApi?.Dispose();
             _tray?.Dispose();
             _singleInstance?.Dispose();
+            _miniPlayer?.Close();
             foreach (var w in _windows) w.Close();
         }
         catch (Exception ex)

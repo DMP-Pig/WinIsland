@@ -12,6 +12,10 @@
             <DropShadowEffect BlurRadius="22" ShadowDepth="0" Opacity="0.35" Color="Black"/>
         </Border.Effect>
         <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -27,6 +31,12 @@
                 <TextBlock x:Name="BodyText" FontSize="11" Foreground="#D9FFFFFF" TextWrapping="Wrap"
                            MaxHeight="66" MaxWidth="250" Margin="0,3,0,0"/>
             </StackPanel>
+            <!-- 复制进度条（27 复制进度）：默认隐藏，进度模式显示 -->
+            <Grid x:Name="ProgressHost" Grid.Row="1" Grid.ColumnSpan="2" Height="4" Margin="0,8,0,0"
+                  Visibility="Collapsed">
+                <Border CornerRadius="2" Background="#33FFFFFF"/>
+                <Border x:Name="ProgressFill" CornerRadius="2" Background="#6C5CE7" HorizontalAlignment="Left"/>
+            </Grid>
         </Grid>
     </Border>
 </Window>

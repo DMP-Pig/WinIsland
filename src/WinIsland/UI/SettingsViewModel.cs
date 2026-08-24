@@ -62,6 +62,52 @@ public sealed class ComponentRow : ObservableObject
     public void RefreshName() => OnPropertyChanged(nameof(Name));
 }
 
+/// <summary>规则引擎设置页的一行（直接编辑 Working.Rules 里的 AppRule，便于即时生效）。</summary>
+public sealed class RuleRow : ObservableObject
+{
+    private readonly AppRule _rule;
+
+    public AppRule Rule => _rule;
+    public IReadOnlyList<EnumOption<RuleCondition>> ConditionOptions { get; } = new[]
+    {
+        new EnumOption<RuleCondition>(RuleCondition.Always, Localization.Get("Rules_Cond_Always")),
+        new EnumOption<RuleCondition>(RuleCondition.NoMedia, Localization.Get("Rules_Cond_NoMedia")),
+        new EnumOption<RuleCondition>(RuleCondition.MediaPlaying, Localization.Get("Rules_Cond_MediaPlaying")),
+        new EnumOption<RuleCondition>(RuleCondition.TimeRange, Localization.Get("Rules_Cond_TimeRange")),
+        new EnumOption<RuleCondition>(RuleCondition.AppPlaying, Localization.Get("Rules_Cond_AppPlaying")),
+    };
+    public IReadOnlyList<EnumOption<RuleAction>> ActionOptions { get; } = new[]
+    {
+        new EnumOption<RuleAction>(RuleAction.Hide, Localization.Get("Rules_Act_Hide")),
+        new EnumOption<RuleAction>(RuleAction.Collapse, Localization.Get("Rules_Act_Collapse")),
+        new EnumOption<RuleAction>(RuleAction.ForceShow, Localization.Get("Rules_Act_ForceShow")),
+    };
+    public IReadOnlyList<int> Hours { get; } = Enumerable.Range(0, 24).ToList();
+
+    public RuleRow(AppRule rule) => _rule = rule;
+
+    public string Name { get => _rule.Name; set { _rule.Name = value; OnPropertyChanged(); } }
+    public bool Enabled { get => _rule.Enabled; set { _rule.Enabled = value; OnPropertyChanged(); } }
+    public RuleCondition Condition
+    {
+        get => _rule.Condition;
+        set
+        {
+            if (_rule.Condition == value) return;
+            _rule.Condition = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsTimeRange));
+            OnPropertyChanged(nameof(IsAppMatch));
+        }
+    }
+    public bool IsTimeRange => Condition == RuleCondition.TimeRange;
+    public bool IsAppMatch => Condition == RuleCondition.AppPlaying;
+    public int StartHour { get => _rule.StartHour; set { _rule.StartHour = value; OnPropertyChanged(); } }
+    public int EndHour { get => _rule.EndHour; set { _rule.EndHour = value; OnPropertyChanged(); } }
+    public string AppMatch { get => _rule.AppMatch; set { _rule.AppMatch = value; OnPropertyChanged(); } }
+    public RuleAction Action { get => _rule.Action; set { _rule.Action = value; OnPropertyChanged(); } }
+}
+
 /// <summary>View model for the settings window. Edits a working copy, saves on demand.</summary>
 public sealed class SettingsViewModel : ObservableObject
 {
@@ -100,10 +146,18 @@ public sealed class SettingsViewModel : ObservableObject
             new EnumOption<string>("Mono", Localization.Get("Appearance_PresetMono")),
             new EnumOption<string>("Grape", Localization.Get("Appearance_PresetGrape")),
         };
+        AnimationStyleOptions = new[]
+        {
+            new EnumOption<string>("Spring", Localization.Get("Appearance_AnimSpring")),
+            new EnumOption<string>("Soft", Localization.Get("Appearance_AnimSoft")),
+            new EnumOption<string>("Elastic", Localization.Get("Appearance_AnimElastic")),
+            new EnumOption<string>("Fade", Localization.Get("Appearance_AnimFade")),
+        };
         _components = BuildComponents(Working.Components);
         _orderItems = new List<OrderItem>();
         RebuildOrderItems();
         _mediaAppRows = BuildMediaApps(Working.MediaApps, registry);
+        _ruleRows = (Working.Rules ?? new List<AppRule>()).Select(r => new RuleRow(r)).ToList();
         Localization.LanguageChanged += (_, _) => { foreach (var r in Components) r.RefreshName(); foreach (var o in OrderItems) o.RefreshName(); };
 
         PresetColors = new[]
@@ -125,14 +179,51 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>勿扰白名单（逗号分隔的 exe 名 / 应用名文本）；白名单来源不受勿扰影响。</summary>
+    public string DnDAllowlistText
+    {
+        get => string.Join(", ", Working.DnDAllowlist);
+        set
+        {
+            Working.DnDAllowlist = (value ?? string.Empty)
+                .Split(new[] { ',', '，', ';', '；' }, System.StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => x.Length > 0)
+                .Distinct(System.StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            OnPropertyChanged();
+        }
+    }
+
     public IReadOnlyList<EnumOption<ThemeMode>> ThemeOptions { get; }
     public IReadOnlyList<EnumOption<IslandPosition>> PositionOptions { get; }
     public IReadOnlyList<EnumOption<MonitorSelection>> MonitorOptions { get; }
     public IReadOnlyList<EnumOption<string>> ThemePresetOptions { get; } = Array.Empty<EnumOption<string>>();
+    public IReadOnlyList<EnumOption<string>> AnimationStyleOptions { get; } = Array.Empty<EnumOption<string>>();
     public IReadOnlyList<string> PresetColors { get; }
     public IReadOnlyList<ComponentRow> Components => _components;
     public IReadOnlyList<OrderItem> OrderItems => _orderItems;
     public IReadOnlyList<MediaAppRow> MediaAppRows => _mediaAppRows;
+    private List<RuleRow> _ruleRows = new();
+    public IReadOnlyList<RuleRow> RuleRows => _ruleRows;
+
+    /// <summary>添加一条默认规则。</summary>
+    public void AddRule()
+    {
+        var rule = new AppRule { Name = Localization.Get("Rules_NewName"), Condition = RuleCondition.TimeRange };
+        Working.Rules ??= new List<AppRule>();
+        Working.Rules.Add(rule);
+        _ruleRows.Add(new RuleRow(rule));
+        OnPropertyChanged(nameof(RuleRows));
+    }
+
+    /// <summary>删除一条规则。</summary>
+    public void RemoveRule(RuleRow row)
+    {
+        if (row is null || !_ruleRows.Remove(row)) return;
+        Working.Rules?.Remove(row.Rule);
+        OnPropertyChanged(nameof(RuleRows));
+    }
 
     private List<MediaAppRow> _mediaAppRows = new();
 
@@ -153,6 +244,7 @@ public sealed class SettingsViewModel : ObservableObject
         new("Todo", "Comp_Todo", c, x => x.TodoWhenIdle, (x, v) => x.TodoWhenIdle = v, x => x.TodoWhenPlaying, (x, v) => x.TodoWhenPlaying = v, _ => RebuildOrderItems()),
         new("Timer", "Comp_Timer", c, x => x.TimerWhenIdle, (x, v) => x.TimerWhenIdle = v, x => x.TimerWhenPlaying, (x, v) => x.TimerWhenPlaying = v, _ => RebuildOrderItems()),
         new("Schedule", "Comp_Schedule", c, x => x.ScheduleWhenIdle, (x, v) => x.ScheduleWhenIdle = v, x => x.ScheduleWhenPlaying, (x, v) => x.ScheduleWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Holiday", "Comp_Holiday", c, x => x.HolidayWhenIdle, (x, v) => x.HolidayWhenIdle = v, x => x.HolidayWhenPlaying, (x, v) => x.HolidayWhenPlaying = v, _ => RebuildOrderItems()),
     };
 
     private static readonly (string Key, string NameKey)[] OrderDefs =
@@ -169,6 +261,7 @@ public sealed class SettingsViewModel : ObservableObject
         ("Todo", "Comp_Todo"),
         ("Timer", "Comp_Timer"),
         ("Schedule", "Comp_Schedule"),
+        ("Holiday", "Comp_Holiday"),
         ("Song", "Comp_Song"),
     };
 

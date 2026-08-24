@@ -55,6 +55,34 @@ public sealed class IslandPush
     /// <summary>操作按钮（可选）。</summary>
     [JsonPropertyName("buttons")]
     public List<IslandPushButton>? Buttons { get; set; }
+    /// <summary>内容类型：info（默认）/ success / warning / error，用于提示色。</summary>
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "";
+
+    /// <summary>优先级：high / normal / low（默认 normal）。多条推送并存时，高优先级显示在前。</summary>
+    [JsonPropertyName("priority")]
+    public string Priority { get; set; } = "";
+
+    /// <summary>副标题（可选，标题下方小字）。</summary>
+    [JsonPropertyName("subtitle")]
+    public string Subtitle { get; set; } = "";
+
+    /// <summary>自定义强调色（#RRGGBB / #AARRGGBB，可选），覆盖类型默认色。</summary>
+    [JsonPropertyName("accent")]
+    public string Accent { get; set; } = "";
+
+    /// <summary>整卡点击回跳（可选）：url 打开链接/文件，launch 启动程序。</summary>
+    [JsonPropertyName("click")]
+    public IslandPushButton? Click { get; set; }
+
+    /// <summary>排序用优先级数值（不入 JSON）：high=2 / normal=1 / low=0。</summary>
+    [JsonIgnore]
+    public int PriorityRank => (Priority ?? "").Trim().ToLowerInvariant() switch
+    {
+        "high" => 2,
+        "low" => 0,
+        _ => 1,
+    };
 
     /// <summary>服务端计算的过期时间（UTC），客户端推送时忽略。</summary>
     [JsonPropertyName("expires_at")]
