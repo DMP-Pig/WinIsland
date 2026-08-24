@@ -45,7 +45,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             PillRow.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
             var w = PillRow.DesiredSize.Width;
             // 字号缩放：逻辑宽度按比例缩小，卡片渲染时再放大，最终视觉宽度不变
-            return w >= 20 ? Math.Clamp((w + 56) / FontScale, 240 / FontScale, 580 / FontScale) : fallback; // 总留白 56（左侧 22 + 右侧 24，右侧略多）
+            return w >= 20 ? Math.Clamp((w + 56) / FontScale, 240 / FontScale, 720 / FontScale) : fallback; // 总留白 56（左侧 22 + 右侧 24，右侧略多）
         }
         catch
         {
@@ -78,7 +78,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             if (_vm.HasActivePush)
             {
                 var baseW = _noPushWValid ? _noPushCompactW : Math.Max(autoW, ManualCompactW);
-                return Math.Clamp(baseW + PushCardCompactWidth(), 240 / FontScale, 620 / FontScale);
+                return Math.Clamp(baseW + PushCardCompactWidth(), 240 / FontScale, 720 / FontScale);
             }
             _noPushCompactW = autoW;
             _noPushWValid = true;
@@ -103,7 +103,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     }
     private double ExpandedWidth => _settings.Current.ExpandedWidthAuto
         ? _vm.EstimatedExpandedWidth / FontScale
-        : Math.Clamp(_settings.Current.ExpandedWidth / FontScale, CompactWidth, 620 / FontScale);
+        : Math.Clamp(_settings.Current.ExpandedWidth / FontScale, CompactWidth, 720 / FontScale);
     private double MaxExpandedHeight => _settings.Current.MaxExpandedHeightAuto
         ? _vm.EstimatedExpandedHeight / FontScale
         : Math.Clamp(_settings.Current.MaxExpandedHeight / FontScale, 240 / FontScale, 620 / FontScale);
@@ -118,8 +118,11 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private readonly System.Windows.Forms.Screen _screen;
     private readonly DispatcherTimer _collapseTimer;
     private readonly DispatcherTimer _compactRestoreTimer;
-    private readonly DispatcherTimer _waveTimer; // 声音波纹：仅播放中运行，空闲时停止不占 CPU
-    private readonly List<ScaleTransform> _waveBars = new();
+    private bool _waveRendering;                  // 波纹渲染中（已挂接合成帧事件）
+    private double _lastWaveTime;                 // 上一帧时间（秒），用于帧率无关平滑
+    private readonly System.Diagnostics.Stopwatch _waveClock = System.Diagnostics.Stopwatch.StartNew();
+    private readonly List<ScaleTransform> _waveBarsExpanded = new();
+    private readonly List<ScaleTransform> _waveBarsCompact = new();
     private Storyboard? _currentStoryboard;
     private HwndSource? _hwndSource;
 
@@ -162,12 +165,12 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         _lyricsScrollTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _lyricsScrollTimer.Tick += (_, _) => SmoothScrollStep();
 
-        // 声音波纹：33ms ≈ 30fps，空闲时停止不占 CPU
-        _waveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
-        _waveTimer.Tick += (_, _) => UpdateWave();
+        // 声音波纹：挂接合成帧事件，按显示器刷新率（~60fps）驱动，空闲时摘除不占 CPU
         if (WaveBar1 is not null)
-            _waveBars.AddRange(new[] { WaveBar1, WaveBar2, WaveBar3, WaveBar4, WaveBar5,
-                WaveBarC1, WaveBarC2, WaveBarC3, WaveBarC4, WaveBarC5 });
+        {
+            _waveBarsExpanded.AddRange(new[] { WaveBar1, WaveBar2, WaveBar3, WaveBar4, WaveBar5, WaveBar6, WaveBar7 });
+            _waveBarsCompact.AddRange(new[] { WaveBarC1, WaveBarC2, WaveBarC3, WaveBarC4, WaveBarC5, WaveBarC6, WaveBarC7 });
+        }
 
         // 悬停不展开；移出时若已展开则延迟收起
         Card.MouseLeave += (_, _) =>
@@ -377,20 +380,29 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     /// <summary>按设置调整窗口与卡片尺寸（紧凑/展开）。仅当窗口尺寸真正变化时才重定位，
     /// 避免上锁/其它设置变更把用户拖动后的位置弹回默认。</summary>
-    public void ApplySize()
+    /// <summary>
+    /// 确保透明窗口尺寸足够容纳当前卡片（含紧凑态自动宽度），
+    /// 否则卡片超出窗口边界会被裁剪。紧凑卡片视觉宽度 = CompactWidth × FontScale。
+    /// </summary>
+    private void EnsureWindowSizeFits()
     {
-        // 窗口固定为能容纳最大推送卡片/展开内容的大小：推送时只需动画 Card 形变，避免窗口级 Resize 卡顿
+        if (!IsLoaded) return;
         var settingExpanded = Math.Clamp(_settings.Current.ExpandedWidth, 300, 620);
         var settingMaxH = Math.Clamp(_settings.Current.MaxExpandedHeight, 240, 620);
-        var w = Math.Max(settingExpanded, 640) + 24;
+        var w = Math.Max(settingExpanded, Math.Max(CompactWidth * FontScale + 8, 640)) + 24;
         var h = Math.Max(settingMaxH, 220) + 24;
-        var sizeChanged = Math.Abs(Width - w) > 0.5 || Math.Abs(Height - h) > 0.5;
-        if (sizeChanged)
+        if (Math.Abs(Width - w) > 0.5 || Math.Abs(Height - h) > 0.5)
         {
             Width = w;
             Height = h;
             Dispatcher.BeginInvoke(Reposition, System.Windows.Threading.DispatcherPriority.Loaded);
         }
+    }
+
+    public void ApplySize()
+    {
+        // 窗口固定为能容纳最大推送卡片/展开内容的大小：推送时只需动画 Card 形变，避免窗口级 Resize 卡顿
+        EnsureWindowSizeFits();
         if (!_vm.IsExpanded)
         {
             Card.Width = CompactWidth;
@@ -417,6 +429,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     {
         if (!IsLoaded) return;
         if (_vm.IsExpanded) { ApplySize(); return; }
+        EnsureWindowSizeFits(); // 先扩宽窗口，避免卡片动画期间超出窗口被裁剪
         var spring = new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 };
         var sb = new Storyboard();
         AddAnim(sb, Card, FrameworkElement.WidthProperty, CompactWidth, 460, spring);
@@ -488,6 +501,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
                 if (_vm.IsVisible) ShowIsland(instant: false);
                 else HideIsland();
                 ApplySize(); // 岛显示/隐藏时重新测量自动尺寸
+                RefreshWave(); // 若启动时已有媒体在播放，确保波纹定时器在岛显示后启动
                 break;
             case nameof(IslandViewModel.IsExpanded):
                 AnimateSize();
@@ -497,6 +511,10 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
                 break;
             case nameof(IslandViewModel.LyricIndex):
                 if (_vm.LyricIndex >= 0) QueueLyricsScroll(_vm.LyricIndex);
+                break;
+            case nameof(IslandViewModel.CurrentLyricText):
+                // 当前歌词行变化时，若处于紧凑态则平滑调整宽度，避免长歌词被裁切/遮挡
+                if (!_vm.IsExpanded && _vm.IsVisible) AnimateCompactSize();
                 break;
             case nameof(IslandViewModel.HasActivePush):
                 ApplySize();           // 确保窗口足够大（首次）
@@ -522,26 +540,70 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private void RefreshWave()
     {
         var on = HasWave;
-        if (on && !_waveTimer.IsEnabled) _waveTimer.Start();
-        else if (!on && _waveTimer.IsEnabled) _waveTimer.Stop();
-        foreach (var sc in _waveBars) sc.ScaleY = 0.16;
+        if (on && !_waveRendering)
+        {
+            _waveRendering = true;
+            CompositionTarget.Rendering += OnWaveFrame;
+        }
+        else if (!on && _waveRendering)
+        {
+            _waveRendering = false;
+            CompositionTarget.Rendering -= OnWaveFrame;
+        }
+        if (!on)
+        {
+            foreach (var sc in _waveBarsExpanded) sc.ScaleY = 0.16;
+            foreach (var sc in _waveBarsCompact) sc.ScaleY = 0.16;
+        }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasWave)));
     }
 
-    /// <summary>波形驱动：按音量强度起伏，相位错开更自然；暂停/空闲稳定在低处。</summary>
-    private void UpdateWave()
+    /// <summary>合成帧回调：按帧间隔指数平滑，随真实音频电平起伏，动画连贯不卡顿。</summary>
+    private void OnWaveFrame(object? sender, EventArgs e)
     {
-        if (!IsLoaded) return;
-        var level = Math.Clamp(_vm.WaveLevel, 0, 1);
-        for (var i = 0; i < _waveBars.Count; i++)
+        try
         {
-            var sc = _waveBars[i];
-            var target = _vm.IsPlaying ? 0.18 + level * (0.95 - i * 0.055) : 0.14;
-            if (target < 0.12) target = 0.12;
-            sc.ScaleY += (target - sc.ScaleY) * 0.4; // 平滑追赶，避免逐帧跳变
+            if (!IsLoaded || !HasWave)
+            {
+                RefreshWave();
+                return;
+            }
+            var now = _waveClock.Elapsed.TotalSeconds;
+            var dt = Math.Min(0.05, Math.Max(0.001, now - _lastWaveTime));
+            _lastWaveTime = now;
+
+            var level = Math.Clamp(_vm.WaveLevel, 0, 1);
+            var height = Math.Clamp(_settings.Current.WaveHeight, 0.25, 2.0);
+            var alpha = 1.0 - Math.Exp(-dt * 22.0); // 帧率无关的指数平滑
+            UpdateWaveSet(_waveBarsCompact, level, now, alpha, height);
+            UpdateWaveSet(_waveBarsExpanded, level, now, alpha, height);
+        }
+        catch
+        {
+            // 渲染异常绝不影响主流程
         }
     }
 
+    private void UpdateWaveSet(IReadOnlyList<ScaleTransform> bars, double level, double t, double alpha, double height)
+    {
+        var n = bars.Count;
+        for (var i = 0; i < n; i++)
+        {
+            var sc = bars[i];
+            double target;
+            if (_vm.IsPlaying)
+            {
+                var phase = t * 6.0 - i * 0.9;
+                var wave = 0.5 + 0.5 * Math.Sin(phase);
+                target = Math.Clamp((0.10 + (0.12 + 0.72 * level) * wave) * height, 0.08, 1.0);
+            }
+            else
+            {
+                target = 0.08;
+            }
+            sc.ScaleY += (target - sc.ScaleY) * alpha;
+        }
+    }
     /// <summary>展开背景随专辑封面取色：1x1 采样主色 + 主题底色线性渐变，失败则回退主题背景。</summary>
     private void ApplyCoverTint()
     {

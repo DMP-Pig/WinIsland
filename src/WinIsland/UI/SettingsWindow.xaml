@@ -474,6 +474,12 @@
                             <CheckBox x:Name="ChkBadge" IsChecked="{Binding Working.BadgeEnabled}"/>
                             <CheckBox x:Name="ChkCoverTint" IsChecked="{Binding Working.CoverTintBackground}"/>
                             <CheckBox x:Name="ChkWave" IsChecked="{Binding Working.WaveVisualizerEnabled}"/>
+                            <CheckBox x:Name="ChkWaveSync" IsChecked="{Binding Working.WaveSyncEnabled}"/>
+                            <TextBlock x:Name="LblWaveSensitivity" Style="{StaticResource Label}"/>
+                            <Slider Minimum="0.2" Maximum="3" Value="{Binding Working.WaveSensitivity}" Width="300" HorizontalAlignment="Left"/>
+                            <TextBlock x:Name="LblWaveHeight" Style="{StaticResource Label}"/>
+                            <Slider Minimum="0.4" Maximum="1.6" Value="{Binding Working.WaveHeight}" Width="300" HorizontalAlignment="Left"/>
+                            <TextBlock x:Name="TxtWaveNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,2,0,0" MaxWidth="480" HorizontalAlignment="Left"/>
                             <TextBlock x:Name="LblWidgets" Style="{StaticResource Label}"/>
                             <CheckBox x:Name="ChkShowWidgets" IsChecked="{Binding Working.ShowWidgetsWhenNoMedia}"/>
                             <CheckBox x:Name="ChkWidgetTime" IsChecked="{Binding Working.WidgetShowTime}"/>

@@ -156,6 +156,9 @@ public sealed class AppSettings
 
     // ── 波纹可视化（媒体按钮左侧，随声音/播放波动）──
     public bool WaveVisualizerEnabled { get; set; } = true;
+    public bool WaveSyncEnabled { get; set; } = true;      // 跟随音乐节奏：采集系统输出声音驱动波纹
+    public double WaveSensitivity { get; set; } = 1.0;     // 波纹灵敏度 0.2 ~ 3.0
+    public double WaveHeight { get; set; } = 1.0;          // 波纹高度 0.4 ~ 1.6
 
     // ── 勿扰模式 ──
     public bool DoNotDisturbEnabled { get; set; } = false;   // 按时间段自动勿扰

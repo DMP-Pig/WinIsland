@@ -118,6 +118,8 @@ public partial class App : Application
         _pomodoro = new PomodoroService();
         _updater = new UpdaterService();
         if (_settings.Current.WaveVisualizerEnabled) _wave.Start();
+        _wave.SetSyncEnabled(_settings.Current.WaveSyncEnabled);
+        _wave.SetSensitivity(_settings.Current.WaveSensitivity);
         _clipboard.SetEnabled(_settings.Current.ClipboardHistoryEnabled);
         _clipboard.MaxEntries = _settings.Current.ClipboardHistoryMax;
         _schedule.Reminder += item => _notifications?.Show("日程提醒", item.Title, "\uE8B7");
@@ -231,6 +233,8 @@ public partial class App : Application
 
             // 波纹可视化开关
             if (s.WaveVisualizerEnabled) _wave?.Start(); else _wave?.Stop();
+            _wave?.SetSyncEnabled(s.WaveSyncEnabled);
+            _wave?.SetSensitivity(s.WaveSensitivity);
 
             // 剪贴板历史开关与保留条数
             if (_clipboard is not null)

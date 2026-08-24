@@ -353,10 +353,21 @@
                                     <StackPanel x:Name="SingleLineInfo" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
                                         <TextBlock Text="{Binding DataContext.Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="13" FontWeight="SemiBold"
                                                    Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                                   TextTrimming="CharacterEllipsis" MaxWidth="160" VerticalAlignment="Center"/>
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="140" VerticalAlignment="Center"/>
                                         <TextBlock Text="{Binding DataContext.Artist, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="11" Margin="6,0,0,0"
                                                    Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
-                                                   TextTrimming="CharacterEllipsis" MaxWidth="120" VerticalAlignment="Center"/>
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="100" VerticalAlignment="Center"/>
+                                        <TextBlock Text="&#x00B7;" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                                   Visibility="{Binding DataContext.HasLyrics, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+                                        <karaoke:KaraokeTextBlock
+                                            KaraokeText="{Binding DataContext.CurrentLyricText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            HighlightFraction="{Binding DataContext.CompactHighlightFraction, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            HighlightBrush="White" BaseBrush="#A0FFFFFF" FontSize="12" Margin="8,0,0,0"
+                                            TextAlignment="Left" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="300"
+                                            VerticalAlignment="Center"
+                                            Visibility="{Binding DataContext.HasLyrics, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
                                     </StackPanel>
                                 </StackPanel>
                                 <DataTemplate.Triggers>
@@ -426,32 +437,42 @@
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
                                 Visibility="{Binding HasMedia, Converter={StaticResource BoolToVis}}">
                         <!-- 声音波纹：随音量起伏（紧凑行） -->
-                        <StackPanel x:Name="WaveBoxCompact" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                <StackPanel x:Name="WaveBoxCompact" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0"
                                     Visibility="{Binding HasWave, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
-                            <Border Width="2.5" Height="12" CornerRadius="1.25" VerticalAlignment="Center" Margin="0,0,2.5,0"
-                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                            <Border Width="2.2" Height="12" CornerRadius="1.1" VerticalAlignment="Center" Margin="0,0,1.8,0"
+                                Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                 <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                 <Border.RenderTransform><ScaleTransform x:Name="WaveBarC1" ScaleY="0.16"/></Border.RenderTransform>
                             </Border>
-                            <Border Width="2.5" Height="12" CornerRadius="1.25" VerticalAlignment="Center" Margin="0,0,2.5,0"
-                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                            <Border Width="2.2" Height="12" CornerRadius="1.1" VerticalAlignment="Center" Margin="0,0,1.8,0"
+                                Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                 <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                 <Border.RenderTransform><ScaleTransform x:Name="WaveBarC2" ScaleY="0.16"/></Border.RenderTransform>
                             </Border>
-                            <Border Width="2.5" Height="12" CornerRadius="1.25" VerticalAlignment="Center" Margin="0,0,2.5,0"
-                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                            <Border Width="2.2" Height="12" CornerRadius="1.1" VerticalAlignment="Center" Margin="0,0,1.8,0"
+                                Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                 <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                 <Border.RenderTransform><ScaleTransform x:Name="WaveBarC3" ScaleY="0.16"/></Border.RenderTransform>
                             </Border>
-                            <Border Width="2.5" Height="12" CornerRadius="1.25" VerticalAlignment="Center" Margin="0,0,2.5,0"
-                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                            <Border Width="2.2" Height="12" CornerRadius="1.1" VerticalAlignment="Center" Margin="0,0,1.8,0"
+                                Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                 <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                 <Border.RenderTransform><ScaleTransform x:Name="WaveBarC4" ScaleY="0.16"/></Border.RenderTransform>
                             </Border>
-                            <Border Width="2.5" Height="12" CornerRadius="1.25" VerticalAlignment="Center"
-                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                            <Border Width="2.2" Height="12" CornerRadius="1.1" VerticalAlignment="Center" Margin="0,0,1.8,0"
+                                Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                 <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                 <Border.RenderTransform><ScaleTransform x:Name="WaveBarC5" ScaleY="0.16"/></Border.RenderTransform>
+                            </Border>
+                            <Border Width="2.2" Height="12" CornerRadius="1.1" VerticalAlignment="Center" Margin="0,0,1.8,0"
+                                Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
+                                <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                <Border.RenderTransform><ScaleTransform x:Name="WaveBarC6" ScaleY="0.16"/></Border.RenderTransform>
+                            </Border>
+                            <Border Width="2.2" Height="12" CornerRadius="1.1" VerticalAlignment="Center" Margin="0,0,1.8,0"
+                                Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
+                                <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                <Border.RenderTransform><ScaleTransform x:Name="WaveBarC7" ScaleY="0.16"/></Border.RenderTransform>
                             </Border>
                         </StackPanel>
                         <Button Style="{StaticResource IconButton}" Command="{Binding PlayPauseCommand}">
@@ -576,32 +597,42 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                             <!-- 声音波纹：随音量起伏（展开控制行） -->
-                            <StackPanel x:Name="WaveBox" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                        <StackPanel x:Name="WaveBox" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0"
                                         Visibility="{Binding HasWave, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
-                                <Border Width="3" Height="16" CornerRadius="1.5" VerticalAlignment="Center" Margin="0,0,3,0"
-                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                <Border Width="2.6" Height="16" CornerRadius="1.3" VerticalAlignment="Center" Margin="0,0,2.2,0"
+                                    Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                     <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                     <Border.RenderTransform><ScaleTransform x:Name="WaveBar1" ScaleY="0.16"/></Border.RenderTransform>
                                 </Border>
-                                <Border Width="3" Height="16" CornerRadius="1.5" VerticalAlignment="Center" Margin="0,0,3,0"
-                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                <Border Width="2.6" Height="16" CornerRadius="1.3" VerticalAlignment="Center" Margin="0,0,2.2,0"
+                                    Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                     <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                     <Border.RenderTransform><ScaleTransform x:Name="WaveBar2" ScaleY="0.16"/></Border.RenderTransform>
                                 </Border>
-                                <Border Width="3" Height="16" CornerRadius="1.5" VerticalAlignment="Center" Margin="0,0,3,0"
-                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                <Border Width="2.6" Height="16" CornerRadius="1.3" VerticalAlignment="Center" Margin="0,0,2.2,0"
+                                    Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                     <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                     <Border.RenderTransform><ScaleTransform x:Name="WaveBar3" ScaleY="0.16"/></Border.RenderTransform>
                                 </Border>
-                                <Border Width="3" Height="16" CornerRadius="1.5" VerticalAlignment="Center" Margin="0,0,3,0"
-                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                <Border Width="2.6" Height="16" CornerRadius="1.3" VerticalAlignment="Center" Margin="0,0,2.2,0"
+                                    Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                     <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                     <Border.RenderTransform><ScaleTransform x:Name="WaveBar4" ScaleY="0.16"/></Border.RenderTransform>
                                 </Border>
-                                <Border Width="3" Height="16" CornerRadius="1.5" VerticalAlignment="Center"
-                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                <Border Width="2.6" Height="16" CornerRadius="1.3" VerticalAlignment="Center" Margin="0,0,2.2,0"
+                                    Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                     <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                     <Border.RenderTransform><ScaleTransform x:Name="WaveBar5" ScaleY="0.16"/></Border.RenderTransform>
+                                </Border>
+                                <Border Width="2.6" Height="16" CornerRadius="1.3" VerticalAlignment="Center" Margin="0,0,2.2,0"
+                                    Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
+                                    <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                    <Border.RenderTransform><ScaleTransform x:Name="WaveBar6" ScaleY="0.16"/></Border.RenderTransform>
+                                </Border>
+                                <Border Width="2.6" Height="16" CornerRadius="1.3" VerticalAlignment="Center" Margin="0,0,2.2,0"
+                                    Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
+                                    <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                    <Border.RenderTransform><ScaleTransform x:Name="WaveBar7" ScaleY="0.16"/></Border.RenderTransform>
                                 </Border>
                             </StackPanel>
                             <Button Style="{StaticResource IconButton}" Command="{Binding PreviousCommand}" IsEnabled="{Binding CanPrevious}">
@@ -617,8 +648,6 @@
                         <!-- 音量 -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
                                     Visibility="{Binding HasVolumeControl, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,4,0"
-                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                             <Slider x:Name="VolumeSlider" Style="{StaticResource ThinSlider}" Width="90" Minimum="0" Maximum="1"
                                     Value="{Binding Volume, Mode=TwoWay}"/>
                         </StackPanel>

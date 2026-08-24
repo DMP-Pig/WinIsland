@@ -1,3 +1,13 @@
+## WinIsland 1.0.7（正式版 / Stable）
+
+一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新内容
+- 「声音波纹」升级为**跟随音乐节奏**：通过 WASAPI 环回实时采集系统正在播放的真实音频，节拍强时浪高、安静时浪低，不再是固定音量条
+- **60fps 连贯渲染**：起音 25ms / 释放 140ms 指数平滑，波纹起伏连贯、不生硬、不卡顿
+- 新增设置（设置 → 外观 → 声音波纹）：跟随音乐节奏开关、灵敏度 0.2–3.0、波纹高度 0.4–1.6，改动即时生效
+- 无音频设备 / 音频服务异常时自动降级为节拍模拟，并每 8 秒自动重试恢复实时采集，不卡死、不堆积线程
+
 ## WinIsland 1.0.6（正式版 / Stable）
 
 一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.

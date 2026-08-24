@@ -360,7 +360,6 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             else if (key == "Net" && ShowIdleNet) items.Add(new IslandComponent("Net"));
             else if (key == "Battery" && ShowIdleBattery) items.Add(new IslandComponent("Battery"));
             else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(new IslandComponent("Song"));
-            else if (key == "Volume" && ShowIdleVolume && !string.IsNullOrEmpty(VolumeText)) items.Add(new IslandComponent("Volume"));
             else if (key == "CapsLock" && ShowIdleCapsLock && !string.IsNullOrEmpty(CapsLockText)) items.Add(new IslandComponent("CapsLock"));
             else if (key == "Clipboard" && ShowIdleClipboard && !string.IsNullOrEmpty(ClipboardSummary)) items.Add(new IslandComponent("Clipboard"));
             else if (key == "Todo" && ShowIdleTodo && !string.IsNullOrEmpty(TodoSummary)) items.Add(new IslandComponent("Todo"));
@@ -534,12 +533,17 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                     case "Ram": w += MeasureText(RamText, 11, 6) + 16; break;
                     case "Net": w += MeasureText(NetText, 11, 6) + 16; break;
                     case "Battery": w += MeasureText(BatteryText, 11, 6) + 16; break;
-                    case "Song": w += 40 + 6 + Math.Min(MeasureText(Title, 13, 7), 90); break;
+                    case "Song":
+                        w += 40 + 6
+                            + Math.Min(MeasureText(Title, 13, 7), 140)
+                            + 6 + Math.Min(MeasureText(Artist, 11, 6), 100);
+                        if (HasLyrics) w += 8 + Math.Min(MeasureText(CurrentLyricText, 12, 6.5), 300);
+                        break;
                 }
                 w += 8; // 组件间右边距（模板 Margin 0,0,8,0 左右），这里按单边即可
             }
-            if (HasMedia) w += 68; // 播放/暂停 + 下一首 按钮
-            return Math.Clamp(w + 4, 260, 460);
+            if (HasMedia) w += 68 + 34; // 播放/暂停 + 下一首 按钮
+            return Math.Clamp(w + 4, 260, 720);
         }
     }
 

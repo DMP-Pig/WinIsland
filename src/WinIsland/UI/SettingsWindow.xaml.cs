@@ -335,6 +335,10 @@ public partial class SettingsWindow : Window
         ChkBadge.Content = Localization.Get("Appearance_Badge");
         ChkCoverTint.Content = Localization.Get("Appearance_CoverTint");
         ChkWave.Content = Localization.Get("Wave_Enabled");
+        ChkWaveSync.Content = Localization.Get("Wave_Sync");
+        LblWaveSensitivity.Text = Localization.Get("Wave_Sensitivity");
+        LblWaveHeight.Text = Localization.Get("Wave_Height");
+        TxtWaveNote.Text = Localization.Get("Wave_Note");
         LblDndTitle.Text = Localization.Get("Dnd_Title");
         ChkDndManual.Content = Localization.Get("Dnd_Manual");
         ChkDndSchedule.Content = Localization.Get("Dnd_Schedule");
