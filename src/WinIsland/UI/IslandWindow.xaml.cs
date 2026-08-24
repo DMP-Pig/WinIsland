@@ -558,23 +558,25 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     private void Expand()
     {
-        // 展开时收起胶囊行（紧凑封面/按钮不叠加在大封面上方），行高归零，再测量高度
-        ContentGrid.RowDefinitions[0].Height = GridLength.Auto;
+        // 胶囊行保持可见（动画淡出），展开内容覆盖全卡片（动画淡入），两者重叠交叉过渡，
+        // 避免 Card 深色背景透过内容间隙产生"黑掉"现象
+        ContentGrid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Star);
+        ContentGrid.RowDefinitions[1].Height = GridLength.Auto;
         ContentGrid.VerticalAlignment = VerticalAlignment.Center;
         PillRow.BeginAnimation(UIElement.OpacityProperty, null);
         ExpandedContent.BeginAnimation(UIElement.OpacityProperty, null);
-        PillRow.Visibility = Visibility.Collapsed;
+
+        // 先测量展开内容自然高度（ScrollViewer 内容总高），得到卡片目标高度
+        ExpandedContent.Opacity = 0;
         ExpandedContent.Visibility = Visibility.Visible;
+        ExpandedContent.Measure(new System.Windows.Size(ExpandedWidth - 24, double.PositiveInfinity));
+        var contentH = ExpandedContent.DesiredSize.Height;
+        var targetHeight = Math.Clamp(contentH + 24, 200, MaxExpandedHeight);
 
-        // 先按内容测量一次，得到自然高度
-        ContentGrid.Measure(new System.Windows.Size(ExpandedWidth - 24, double.PositiveInfinity));
-        var contentH = ContentGrid.DesiredSize.Height;
-        var targetHeight = Math.Clamp(contentH + 16, 200, MaxExpandedHeight);
-
-        // 关键：把展开内容行（Row1）固定为可视高度 targetHeight-16，
-        // 让 ExpandedContent(ScrollViewer) 获得确定视口 —— 内容超高时才能滚轮滚动查看
-        ContentGrid.RowDefinitions[1].Height = new GridLength(Math.Max(120, targetHeight - 16), GridUnitType.Pixel);
-        ContentGrid.Measure(new System.Windows.Size(ExpandedWidth - 24, targetHeight - 16));
+        // 重新显示胶囊行：动画期间淡出，与展开内容交叉过渡
+        PillRow.BeginAnimation(UIElement.OpacityProperty, null);
+        PillRow.Visibility = Visibility.Visible;
+        PillRow.Opacity = 1;
 
         AnimateCard(ExpandedWidth, targetHeight, expand: true);
     }
@@ -627,7 +629,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         var spring = new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 };
         var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
 
-        // 卡片尺寸：弹簧曲线（展开 880ms / 收起 760ms，再慢一点点）
+        // 卡片尺寸：弹簧曲线（展开 880ms / 收起 760ms）
         AddAnim(sb, Card, FrameworkElement.WidthProperty, width, expand ? 880 : 760, spring);
         AddAnim(sb, Card, FrameworkElement.HeightProperty, height, expand ? 880 : 760, spring);
 
@@ -639,7 +641,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, expand ? 720 : 640, smooth, contentDelay);
 
         // 胶囊行：展开后淡出（由大图区接管）；收起时立即恢复完全不透明，
-        // 避免缩回瞬间胶囊内容还在淡入而出现“空内容”。
+        // 避免缩回瞬间胶囊内容还在淡入而出现"空内容"
         if (expand)
             AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, 320, smooth, TimeSpan.FromMilliseconds(70));
         else
@@ -652,10 +654,21 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             // 多次展开/收起后组件上下间距会残留异常
             Card.BeginAnimation(FrameworkElement.WidthProperty, null);
             Card.BeginAnimation(FrameworkElement.HeightProperty, null);
-            if (!_vm.IsExpanded)
+            // 必须写回最终尺寸：清除动画后若只依赖本地值，Card 会回退到紧凑时设置的
+            // 本地尺寸（Width/Height），展开态瞬间缩回紧凑大小导致内容被裁剪而黑屏
+            Card.Width = width;
+            Card.Height = height;
+            // 动画结束后整理可见性：展开态折叠胶囊行并固定展开内容不透明，收起态恢复胶囊行
+            if (_vm.IsExpanded)
             {
-                Card.Width = CompactWidth;
-                Card.Height = CompactHeight;
+                PillRow.Visibility = Visibility.Collapsed;
+                PillRow.Opacity = 0;
+                ExpandedContent.Opacity = 1;
+            }
+            else
+            {
+                PillRow.Visibility = Visibility.Visible;
+                PillRow.Opacity = 1;
             }
             onCompleted?.Invoke();
         };
