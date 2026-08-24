@@ -43,6 +43,18 @@ public sealed class ComponentFlags
     public bool NetWhenPlaying { get; set; } = false;
     public bool BatteryWhenIdle { get; set; } = false;
     public bool BatteryWhenPlaying { get; set; } = false;
+    public bool VolumeWhenIdle { get; set; } = false;
+    public bool VolumeWhenPlaying { get; set; } = true;
+    public bool CapsLockWhenIdle { get; set; } = false;
+    public bool CapsLockWhenPlaying { get; set; } = false;
+    public bool ClipboardWhenIdle { get; set; } = false;
+    public bool ClipboardWhenPlaying { get; set; } = true;
+    public bool TodoWhenIdle { get; set; } = true;
+    public bool TodoWhenPlaying { get; set; } = false;
+    public bool TimerWhenIdle { get; set; } = false;
+    public bool TimerWhenPlaying { get; set; } = false;
+    public bool ScheduleWhenIdle { get; set; } = true;
+    public bool ScheduleWhenPlaying { get; set; } = false;
 }
 /// <summary>Persisted user configuration. JSON at %APPDATA%\WinIsland\settings.json.</summary>
 public sealed class AppSettings
@@ -133,6 +145,34 @@ public sealed class AppSettings
     public int IslandApiPort { get; set; } = 9840;               // 本地监听端口
     public string IslandApiToken { get; set; } = "";             // 可选 Token（防局域网误连）
     public int IslandApiDefaultDuration { get; set; } = 30;      // 默认显示时长（秒），推送方可按条覆盖
+
+    // ── 外观增强（主题预设 / 字体 / 字号 / 圆角 / 角标 / 封面取色）──
+    public string ThemePreset { get; set; } = "Default";   // Default | Ocean | Forest | Sunset | Neon | Mono | Grape
+    public string FontFamily { get; set; } = "Segoe UI";   // 界面字体
+    public double FontScale { get; set; } = 1.0;           // 字号缩放 0.8 ~ 1.4
+    public double CornerRadius { get; set; } = 28;         // 胶囊圆角 16 ~ 40
+    public bool BadgeEnabled { get; set; } = true;         // 未读通知角标
+    public bool CoverTintBackground { get; set; } = true;  // 展开背景随专辑封面取色
+
+    // ── 波纹可视化（媒体按钮左侧，随声音/播放波动）──
+    public bool WaveVisualizerEnabled { get; set; } = true;
+
+    // ── 勿扰模式 ──
+    public bool DoNotDisturbEnabled { get; set; } = false;   // 按时间段自动勿扰
+    public bool DoNotDisturbManual { get; set; } = false;    // 手动开关勿扰
+    public int DoNotDisturbStartHour { get; set; } = 22;
+    public int DoNotDisturbEndHour { get; set; } = 8;
+
+    // ── 效率工具 ──
+    public bool ClipboardHistoryEnabled { get; set; } = false;  // 剪贴板历史（默认关，随需开启）
+    public int ClipboardHistoryMax { get; set; } = 15;
+    public bool PomodoroEnabled { get; set; } = false;          // 番茄钟/计时器
+    public int PomodoroWorkMinutes { get; set; } = 25;
+    public int PomodoroBreakMinutes { get; set; } = 5;
+    public bool AutoUpdateCheck { get; set; } = false;          // 自动检查 GitHub 新版本（默认关，需联网）
+    public int KeyIndicatorSeconds { get; set; } = 3;              // 键盘指示灯出现时长（秒）
+
+    public string ActiveProfile { get; set; } = "Default";   // 当前配置档案名
 
     public AppSettings Clone() => (AppSettings)MemberwiseClone();
 }

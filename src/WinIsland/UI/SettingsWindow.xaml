@@ -369,6 +369,9 @@
                             <TextBlock x:Name="LblLowBattery" Style="{StaticResource Label}"/>
                             <Slider Minimum="0" Maximum="50" Value="{Binding Working.LowBatteryThreshold}" Width="300" HorizontalAlignment="Left"
                                     IsSnapToTickEnabled="True" TickFrequency="5"/>
+                            <TextBlock x:Name="LblKeyCaps" Style="{StaticResource Label}" Margin="0,10,0,0"/>
+                            <Slider Minimum="1" Maximum="10" Value="{Binding Working.KeyIndicatorSeconds}" Width="300" HorizontalAlignment="Left"
+                                    IsSnapToTickEnabled="True" TickFrequency="1"/>
                             <TextBlock x:Name="TxtLowBatteryHint" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                        TextWrapping="Wrap" Margin="0,2,0,0"/>
                         </StackPanel>
@@ -379,6 +382,9 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10,6">
                             <TextBlock x:Name="LblTheme" Style="{StaticResource Label}" Text="主题"/>
+                            <TextBlock x:Name="LblThemePreset" Style="{StaticResource Label}"/>
+                            <ComboBox ItemsSource="{Binding ThemePresetOptions}" SelectedValuePath="Value"
+                                      DisplayMemberPath="Display" SelectedValue="{Binding Working.ThemePreset}"/>
                             <ComboBox ItemsSource="{Binding ThemeOptions}" SelectedValuePath="Value"
                                       DisplayMemberPath="Display" SelectedValue="{Binding Working.Theme}"/>
 
@@ -403,6 +409,13 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </WrapPanel>
+                            <TextBlock x:Name="LblFontFamily" Style="{StaticResource Label}"/>
+                            <TextBox Width="220" HorizontalAlignment="Left" Text="{Binding Working.FontFamily}"/>
+                            <TextBlock x:Name="LblFontScale" Style="{StaticResource Label}"/>
+                            <Slider Minimum="0.8" Maximum="1.4" Value="{Binding Working.FontScale}" Width="300" HorizontalAlignment="Left"/>
+                            <TextBlock x:Name="LblCornerRadius" Style="{StaticResource Label}"/>
+                            <Slider Minimum="16" Maximum="40" Value="{Binding Working.CornerRadius}" Width="300" HorizontalAlignment="Left"
+                                    IsSnapToTickEnabled="True" TickFrequency="2"/>
                             <TextBox x:Name="AccentBox" Width="130" HorizontalAlignment="Left" Margin="2,4,0,0"
                                      Text="{Binding Working.AccentColor}"/>
 
@@ -458,6 +471,9 @@
                                 <CheckBox x:Name="ChkExpandedHeightAuto" IsChecked="{Binding Working.MaxExpandedHeightAuto}" VerticalAlignment="Center" Margin="12,0,0,0"/>
                             </StackPanel>
 
+                            <CheckBox x:Name="ChkBadge" IsChecked="{Binding Working.BadgeEnabled}"/>
+                            <CheckBox x:Name="ChkCoverTint" IsChecked="{Binding Working.CoverTintBackground}"/>
+                            <CheckBox x:Name="ChkWave" IsChecked="{Binding Working.WaveVisualizerEnabled}"/>
                             <TextBlock x:Name="LblWidgets" Style="{StaticResource Label}"/>
                             <CheckBox x:Name="ChkShowWidgets" IsChecked="{Binding Working.ShowWidgetsWhenNoMedia}"/>
                             <CheckBox x:Name="ChkWidgetTime" IsChecked="{Binding Working.WidgetShowTime}"/>
@@ -644,6 +660,106 @@
                     </ScrollViewer>
                 </TabItem>
 
+                <TabItem x:Name="TabProductivity" Header="Productivity">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10,6">
+                            <TextBlock x:Name="LblProdClipboard" Style="{StaticResource Label}"/>
+                            <CheckBox x:Name="ChkClipboardEnabled" IsChecked="{Binding Working.ClipboardHistoryEnabled}"/>
+                            <TextBlock x:Name="LblClipboardMax" Style="{StaticResource Label}"/>
+                            <Slider Minimum="3" Maximum="200" Value="{Binding Working.ClipboardHistoryMax}" Width="300" HorizontalAlignment="Left"
+                                    IsSnapToTickEnabled="True" TickFrequency="1"/>
+                            <TextBlock x:Name="TxtClipboardNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,2,0,0"/>
+
+                            <TextBlock x:Name="LblProdPomodoro" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                            <CheckBox x:Name="ChkPomodoroEnabled" IsChecked="{Binding Working.PomodoroEnabled}"/>
+                            <TextBlock x:Name="LblWorkMinutes" Style="{StaticResource Label}"/>
+                            <Slider Minimum="1" Maximum="120" Value="{Binding Working.PomodoroWorkMinutes}" Width="300" HorizontalAlignment="Left"
+                                    IsSnapToTickEnabled="True" TickFrequency="5"/>
+                            <TextBlock x:Name="LblBreakMinutes" Style="{StaticResource Label}"/>
+                            <Slider Minimum="1" Maximum="60" Value="{Binding Working.PomodoroBreakMinutes}" Width="300" HorizontalAlignment="Left"
+                                    IsSnapToTickEnabled="True" TickFrequency="5"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button x:Name="BtnPomodoroStart" Padding="12,5" Click="PomodoroStart_Click"/>
+                                <Button x:Name="BtnPomodoroBreak" Padding="12,5" Margin="8,0,0,0" Click="PomodoroBreak_Click"/>
+                                <Button x:Name="BtnPomodoroStop" Padding="12,5" Margin="8,0,0,0" Click="PomodoroStop_Click"/>
+                                <TextBlock x:Name="TxtPomodoroClock" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                           Margin="14,0,0,0" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            </StackPanel>
+
+                            <TextBlock x:Name="LblProdTodo" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TodoInput"/>
+                                <Button x:Name="BtnTodoAdd" Grid.Column="1" Content="+" Margin="6,0,0,0" Padding="12,5" Click="TodoAdd_Click"/>
+                            </Grid>
+                            <ListBox x:Name="TodoList" MaxHeight="180" Margin="0,8,0,0" BorderThickness="0" Background="Transparent"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,2,0,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox IsChecked="{Binding Done}" Click="TodoToggle_Click" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Text}" VerticalAlignment="Center" Margin="8,0,8,0"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <Button Grid.Column="2" Content="&#xE711;" FontFamily="Segoe MDL2 Assets" Padding="8,2"
+                                                    Background="Transparent" BorderThickness="0" Click="TodoRemove_Click"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <TextBlock x:Name="LblProdSchedule" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="ScheduleTitleInput"/>
+                                <TextBox x:Name="ScheduleTimeInput" Grid.Column="1" Margin="6,0,0,0"/>
+                                <Button x:Name="BtnScheduleAdd" Grid.Column="2" Margin="6,0,0,0" Padding="12,5" Click="ScheduleAdd_Click"/>
+                            </Grid>
+                            <ListBox x:Name="ScheduleList" MaxHeight="160" Margin="0,8,0,0" BorderThickness="0" Background="Transparent"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,2,0,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding When, StringFormat=MM-dd HH:mm}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" TextTrimming="CharacterEllipsis" Margin="6,0,6,0"/>
+                                            <Button Grid.Column="2" Content="&#xE711;" FontFamily="Segoe MDL2 Assets" Padding="8,2"
+                                                    Background="Transparent" BorderThickness="0" Click="ScheduleRemove_Click"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <TextBlock x:Name="TxtProdNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem x:Name="TabUpdate" Header="Update">
+                    <StackPanel Margin="10,6">
+                        <CheckBox x:Name="ChkAutoUpdateCheck" IsChecked="{Binding Working.AutoUpdateCheck}"/>
+                        <Button x:Name="BtnCheckUpdate" Padding="14,6" Margin="0,10,0,0" Click="CheckUpdate_Click"/>
+                        <TextBlock x:Name="TxtUpdateNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,10,0,0"/>
+                    </StackPanel>
+                </TabItem>
+
                 <TabItem x:Name="TabAbout" Header="关于">
                     <StackPanel Margin="10,6">
                         <TextBlock x:Name="TxtAbout" Text="WinIsland — Windows 灵动岛&#10;灵感来自 macOS Dynamic Island。&#10;基于 .NET 8 + WPF，仅使用系统媒体会话与本地 API。" 
@@ -663,6 +779,17 @@
                         <TextBlock x:Name="LblNotifyTimeout" Style="{StaticResource Label}"/>
                         <Slider Minimum="3" Maximum="15" Value="{Binding Working.NotificationTimeoutSeconds}" Width="300" HorizontalAlignment="Left"
                                 IsSnapToTickEnabled="True" TickFrequency="1"/>
+                        <TextBlock x:Name="LblDndTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                        <CheckBox x:Name="ChkDndManual" IsChecked="{Binding Working.DoNotDisturbManual}"/>
+                        <CheckBox x:Name="ChkDndSchedule" IsChecked="{Binding Working.DoNotDisturbEnabled}"/>
+                        <TextBlock x:Name="LblDndStart" Style="{StaticResource Label}"/>
+                        <Slider Minimum="0" Maximum="23" Value="{Binding Working.DoNotDisturbStartHour}" Width="300" HorizontalAlignment="Left"
+                                IsSnapToTickEnabled="True" TickFrequency="1"/>
+                        <TextBlock x:Name="LblDndEnd" Style="{StaticResource Label}"/>
+                        <Slider Minimum="0" Maximum="23" Value="{Binding Working.DoNotDisturbEndHour}" Width="300" HorizontalAlignment="Left"
+                                IsSnapToTickEnabled="True" TickFrequency="1"/>
+                        <TextBlock x:Name="TxtDndNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,6,0,0"/>
                         <TextBlock x:Name="TxtNotifyNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,10,0,0"/>
 

@@ -32,6 +32,15 @@ public partial class App : Application
     private IslandApiServer? _islandApi;
     private MediaAppRegistry? _mediaApps;
 
+    // ── 效率工具 / 波纹 / 更新服务（共享实例：设置页与灵动岛组件共用同一份数据）──
+    private AudioWaveService? _wave;
+    private KeyboardIndicatorMonitor? _keyboard;
+    private ClipboardHistoryService? _clipboard;
+    private TodoService? _todo;
+    private ScheduleService? _schedule;
+    private PomodoroService? _pomodoro;
+    private UpdaterService? _updater;
+
     public App()
     {
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -100,7 +109,26 @@ public partial class App : Application
         _systemNotifications = new SystemNotificationMonitor();
         _systemNotifications.NotificationCaptured += (_, n) => _notifications.Show(n.Title, n.Body, "\uE945");
 
-        _vm = new IslandViewModel(_coordinator, _settings, _lyrics);
+        // ── 效率工具 / 波纹 / 更新服务 ──
+        _wave = new AudioWaveService();
+        _keyboard = new KeyboardIndicatorMonitor();
+        _clipboard = new ClipboardHistoryService();
+        _todo = new TodoService();
+        _schedule = new ScheduleService();
+        _pomodoro = new PomodoroService();
+        _updater = new UpdaterService();
+        if (_settings.Current.WaveVisualizerEnabled) _wave.Start();
+        _clipboard.SetEnabled(_settings.Current.ClipboardHistoryEnabled);
+        _clipboard.MaxEntries = _settings.Current.ClipboardHistoryMax;
+        _schedule.Reminder += item => _notifications?.Show("日程提醒", item.Title, "\uE8B7");
+
+        _vm = new IslandViewModel(_coordinator, _settings, _lyrics,
+            _wave, _keyboard, _clipboard, _todo, _schedule, _pomodoro, _notificationHistory);
+        // 番茄钟到点提醒
+        _vm.PomodoroCompletedRequested += phase =>
+            _notifications?.Show("番茄钟结束",
+                phase == PomodoroPhase.Work ? "工作阶段结束，休息一下吧" : "休息结束，开始新的专注吧",
+                "\uE823");
         _vm.OpenSettingsRequested += (_, _) => OpenSettings();
         _vm.ToggleLyricsWindowRequested += (_, _) => ToggleLyricsWindow();
         // 播放媒体时不弹「正在播放」通知（用户要求；蓝牙/低电量/系统通知等仍保留）
@@ -129,6 +157,28 @@ public partial class App : Application
             AutoStart.SetEnabled(enable);
             _settings.Update(s => s.StartWithWindows = enable);
             _tray.SetAutoStartChecked(enable);
+        };
+        _tray.DoNotDisturbRequested += (_, _) =>
+        {
+            var on = !DoNotDisturb.IsActive(_settings!.Current);
+            _settings.Update(s => s.DoNotDisturbManual = on);
+            _tray.SetDoNotDisturbChecked(on);
+        };
+        _tray.UpdateRequested += async (_, _) =>
+        {
+            try
+            {
+                if (_updater is null) return;
+                var found = await _updater.CheckAsync();
+                MessageBox.Show(found ? Localization.Get("Update_Found") : Localization.Get("Update_None"),
+                    Localization.Get("Update_Title"), MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex) { AppLogger.Error("Check update failed", ex); }
+        };
+        _tray.LogsRequested += (_, _) =>
+        {
+            try { new LogViewerWindow().Show(); }
+            catch (Exception ex) { AppLogger.Error("Open log viewer failed", ex); }
         };
         _tray.ExitRequested += (_, _) => Shutdown();
 
@@ -179,6 +229,16 @@ public partial class App : Application
                 else if (!s.IslandApiEnabled && running) _islandApi.Stop();
             }
 
+            // 波纹可视化开关
+            if (s.WaveVisualizerEnabled) _wave?.Start(); else _wave?.Stop();
+
+            // 剪贴板历史开关与保留条数
+            if (_clipboard is not null)
+            {
+                _clipboard.SetEnabled(s.ClipboardHistoryEnabled);
+                _clipboard.MaxEntries = s.ClipboardHistoryMax;
+            }
+
             // 尺寸设置变更 → 应用到灵动岛
             foreach (var w in _windows) w.ApplySize();
 
@@ -199,6 +259,10 @@ public partial class App : Application
         if (_settings.Current.StandaloneLyricsWindow)
             ShowLyricsWindow();
 
+        // 启动时自动检查新版本（可选；需联网，默认关闭）
+        if (_settings.Current.AutoUpdateCheck)
+            _ = CheckForUpdatesAsync(showWhenUpToDate: false);
+
         // ── Diagnostics mode: report and exit. ──
         if (e.Args.Contains("--diagnose", StringComparer.OrdinalIgnoreCase))
             _ = RunDiagnosticsAsync();
@@ -210,6 +274,22 @@ public partial class App : Application
         // ── Open the settings window at startup (also handy from the CLI). ──
         if (e.Args.Contains("--settings", StringComparer.OrdinalIgnoreCase))
             Dispatcher.BeginInvoke(OpenSettings);
+    }
+
+    /// <summary>检查更新；有新版时弹通知（可带下载链接）。</summary>
+    private async Task CheckForUpdatesAsync(bool showWhenUpToDate)
+    {
+        try
+        {
+            if (_updater is null) return;
+            var hasNew = await _updater.CheckAsync();
+            if (!hasNew && showWhenUpToDate)
+                _notifications?.Show(Localization.Get("Update_Title"), Localization.Get("Update_None"), "\uE72E");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Update check failed", ex);
+        }
     }
 
     private async Task RunDiagnosticsAsync()
@@ -263,7 +343,8 @@ public partial class App : Application
     {
         if (_settings is null) return;
         var vm = new SettingsViewModel(_settings, _mediaApps);
-        var win = new SettingsWindow(vm, _settings, _cider, _notificationHistory);
+        var win = new SettingsWindow(vm, _settings, _cider, _notificationHistory,
+            _todo, _schedule, _clipboard, _pomodoro, _updater);
         win.ShowDialog();
     }
 
@@ -302,6 +383,12 @@ public partial class App : Application
             _settings?.Save();
             _vm?.SavePlaybackState(); // 退出前保存播放位置，重启后恢复（暂停时不再跳回开头）
             _vm?.Dispose();
+            _wave?.Dispose();
+            _keyboard?.Dispose();
+            _clipboard?.Dispose();
+            _todo?.Dispose();
+            _schedule?.Dispose();
+            _pomodoro?.Dispose();
             _coordinator?.Dispose();
             _bluetooth?.Dispose();
             _systemNotifications?.Dispose();

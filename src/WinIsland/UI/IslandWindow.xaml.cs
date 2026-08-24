@@ -1,12 +1,15 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Brush = System.Windows.Media.Brush;
 using Point = System.Windows.Point;
@@ -24,8 +27,10 @@ namespace WinIsland.UI;
 public partial class IslandWindow : Window, INotifyPropertyChanged
 {
     // 尺寸来自设置（可调），带安全钳制
-    private double ManualCompactW => Math.Clamp(_settings.Current.CompactWidth, 240, 520);
-    private double ManualCompactH => Math.Clamp(_settings.Current.CompactHeight, 48, 140);
+    /// <summary>字号缩放系数：整张卡片 LayoutTransform 缩放，逻辑尺寸 = 视觉尺寸 / 缩放比。</summary>
+    private double FontScale => Math.Clamp(_settings.Current.FontScale, 0.8, 1.4);
+    private double ManualCompactW => Math.Clamp(_settings.Current.CompactWidth / FontScale, 240 / FontScale, 520 / FontScale);
+    private double ManualCompactH => Math.Clamp(_settings.Current.CompactHeight / FontScale, 48 / FontScale, 140 / FontScale);
 
     /// <summary>
     /// 实测紧凑内容宽度（岛可见时精确贴合组件）。
@@ -39,7 +44,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             if (!IsLoaded || !_vm.IsVisible) return fallback;
             PillRow.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
             var w = PillRow.DesiredSize.Width;
-            return w >= 20 ? Math.Clamp(w + 56, 240, 580) : fallback; // 总留白 56（左侧 22 + 右侧 24，右侧略多）
+            // 字号缩放：逻辑宽度按比例缩小，卡片渲染时再放大，最终视觉宽度不变
+            return w >= 20 ? Math.Clamp((w + 56) / FontScale, 240 / FontScale, 580 / FontScale) : fallback; // 总留白 56（左侧 22 + 右侧 24，右侧略多）
         }
         catch
         {
@@ -56,7 +62,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         var title = _vm.ActivePush?.Title ?? string.Empty;
         double tw = 0;
         foreach (var ch in title) tw += ch > 0x2E7F ? 13 : 7;
-        return Math.Min(tw, 150) + 68;
+        return (Math.Min(tw, 150) + 68) / FontScale;
     }
 
     /// <summary>
@@ -72,7 +78,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             if (_vm.HasActivePush)
             {
                 var baseW = _noPushWValid ? _noPushCompactW : Math.Max(autoW, ManualCompactW);
-                return Math.Clamp(baseW + PushCardCompactWidth(), 240, 620);
+                return Math.Clamp(baseW + PushCardCompactWidth(), 240 / FontScale, 620 / FontScale);
             }
             _noPushCompactW = autoW;
             _noPushWValid = true;
@@ -89,18 +95,18 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         {
             if (!_settings.Current.CompactHeightAuto) return ManualCompactH; // 手动模式：高度恒定
             if (_vm.HasActivePush)
-                return _noPushHValid ? Math.Clamp(_noPushCompactH, 44, 160) : Math.Clamp(_vm.EstimatedCompactHeight, 44, 160);
-            _noPushCompactH = _vm.EstimatedCompactHeight;
+                return _noPushHValid ? Math.Clamp(_noPushCompactH, 44 / FontScale, 160 / FontScale) : Math.Clamp(_vm.EstimatedCompactHeight / FontScale, 44 / FontScale, 160 / FontScale);
+            _noPushCompactH = _vm.EstimatedCompactHeight / FontScale;
             _noPushHValid = true;
-            return _vm.EstimatedCompactHeight;
+            return _noPushCompactH;
         }
     }
     private double ExpandedWidth => _settings.Current.ExpandedWidthAuto
-        ? _vm.EstimatedExpandedWidth
-        : Math.Clamp(_settings.Current.ExpandedWidth, CompactWidth, 620);
+        ? _vm.EstimatedExpandedWidth / FontScale
+        : Math.Clamp(_settings.Current.ExpandedWidth / FontScale, CompactWidth, 620 / FontScale);
     private double MaxExpandedHeight => _settings.Current.MaxExpandedHeightAuto
-        ? _vm.EstimatedExpandedHeight
-        : Math.Clamp(_settings.Current.MaxExpandedHeight, 240, 620);
+        ? _vm.EstimatedExpandedHeight / FontScale
+        : Math.Clamp(_settings.Current.MaxExpandedHeight / FontScale, 240 / FontScale, 620 / FontScale);
 
     private const int WM_NCHITTEST = 0x0084;
     private const int HTCLIENT = 1;
@@ -112,6 +118,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private readonly System.Windows.Forms.Screen _screen;
     private readonly DispatcherTimer _collapseTimer;
     private readonly DispatcherTimer _compactRestoreTimer;
+    private readonly DispatcherTimer _waveTimer; // 声音波纹：仅播放中运行，空闲时停止不占 CPU
+    private readonly List<ScaleTransform> _waveBars = new();
     private Storyboard? _currentStoryboard;
     private HwndSource? _hwndSource;
 
@@ -154,6 +162,13 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         _lyricsScrollTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _lyricsScrollTimer.Tick += (_, _) => SmoothScrollStep();
 
+        // 声音波纹：33ms ≈ 30fps，空闲时停止不占 CPU
+        _waveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+        _waveTimer.Tick += (_, _) => UpdateWave();
+        if (WaveBar1 is not null)
+            _waveBars.AddRange(new[] { WaveBar1, WaveBar2, WaveBar3, WaveBar4, WaveBar5,
+                WaveBarC1, WaveBarC2, WaveBarC3, WaveBarC4, WaveBarC5 });
+
         // 悬停不展开；移出时若已展开则延迟收起
         Card.MouseLeave += (_, _) =>
         {
@@ -171,7 +186,13 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
         _vm.PropertyChanged += OnVmPropertyChanged;
         _theme.ThemeChanged += (_, _) => ApplyTheme();
-        _settings.Changed += (_, _) => ApplyExpandedSectionVisibility();
+        _settings.Changed += (_, _) =>
+        {
+            ApplyExpandedSectionVisibility();
+            ApplyAppearance();
+            RefreshWave();
+            ApplyCoverTint();
+        };
 
         Loaded += OnLoaded;
         DpiChanged += (_, _) => Reposition();
@@ -199,6 +220,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     // ── 单行模式：紧凑态所有组件一行显示 ──
     public bool SingleLineMode => _settings.Current.SingleLineMode;
+    // 声音波纹：播放中 + 开启波纹设置 + 岛可见才显示（空闲时停止计时器）
+    public bool HasWave => _vm.IsVisible && _vm.HasMedia && _vm.IsPlaying && _settings.Current.WaveVisualizerEnabled;
+
     // 上岛推送内容：单行模式下只显示图标+标题（隐藏正文/进度/按钮）
     public bool PushShowBody => _vm.ActivePushHasBody && !SingleLineMode;
     public bool PushShowProgress => _vm.ActivePushHasProgress && !SingleLineMode;
@@ -333,6 +357,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ButtonHoverBrush)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SliderTrackBrush)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SliderThumbBrush)));
+        ApplyAppearance();
+        RefreshWave();
+        ApplyCoverTint();
     }
 
     /// <summary>展开卡片分区块的可见性随设置即时刷新。</summary>
@@ -373,6 +400,16 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PillRow.Margin = _settings.Current.CompactWidthAuto
             ? new Thickness(8, 0, 0, 0)
             : new Thickness(0);
+    }
+
+    /// <summary>应用外观参数：圆角 / 字体 / 字号缩放。字号缩放作用于整张卡片（LayoutTransform），
+    /// 逻辑尺寸同步除以缩放比，最终视觉尺寸与设置一致、不溢出不裁剪。</summary>
+    private void ApplyAppearance()
+    {
+        try { System.Windows.Documents.TextElement.SetFontFamily(Card, new System.Windows.Media.FontFamily(_settings.Current.FontFamily)); } catch { /* 非法字体名忽略 */ }
+        Card.CornerRadius = new CornerRadius(Math.Clamp(_settings.Current.CornerRadius, 16, 40));
+        Card.LayoutTransform = new ScaleTransform(FontScale, FontScale);
+        ApplySize();
     }
 
     /// <summary>推送到达/更新/过期时：Card 尺寸用弹簧动画平滑过渡到新大小（丝滑不生硬）。</summary>
@@ -469,7 +506,106 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
                 break;
             case nameof(IslandViewModel.HasMedia):
                 ApplyExpandedSectionVisibility();
+                RefreshWave();
                 break;
+            case nameof(IslandViewModel.IsPlaying):
+                RefreshWave();
+                break;
+            case nameof(IslandViewModel.Artwork):
+                ApplyCoverTint();
+                break;
+        }
+    }
+
+    // ── 声音波纹 / 封面取色 ─────────────────────────────────────
+
+    private void RefreshWave()
+    {
+        var on = HasWave;
+        if (on && !_waveTimer.IsEnabled) _waveTimer.Start();
+        else if (!on && _waveTimer.IsEnabled) _waveTimer.Stop();
+        foreach (var sc in _waveBars) sc.ScaleY = 0.16;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasWave)));
+    }
+
+    /// <summary>波形驱动：按音量强度起伏，相位错开更自然；暂停/空闲稳定在低处。</summary>
+    private void UpdateWave()
+    {
+        if (!IsLoaded) return;
+        var level = Math.Clamp(_vm.WaveLevel, 0, 1);
+        for (var i = 0; i < _waveBars.Count; i++)
+        {
+            var sc = _waveBars[i];
+            var target = _vm.IsPlaying ? 0.18 + level * (0.95 - i * 0.055) : 0.14;
+            if (target < 0.12) target = 0.12;
+            sc.ScaleY += (target - sc.ScaleY) * 0.4; // 平滑追赶，避免逐帧跳变
+        }
+    }
+
+    /// <summary>展开背景随专辑封面取色：1x1 采样主色 + 主题底色线性渐变，失败则回退主题背景。</summary>
+    private void ApplyCoverTint()
+    {
+        try
+        {
+            var src = _vm.Artwork;
+            if (src is null || !_settings.Current.CoverTintBackground)
+            {
+                ClearCoverTint();
+                return;
+            }
+            var color = SampleCoverColor(src);
+            if (color is null) { ClearCoverTint(); return; }
+            var c = color.Value;
+            var baseColor = (_theme.CardBackground as SolidColorBrush)?.Color
+                ?? System.Windows.Media.Color.FromArgb(0xF0, 0x14, 0x14, 0x1E);
+            var g = new LinearGradientBrush
+            {
+                StartPoint = new System.Windows.Point(0, 0),
+                EndPoint = new System.Windows.Point(1, 1),
+            };
+            g.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(0xE6, c.R, c.G, c.B), 0));
+            g.GradientStops.Add(new GradientStop(baseColor, 1));
+            g.Freeze();
+            Card.Background = g;
+        }
+        catch
+        {
+            ClearCoverTint();
+        }
+    }
+
+    /// <summary>恢复 Card 背景为绑定的主题色（移除封面取色）。</summary>
+    private void ClearCoverTint()
+    {
+        try
+        {
+            Card.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding(nameof(CardBackground))
+            {
+                RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(Window), 1),
+            });
+        }
+        catch
+        {
+            Card.Background = _theme.CardBackground;
+        }
+    }
+
+    /// <summary>把封面渲染到 1x1 位图采样主色（RGBA）。</summary>
+    private static System.Windows.Media.Color? SampleCoverColor(ImageSource src)
+    {
+        try
+        {
+            var rtb = new RenderTargetBitmap(1, 1, 96, 96, PixelFormats.Pbgra32);
+            var img = new System.Windows.Controls.Image { Source = src, Stretch = Stretch.UniformToFill };
+            rtb.Render(img);
+            var px = new byte[4];
+            rtb.CopyPixels(px, 4, 0);
+            if (px[3] < 40) return null; // 透明/未加载完成，放弃取色
+            return System.Windows.Media.Color.FromArgb(255, px[2], px[1], px[0]);
+        }
+        catch
+        {
+            return null;
         }
     }
 

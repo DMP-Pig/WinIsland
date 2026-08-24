@@ -262,6 +262,54 @@
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                 </StackPanel>
                             </DataTemplate>
+                            <DataTemplate x:Key="VolumeItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.VolumeText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="CapsLockItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE765;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.CapsLockText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="ClipboardItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.ClipboardSummary, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="TodoItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE73A;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.TodoSummary, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="TimerItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.TimerText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="ScheduleItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.ScheduleSummary, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
                             <DataTemplate x:Key="SongItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Border Width="40" Height="40" CornerRadius="12" Margin="0,0,10,0"
@@ -347,6 +395,24 @@
                                                 <DataTrigger Binding="{Binding Kind}" Value="Battery">
                                                     <Setter Property="ContentTemplate" Value="{StaticResource BatteryItem}"/>
                                                 </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Volume">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource VolumeItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="CapsLock">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource CapsLockItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Clipboard">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource ClipboardItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Todo">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource TodoItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Timer">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource TimerItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Schedule">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource ScheduleItem}"/>
+                                                </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </ContentControl.Style>
@@ -359,6 +425,35 @@
                     <!-- 按钮靠右 -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
                                 Visibility="{Binding HasMedia, Converter={StaticResource BoolToVis}}">
+                        <!-- 声音波纹：随音量起伏（紧凑行） -->
+                        <StackPanel x:Name="WaveBoxCompact" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0"
+                                    Visibility="{Binding HasWave, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                            <Border Width="2.5" Height="12" CornerRadius="1.25" VerticalAlignment="Center" Margin="0,0,2.5,0"
+                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                <Border.RenderTransform><ScaleTransform x:Name="WaveBarC1" ScaleY="0.16"/></Border.RenderTransform>
+                            </Border>
+                            <Border Width="2.5" Height="12" CornerRadius="1.25" VerticalAlignment="Center" Margin="0,0,2.5,0"
+                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                <Border.RenderTransform><ScaleTransform x:Name="WaveBarC2" ScaleY="0.16"/></Border.RenderTransform>
+                            </Border>
+                            <Border Width="2.5" Height="12" CornerRadius="1.25" VerticalAlignment="Center" Margin="0,0,2.5,0"
+                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                <Border.RenderTransform><ScaleTransform x:Name="WaveBarC3" ScaleY="0.16"/></Border.RenderTransform>
+                            </Border>
+                            <Border Width="2.5" Height="12" CornerRadius="1.25" VerticalAlignment="Center" Margin="0,0,2.5,0"
+                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                <Border.RenderTransform><ScaleTransform x:Name="WaveBarC4" ScaleY="0.16"/></Border.RenderTransform>
+                            </Border>
+                            <Border Width="2.5" Height="12" CornerRadius="1.25" VerticalAlignment="Center"
+                                    Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                <Border.RenderTransform><ScaleTransform x:Name="WaveBarC5" ScaleY="0.16"/></Border.RenderTransform>
+                            </Border>
+                        </StackPanel>
                         <Button Style="{StaticResource IconButton}" Command="{Binding PlayPauseCommand}">
                             <TextBlock Text="{Binding PlayPauseGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                         </Button>
@@ -480,6 +575,35 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <!-- 声音波纹：随音量起伏（展开控制行） -->
+                            <StackPanel x:Name="WaveBox" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0"
+                                        Visibility="{Binding HasWave, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                                <Border Width="3" Height="16" CornerRadius="1.5" VerticalAlignment="Center" Margin="0,0,3,0"
+                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                    <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                    <Border.RenderTransform><ScaleTransform x:Name="WaveBar1" ScaleY="0.16"/></Border.RenderTransform>
+                                </Border>
+                                <Border Width="3" Height="16" CornerRadius="1.5" VerticalAlignment="Center" Margin="0,0,3,0"
+                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                    <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                    <Border.RenderTransform><ScaleTransform x:Name="WaveBar2" ScaleY="0.16"/></Border.RenderTransform>
+                                </Border>
+                                <Border Width="3" Height="16" CornerRadius="1.5" VerticalAlignment="Center" Margin="0,0,3,0"
+                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                    <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                    <Border.RenderTransform><ScaleTransform x:Name="WaveBar3" ScaleY="0.16"/></Border.RenderTransform>
+                                </Border>
+                                <Border Width="3" Height="16" CornerRadius="1.5" VerticalAlignment="Center" Margin="0,0,3,0"
+                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                    <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                    <Border.RenderTransform><ScaleTransform x:Name="WaveBar4" ScaleY="0.16"/></Border.RenderTransform>
+                                </Border>
+                                <Border Width="3" Height="16" CornerRadius="1.5" VerticalAlignment="Center"
+                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                    <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                                    <Border.RenderTransform><ScaleTransform x:Name="WaveBar5" ScaleY="0.16"/></Border.RenderTransform>
+                                </Border>
+                            </StackPanel>
                             <Button Style="{StaticResource IconButton}" Command="{Binding PreviousCommand}" IsEnabled="{Binding CanPrevious}">
                                 <TextBlock Text="&#xE892;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                             </Button>
@@ -526,6 +650,14 @@
                     </StackPanel>
                 </ScrollViewer>
                 </Grid>
+                <!-- 未读通知角标：卡片右上角红点（展开后查看会清零） -->
+                <Border x:Name="BadgeDot" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,10,0"
+                        MinWidth="16" Height="16" CornerRadius="8" Padding="4,0" Background="#E81123"
+                        BorderBrush="#66FFFFFF" BorderThickness="1"
+                        Visibility="{Binding ShowBadge, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{Binding BadgeText}" FontSize="9" FontWeight="Bold" Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
             </Grid>
         </Border>
     </Grid>

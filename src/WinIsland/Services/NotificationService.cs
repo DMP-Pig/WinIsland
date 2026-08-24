@@ -42,7 +42,15 @@ public sealed class NotificationService
         {
             if (string.IsNullOrWhiteSpace(title)) return;
 
+            // 无论是否勿扰都先写入历史，避免勿扰期间丢失提醒记录
             _history?.Add(title, body, glyph);
+
+            // 勿扰模式：不弹横幅，仅进历史
+            if (DoNotDisturb.IsActive(_settings.Current))
+            {
+                AppLogger.Info($"Banner suppressed by DnD: '{title}'");
+                return;
+            }
 
             var screen = System.Windows.Forms.Screen.PrimaryScreen
                 ?? System.Windows.Forms.Screen.AllScreens[0];
