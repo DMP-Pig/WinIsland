@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using Application = System.Windows.Application;
 using Localization = WinIsland.UI.Localization;
@@ -28,6 +29,7 @@ public partial class App : Application
     private NotificationService? _notifications;
     private NotificationHistoryService? _notificationHistory;
     private GlobalHotkeyService? _hotkeys;
+    private IslandApiServer? _islandApi;
     private MediaAppRegistry? _mediaApps;
 
     public App()
@@ -35,9 +37,17 @@ public partial class App : Application
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
     }
 
+    [DllImport("user32.dll")]
+    private static extern bool SetProcessDpiAwarenessContext(IntPtr value);
+    private static readonly IntPtr DpiAwarenessPerMonitorV2 = new(-4);
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // 窗口创建前强制 PerMonitorV2，避免启动瞬间按系统缩放渲染导致文字先大后恢复正常
+        try { SetProcessDpiAwarenessContext(DpiAwarenessPerMonitorV2); }
+        catch { /* manifest 已声明，忽略 */ }
 
         // ── Crash safety: log everything, never show a raw crash dialog. ──
         DispatcherUnhandledException += (_, args) =>
@@ -93,10 +103,17 @@ public partial class App : Application
         _vm = new IslandViewModel(_coordinator, _settings, _lyrics);
         _vm.OpenSettingsRequested += (_, _) => OpenSettings();
         _vm.ToggleLyricsWindowRequested += (_, _) => ToggleLyricsWindow();
-        _vm.NowPlayingRequested += (title, artist) =>
-            _notifications?.Show(Localization.Get("NowPlaying_Title"), string.IsNullOrEmpty(artist) ? title : $"{title} - {artist}", "\uE8D6");
+        // 播放媒体时不弹「正在播放」通知（用户要求；蓝牙/低电量/系统通知等仍保留）
+        // _vm.NowPlayingRequested += (title, artist) =>
+        //     _notifications?.Show(Localization.Get("NowPlaying_Title"), string.IsNullOrEmpty(artist) ? title : $"{title} - {artist}", "\uE8D6");
         _vm.LowBatteryRequested += percent =>
             _notifications?.Show(Localization.Get("LowBattery_Title"), $"{percent}%", "\uEBA0");
+
+        // ── 上岛 API：第三方软件推送信息到灵动岛 ──
+        _islandApi = new IslandApiServer(_settings);
+        _islandApi.PushReceived += push => Dispatcher.BeginInvoke(() => _vm?.PushIsland(push));
+        _islandApi.PushRemoved += id => Dispatcher.BeginInvoke(() => _vm?.RemoveIslandPush(id));
+        if (_settings.Current.IslandApiEnabled) _islandApi.Start();
 
         // ── Island windows (one per selected monitor) ──
         RecreateWindows();
@@ -153,6 +170,14 @@ public partial class App : Application
 
             // 全局快捷键开关
             _hotkeys?.SetEnabled(s.GlobalHotkeysEnabled);
+
+            // 上岛 API：启用/端口变化时重启
+            if (_islandApi is not null)
+            {
+                var running = _islandApi.IsRunning;
+                if (s.IslandApiEnabled && !running) _islandApi.Start();
+                else if (!s.IslandApiEnabled && running) _islandApi.Stop();
+            }
 
             // 尺寸设置变更 → 应用到灵动岛
             foreach (var w in _windows) w.ApplySize();
@@ -281,6 +306,7 @@ public partial class App : Application
             _bluetooth?.Dispose();
             _systemNotifications?.Dispose();
             _hotkeys?.Dispose();
+            _islandApi?.Dispose();
             _tray?.Dispose();
             _singleInstance?.Dispose();
             foreach (var w in _windows) w.Close();

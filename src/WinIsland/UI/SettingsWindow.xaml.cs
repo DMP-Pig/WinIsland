@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Point = System.Windows.Point;
@@ -29,6 +30,7 @@ public partial class SettingsWindow : Window
     private readonly DispatcherTimer _autoApply;
     private readonly NotificationHistoryService? _history;
     private string _lastAppliedJson;
+    private bool _sizeSlidersInitialized; // 初始化期间不触发"手动调整关闭自动"
 
     public SettingsWindow(SettingsViewModel vm, SettingsService service, CiderMediaProvider? cider,
         NotificationHistoryService? history = null)
@@ -54,6 +56,9 @@ public partial class SettingsWindow : Window
 
         // 关闭时兜底保存最后一次改动
         Closed += (_, _) => { try { _vm.Save(); } catch { } };
+
+        // 初始化完成后才允许"手动调整关闭自动"
+        Loaded += (_, _) => _sizeSlidersInitialized = true;
     }
 
     /// <summary>滚轮滚动当前页签的 ScrollViewer（避免被 ComboBox/Slider 拦截）。</summary>
@@ -174,6 +179,19 @@ public partial class SettingsWindow : Window
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+    /// <summary>手动拖动尺寸滑杆时，若该尺寸处于"自动调整"状态则自动关闭自动调整（自动/手动二选一）。</summary>
+    private void SizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_sizeSlidersInitialized || sender is not Slider s || s.Tag is not string key) return;
+        switch (key)
+        {
+            case "CompactWidth": if (_vm.Working.CompactWidthAuto) _vm.Working.CompactWidthAuto = false; break;
+            case "CompactHeight": if (_vm.Working.CompactHeightAuto) _vm.Working.CompactHeightAuto = false; break;
+            case "ExpandedWidth": if (_vm.Working.ExpandedWidthAuto) _vm.Working.ExpandedWidthAuto = false; break;
+            case "ExpandedHeight": if (_vm.Working.MaxExpandedHeightAuto) _vm.Working.MaxExpandedHeightAuto = false; break;
+        }
+    }
     /// <summary>Refresh all hardcoded labels from the localization tables.</summary>
     private void ApplyLocalization()
     {
@@ -199,6 +217,12 @@ public partial class SettingsWindow : Window
         TabCider.Header = Localization.Get("Settings_Cider");
         TabAbout.Header = Localization.Get("Settings_About");
         TabNotify.Header = Localization.Get("Settings_Notifications");
+        TabIsland.Header = Localization.Get("Settings_Island");
+        ChkIslandApi.Content = Localization.Get("Island_Enabled");
+        LblIslandPort.Text = Localization.Get("Island_Port");
+        LblIslandToken.Text = Localization.Get("Island_Token");
+        LblIslandDuration.Text = Localization.Get("Island_DefaultDuration");
+        TxtIslandNote.Text = Localization.Get("Island_Note");
 
         LblLanguage.Text = Localization.Get("General_Language");
         LblTheme.Text = Localization.Get("Appearance_Theme");
@@ -213,6 +237,11 @@ public partial class SettingsWindow : Window
         LblCompactWidth.Text = Localization.Get("Appearance_CompactWidth");
         LblCompactHeight.Text = Localization.Get("Appearance_CompactHeight");
         LblExpandedWidth.Text = Localization.Get("Appearance_ExpandedWidth");
+        LblExpandedHeight.Text = Localization.Get("Appearance_ExpandedHeight");
+        ChkCompactWidthAuto.Content = Localization.Get("Appearance_Auto");
+        ChkCompactHeightAuto.Content = Localization.Get("Appearance_Auto");
+        ChkExpandedWidthAuto.Content = Localization.Get("Appearance_Auto");
+        ChkExpandedHeightAuto.Content = Localization.Get("Appearance_Auto");
         LblWidgets.Text = Localization.Get("Appearance_Widgets");
         ChkShowWidgets.Content = Localization.Get("Appearance_ShowWidgets");
         ChkWidgetTime.Content = Localization.Get("Appearance_WidgetTime");

@@ -24,10 +24,83 @@ namespace WinIsland.UI;
 public partial class IslandWindow : Window, INotifyPropertyChanged
 {
     // 尺寸来自设置（可调），带安全钳制
-    private double CompactWidth => Math.Clamp(_settings.Current.CompactWidth, 240, 520);
-    private double CompactHeight => Math.Clamp(_settings.Current.CompactHeight, 48, 140);
-    private double ExpandedWidth => Math.Clamp(_settings.Current.ExpandedWidth, CompactWidth, 620);
-    private double MaxExpandedHeight => Math.Clamp(_settings.Current.MaxExpandedHeight, 240, 620);
+    private double ManualCompactW => Math.Clamp(_settings.Current.CompactWidth, 240, 520);
+    private double ManualCompactH => Math.Clamp(_settings.Current.CompactHeight, 48, 140);
+
+    /// <summary>
+    /// 实测紧凑内容宽度（岛可见时精确贴合组件）。
+    /// 岛隐藏/未布局时返回「估算与手动值取较大者」，避免启动瞬间 Card 过窄导致组件挤压、显示不完整。
+    /// </summary>
+    private double MeasureCompactWidthNow()
+    {
+        var fallback = Math.Max(_vm.EstimatedCompactWidth, ManualCompactW);
+        try
+        {
+            if (!IsLoaded || !_vm.IsVisible) return fallback;
+            PillRow.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
+            var w = PillRow.DesiredSize.Width;
+            return w >= 20 ? Math.Clamp(w + 56, 240, 580) : fallback; // 总留白 56（左侧 22 + 右侧 24，右侧略多）
+        }
+        catch
+        {
+            return fallback;
+        }
+    }
+
+    private double _noPushCompactW;
+    private bool _noPushWValid;
+
+    /// <summary>推送卡片在紧凑态的单行估算宽度：标题 + 图标30 + 间距8 + 内边距24 + 余量6，保证文字完整。</summary>
+    private double PushCardCompactWidth()
+    {
+        var title = _vm.ActivePush?.Title ?? string.Empty;
+        double tw = 0;
+        foreach (var ch in title) tw += ch > 0x2E7F ? 13 : 7;
+        return Math.Min(tw, 150) + 68;
+    }
+
+    /// <summary>
+    /// 紧凑宽度：推送出现时 = 「无推送宽度 + 推送卡片宽度」确定性加长，
+    /// 确保推送卡片与所有组件完整显示（不依赖 UI 布局时序）；手动模式恒定。
+    /// </summary>
+    private double CompactWidth
+    {
+        get
+        {
+            if (!_settings.Current.CompactWidthAuto) return ManualCompactW;
+            var autoW = MeasureCompactWidthNow();
+            if (_vm.HasActivePush)
+            {
+                var baseW = _noPushWValid ? _noPushCompactW : Math.Max(autoW, ManualCompactW);
+                return Math.Clamp(baseW + PushCardCompactWidth(), 240, 620);
+            }
+            _noPushCompactW = autoW;
+            _noPushWValid = true;
+            return autoW;
+        }
+    }
+    private double _noPushCompactH;   // 无上岛推送时的紧凑高度（缓存）
+    private bool _noPushHValid;
+
+    /// <summary>紧凑高度：上岛推送不改变高度（与没上岛前一致），推送卡片在紧凑高度内自适应显示。</summary>
+    private double CompactHeight
+    {
+        get
+        {
+            if (!_settings.Current.CompactHeightAuto) return ManualCompactH; // 手动模式：高度恒定
+            if (_vm.HasActivePush)
+                return _noPushHValid ? Math.Clamp(_noPushCompactH, 44, 160) : Math.Clamp(_vm.EstimatedCompactHeight, 44, 160);
+            _noPushCompactH = _vm.EstimatedCompactHeight;
+            _noPushHValid = true;
+            return _vm.EstimatedCompactHeight;
+        }
+    }
+    private double ExpandedWidth => _settings.Current.ExpandedWidthAuto
+        ? _vm.EstimatedExpandedWidth
+        : Math.Clamp(_settings.Current.ExpandedWidth, CompactWidth, 620);
+    private double MaxExpandedHeight => _settings.Current.MaxExpandedHeightAuto
+        ? _vm.EstimatedExpandedHeight
+        : Math.Clamp(_settings.Current.MaxExpandedHeight, 240, 620);
 
     private const int WM_NCHITTEST = 0x0084;
     private const int HTCLIENT = 1;
@@ -38,6 +111,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private readonly SettingsService _settings;
     private readonly System.Windows.Forms.Screen _screen;
     private readonly DispatcherTimer _collapseTimer;
+    private readonly DispatcherTimer _compactRestoreTimer;
     private Storyboard? _currentStoryboard;
     private HwndSource? _hwndSource;
 
@@ -60,6 +134,21 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         {
             _collapseTimer.Stop();
             _vm.IsExpanded = false;
+        };
+
+        // 收起动画可能被快速切换打断导致 Card 尺寸残留：动画结束后兜底恢复精确紧凑尺寸
+        _compactRestoreTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
+        _compactRestoreTimer.Tick += (_, _) =>
+        {
+            _compactRestoreTimer.Stop();
+            if (IsLoaded && !_vm.IsExpanded)
+            {
+                Card.BeginAnimation(FrameworkElement.WidthProperty, null);
+                Card.BeginAnimation(FrameworkElement.HeightProperty, null);
+                Card.Width = CompactWidth;
+                Card.Height = CompactHeight;
+                ContentGrid.RowDefinitions[1].Height = GridLength.Auto;
+            }
         };
 
         _lyricsScrollTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
@@ -102,13 +191,18 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     public Brush SliderThumbBrush => _theme.SliderThumbBrush;
 
     // ── 展开卡片分区块开关（来自设置，绑定到展开内容）──
-    public bool ExpandedShowArtTitle => _settings.Current.ExpandedShowArtTitle;
-    public bool ExpandedShowProgress => _settings.Current.ExpandedShowProgress;
-    public bool ExpandedShowControls => _settings.Current.ExpandedShowControls;
-    public bool ExpandedShowLyrics => _settings.Current.ExpandedShowLyrics;
+    // 歌曲相关区域仅在“有媒体播放”时显示；只有上岛推送时展开态以上岛内容为主，避免空歌曲区
+    public bool ExpandedShowArtTitle => _vm.HasMedia && _settings.Current.ExpandedShowArtTitle;
+    public bool ExpandedShowProgress => _vm.HasMedia && _settings.Current.ExpandedShowProgress;
+    public bool ExpandedShowControls => _vm.HasMedia && _settings.Current.ExpandedShowControls;
+    public bool ExpandedShowLyrics => _vm.HasMedia && _settings.Current.ExpandedShowLyrics;
 
     // ── 单行模式：紧凑态所有组件一行显示 ──
     public bool SingleLineMode => _settings.Current.SingleLineMode;
+    // 上岛推送内容：单行模式下只显示图标+标题（隐藏正文/进度/按钮）
+    public bool PushShowBody => _vm.ActivePushHasBody && !SingleLineMode;
+    public bool PushShowProgress => _vm.ActivePushHasProgress && !SingleLineMode;
+    public bool PushShowButtons => _vm.ActivePushHasButtons && !SingleLineMode;
 
     // ── 点击展开 / 解锁拖动 / 右键菜单 ─────────────────────────
 
@@ -180,6 +274,16 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         MenuOnlineLyrics.IsChecked = _settings.Current.OnlineLyricsEnabled;
     }
 
+    /// <summary>上岛推送按钮点击：执行动作（打开 URL / 启动程序）后关闭当前推送。</summary>
+    private void PushButton_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is IslandPushButton button)
+        {
+            _vm.ExecutePushAction(button);
+            _vm.DismissActivePush();
+        }
+    }
+
     private void MenuOnlineLyrics_Click(object sender, RoutedEventArgs e)
     {
         _settings.Update(s => s.OnlineLyricsEnabled = !s.OnlineLyricsEnabled);
@@ -239,14 +343,20 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowControls)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowLyrics)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SingleLineMode)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowBody)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowProgress)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowButtons)));
     }
 
     /// <summary>按设置调整窗口与卡片尺寸（紧凑/展开）。仅当窗口尺寸真正变化时才重定位，
     /// 避免上锁/其它设置变更把用户拖动后的位置弹回默认。</summary>
     public void ApplySize()
     {
-        var w = Math.Max(ExpandedWidth, CompactWidth) + 24;
-        var h = Math.Max(MaxExpandedHeight, CompactHeight) + 24;
+        // 窗口固定为能容纳最大推送卡片/展开内容的大小：推送时只需动画 Card 形变，避免窗口级 Resize 卡顿
+        var settingExpanded = Math.Clamp(_settings.Current.ExpandedWidth, 300, 620);
+        var settingMaxH = Math.Clamp(_settings.Current.MaxExpandedHeight, 240, 620);
+        var w = Math.Max(settingExpanded, 640) + 24;
+        var h = Math.Max(settingMaxH, 220) + 24;
         var sizeChanged = Math.Abs(Width - w) > 0.5 || Math.Abs(Height - h) > 0.5;
         if (sizeChanged)
         {
@@ -259,6 +369,37 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             Card.Width = CompactWidth;
             Card.Height = CompactHeight;
         }
+        // 自动调节尺寸时：胶囊行左侧额外留白（左侧横向距离更大），手动模式保持对称
+        PillRow.Margin = _settings.Current.CompactWidthAuto
+            ? new Thickness(8, 0, 0, 0)
+            : new Thickness(0);
+    }
+
+    /// <summary>推送到达/更新/过期时：Card 尺寸用弹簧动画平滑过渡到新大小（丝滑不生硬）。</summary>
+    private void AnimateCompactSize()
+    {
+        if (!IsLoaded) return;
+        if (_vm.IsExpanded) { ApplySize(); return; }
+        var spring = new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 };
+        var sb = new Storyboard();
+        AddAnim(sb, Card, FrameworkElement.WidthProperty, CompactWidth, 460, spring);
+        AddAnim(sb, Card, FrameworkElement.HeightProperty, CompactHeight, 460, spring);
+        sb.Begin();
+    }
+
+    /// <summary>第三方应用上岛：推送卡片淡入 + 轻微缩放的丝滑动画。</summary>
+    private void PlayPushCardAnimation()
+    {
+        if (!IsLoaded || CompactPushCard is null || !_vm.HasActivePush) return;
+        CompactPushCard.Opacity = 0;
+        CompactPushScale.ScaleX = CompactPushScale.ScaleY = 0.94;
+        var sb = new Storyboard();
+        var spring = new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 };
+        var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
+        AddAnim(sb, CompactPushCard, UIElement.OpacityProperty, 1, 320, smooth);
+        AddAnim(sb, CompactPushScale, ScaleTransform.ScaleXProperty, 1, 440, spring);
+        AddAnim(sb, CompactPushScale, ScaleTransform.ScaleYProperty, 1, 440, spring);
+        sb.Begin();
     }
     /// <summary>右键菜单主题色（圆角液态玻璃）。</summary>
     private void ApplyMenuTheme()
@@ -309,14 +450,25 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             case nameof(IslandViewModel.IsVisible):
                 if (_vm.IsVisible) ShowIsland(instant: false);
                 else HideIsland();
+                ApplySize(); // 岛显示/隐藏时重新测量自动尺寸
                 break;
             case nameof(IslandViewModel.IsExpanded):
                 AnimateSize();
                 if (_vm.IsExpanded && _vm.LyricIndex >= 0)
                     Dispatcher.BeginInvoke(() => ScrollLyricsTo(_vm.LyricIndex), DispatcherPriority.Loaded);
+                if (!_vm.IsExpanded) _compactRestoreTimer.Start(); // 收起后兜底恢复精确尺寸，避免多次切换后上下间距异常
                 break;
             case nameof(IslandViewModel.LyricIndex):
                 if (_vm.LyricIndex >= 0) QueueLyricsScroll(_vm.LyricIndex);
+                break;
+            case nameof(IslandViewModel.HasActivePush):
+                ApplySize();           // 确保窗口足够大（首次）
+                AnimateCompactSize();  // 尺寸变化：弹簧动画，丝滑
+                PlayPushCardAnimation(); // 上岛卡片：淡入 + 缩放动画
+                ApplyExpandedSectionVisibility();
+                break;
+            case nameof(IslandViewModel.HasMedia):
+                ApplyExpandedSectionVisibility();
                 break;
         }
     }
@@ -413,8 +565,17 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         ExpandedContent.BeginAnimation(UIElement.OpacityProperty, null);
         PillRow.Visibility = Visibility.Collapsed;
         ExpandedContent.Visibility = Visibility.Visible;
+
+        // 先按内容测量一次，得到自然高度
         ContentGrid.Measure(new System.Windows.Size(ExpandedWidth - 24, double.PositiveInfinity));
-        var targetHeight = Math.Clamp(ContentGrid.DesiredSize.Height + 16, 200, MaxExpandedHeight);
+        var contentH = ContentGrid.DesiredSize.Height;
+        var targetHeight = Math.Clamp(contentH + 16, 200, MaxExpandedHeight);
+
+        // 关键：把展开内容行（Row1）固定为可视高度 targetHeight-16，
+        // 让 ExpandedContent(ScrollViewer) 获得确定视口 —— 内容超高时才能滚轮滚动查看
+        ContentGrid.RowDefinitions[1].Height = new GridLength(Math.Max(120, targetHeight - 16), GridUnitType.Pixel);
+        ContentGrid.Measure(new System.Windows.Size(ExpandedWidth - 24, targetHeight - 16));
+
         AnimateCard(ExpandedWidth, targetHeight, expand: true);
     }
 
@@ -422,7 +583,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     {
         // 先恢复胶囊行（紧凑行占满并垂直居中），再缩回紧凑尺寸
         ContentGrid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Star);
-        ContentGrid.VerticalAlignment = VerticalAlignment.Top; // 收回时胶囊贴顶，避免被居中裁切到卡片外
+        ContentGrid.RowDefinitions[1].Height = GridLength.Auto; // 展开行恢复自适应
+        // 保持垂直居中：收回后组件上下对称（此前设为 Top 会导致贴顶、下方留白，展开收回后距离不同）
+        ContentGrid.VerticalAlignment = VerticalAlignment.Center;
 
         // 清除展开动画的残留（HoldEnd 会把 PillRow.Opacity 锁在 0，直接设本地值无效）
         PillRow.BeginAnimation(UIElement.OpacityProperty, null);
@@ -485,6 +648,15 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         sb.Completed += (_, _) =>
         {
             _currentStoryboard = null;
+            // 关键：清除动画对 Card 尺寸的 HoldEnd 锁定，否则之后设置本地尺寸（含自动重算）不生效，
+            // 多次展开/收起后组件上下间距会残留异常
+            Card.BeginAnimation(FrameworkElement.WidthProperty, null);
+            Card.BeginAnimation(FrameworkElement.HeightProperty, null);
+            if (!_vm.IsExpanded)
+            {
+                Card.Width = CompactWidth;
+                Card.Height = CompactHeight;
+            }
             onCompleted?.Invoke();
         };
         _currentStoryboard = sb;

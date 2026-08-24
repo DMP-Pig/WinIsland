@@ -438,11 +438,25 @@
                             <Slider Minimum="0.3" Maximum="1" Value="{Binding Working.Opacity}" Width="300" HorizontalAlignment="Left"/>
                             <TextBlock x:Name="LblIslandSize" Style="{StaticResource Label}"/>
                             <TextBlock x:Name="LblCompactWidth" Style="{StaticResource Label}"/>
-                            <Slider Minimum="260" Maximum="520" Value="{Binding Working.CompactWidth}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="2"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider Minimum="260" Maximum="520" Value="{Binding Working.CompactWidth}" Width="230" IsSnapToTickEnabled="True" TickFrequency="2" Tag="CompactWidth" ValueChanged="SizeSlider_ValueChanged"/>
+                                <CheckBox x:Name="ChkCompactWidthAuto" IsChecked="{Binding Working.CompactWidthAuto}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            </StackPanel>
                             <TextBlock x:Name="LblCompactHeight" Style="{StaticResource Label}"/>
-                            <Slider Minimum="48" Maximum="140" Value="{Binding Working.CompactHeight}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="1"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider Minimum="48" Maximum="140" Value="{Binding Working.CompactHeight}" Width="230" IsSnapToTickEnabled="True" TickFrequency="1" Tag="CompactHeight" ValueChanged="SizeSlider_ValueChanged"/>
+                                <CheckBox x:Name="ChkCompactHeightAuto" IsChecked="{Binding Working.CompactHeightAuto}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            </StackPanel>
                             <TextBlock x:Name="LblExpandedWidth" Style="{StaticResource Label}"/>
-                            <Slider Minimum="340" Maximum="620" Value="{Binding Working.ExpandedWidth}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="2"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider Minimum="340" Maximum="620" Value="{Binding Working.ExpandedWidth}" Width="230" IsSnapToTickEnabled="True" TickFrequency="2" Tag="ExpandedWidth" ValueChanged="SizeSlider_ValueChanged"/>
+                                <CheckBox x:Name="ChkExpandedWidthAuto" IsChecked="{Binding Working.ExpandedWidthAuto}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock x:Name="LblExpandedHeight" Style="{StaticResource Label}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider Minimum="240" Maximum="620" Value="{Binding Working.MaxExpandedHeight}" Width="230" IsSnapToTickEnabled="True" TickFrequency="2" Tag="ExpandedHeight" ValueChanged="SizeSlider_ValueChanged"/>
+                                <CheckBox x:Name="ChkExpandedHeightAuto" IsChecked="{Binding Working.MaxExpandedHeightAuto}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            </StackPanel>
 
                             <TextBlock x:Name="LblWidgets" Style="{StaticResource Label}"/>
                             <CheckBox x:Name="ChkShowWidgets" IsChecked="{Binding Working.ShowWidgetsWhenNoMedia}"/>
@@ -611,6 +625,23 @@
                         <TextBlock x:Name="TxtCiderHint" Text="在 Cider 中开启：设置 → 连接性 → 允许外部控制（Manage External Application Access），生成 Token 后填入。" 
                                    FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,10,0,0"/>
                     </StackPanel>
+                </TabItem>
+
+                <TabItem x:Name="TabIsland" Header="上岛 API">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10,6">
+                            <CheckBox x:Name="ChkIslandApi" IsChecked="{Binding Working.IslandApiEnabled}"/>
+                            <TextBlock x:Name="LblIslandPort" Style="{StaticResource Label}"/>
+                            <TextBox Width="130" HorizontalAlignment="Left" Text="{Binding Working.IslandApiPort}"/>
+                            <TextBlock x:Name="LblIslandToken" Style="{StaticResource Label}"/>
+                            <TextBox Width="300" HorizontalAlignment="Left" Text="{Binding Working.IslandApiToken}"/>
+                            <TextBlock x:Name="LblIslandDuration" Style="{StaticResource Label}"/>
+                            <Slider Minimum="5" Maximum="300" Value="{Binding Working.IslandApiDefaultDuration}" Width="300" HorizontalAlignment="Left"
+                                    IsSnapToTickEnabled="True" TickFrequency="5"/>
+                            <TextBlock x:Name="TxtIslandNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,10,0,0" FontFamily="Consolas"/>
+                        </StackPanel>
+                    </ScrollViewer>
                 </TabItem>
 
                 <TabItem x:Name="TabAbout" Header="关于">

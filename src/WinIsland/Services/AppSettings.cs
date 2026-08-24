@@ -57,7 +57,7 @@ public sealed class AppSettings
     public MonitorSelection Monitor { get; set; } = MonitorSelection.Primary;
     public int MonitorIndex { get; set; } = 0;
     public double OffsetX { get; set; } = 0;
-    public double OffsetY { get; set; } = 16;
+    public double OffsetY { get; set; } = 8;
     public double Opacity { get; set; } = 0.92;
 
     // ── Behavior ───────────────────────────────────────────────
@@ -76,7 +76,7 @@ public sealed class AppSettings
     public bool CompactShowArt { get; set; } = true;
     public bool CompactShowTitle { get; set; } = true;
     public bool CompactShowProgress { get; set; } = false;
-    public bool SingleLineMode { get; set; } = false;   // 单行模式：紧凑态所有组件一行显示
+    public bool SingleLineMode { get; set; } = true;    // 单行模式：紧凑态所有组件一行显示（默认开启）
 
     // ── Expanded card sections（展开卡片里可独立开关的区块）──
     public bool ExpandedShowArtTitle { get; set; } = true;   // 大封面 + 歌名/歌手/专辑
@@ -104,6 +104,12 @@ public sealed class AppSettings
     public double ExpandedWidth { get; set; } = 400;
     public double MaxExpandedHeight { get; set; } = 384;
 
+    // 自动调整：按组件内容自适应尺寸（默认开启；手动拖动滑杆会自动关闭对应项）
+    public bool CompactWidthAuto { get; set; } = true;
+    public bool CompactHeightAuto { get; set; } = true;
+    public bool ExpandedWidthAuto { get; set; } = true;
+    public bool MaxExpandedHeightAuto { get; set; } = true;
+
     // ── Idle widgets（无媒体时组件）──────────────────────────
     public bool ShowWidgetsWhenNoMedia { get; set; } = false; // 无媒体时显示组件（旧开关）
     public bool WidgetShowTime { get; set; } = true;
@@ -121,6 +127,12 @@ public sealed class AppSettings
     public bool NotificationTakeoverEnabled { get; set; } = false; // 接管 Windows 通知（尽力而为）
     public int NotificationTimeoutSeconds { get; set; } = 6;      // 横幅显示时长
     public string NotificationPosition { get; set; } = "TopRight"; // TopRight = 右上角
+
+    // ── 上岛 API（其他软件推送信息到灵动岛）──
+    public bool IslandApiEnabled { get; set; } = true;           // 启用本地上岛 API
+    public int IslandApiPort { get; set; } = 9840;               // 本地监听端口
+    public string IslandApiToken { get; set; } = "";             // 可选 Token（防局域网误连）
+    public int IslandApiDefaultDuration { get; set; } = 30;      // 默认显示时长（秒），推送方可按条覆盖
 
     public AppSettings Clone() => (AppSettings)MemberwiseClone();
 }

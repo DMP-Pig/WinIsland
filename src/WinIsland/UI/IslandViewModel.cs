@@ -45,6 +45,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private bool _pauseLock;                       // 暂停锁定：期间不随快照恢复播放、不推进歌词
     private PlaybackStatus _restoredStatus = PlaybackStatus.Closed; // 上次退出的状态（用于启动恢复）
 
+    // ── 上岛推送（第三方软件推送到灵动岛）──
+    private IslandPush? _activePush;
+
 
     public IslandViewModel(MediaCoordinator coordinator, SettingsService settings, LyricsService lyricsService)
     {
@@ -86,6 +89,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             if (!IsVisible) return;
             ClockText = DateTime.Now.ToString("HH:mm");
             DateText = DateTime.Now.ToString("M月d日 ddd", System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
+            CheckPushExpiry();
             UpdateSystemStats();
             if (ShowIdleWeather && ++_weatherTick % 60 == 1)
             {
@@ -380,7 +384,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
 
 
     // 组件摆放顺序（WidgetOrder 中的下标决定左右列）
-    public double WidgetTimeFontSize => HasMedia ? 14 : 22;
+    public double WidgetTimeFontSize => HasMedia ? 14 : 16; // 空闲时钟字号适中，启动不突兀
 
     // 系统状态/日期组件文本
     private string _dateText = string.Empty;
@@ -399,6 +403,214 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     /// <summary>低电量触发（参数：电量百分比）。</summary>
     public event Action<int>? LowBatteryRequested;
     private bool _lowBatteryNotified;
+    // ── 上岛推送（第三方软件推送到灵动岛）──────────────────
+    public IslandPush? ActivePush
+    {
+        get => _activePush;
+        private set
+        {
+            if (!Set(ref _activePush, value)) return;
+            OnPropertyChanged(nameof(HasActivePush));
+            OnPropertyChanged(nameof(ActivePushIcon));
+            OnPropertyChanged(nameof(ActivePushTitle));
+            OnPropertyChanged(nameof(ActivePushBody));
+            OnPropertyChanged(nameof(ActivePushHasBody));
+            OnPropertyChanged(nameof(ActivePushHasProgress));
+            OnPropertyChanged(nameof(ActivePushProgress));
+            OnPropertyChanged(nameof(ActivePushHasButtons));
+            OnPropertyChanged(nameof(ActivePushButtons));
+            UpdateVisibility(); // 上岛卡片显示/消失影响灵动岛可见性
+        }
+    }
+
+    public bool HasActivePush => ActivePush is not null;
+    public string ActivePushIcon => string.IsNullOrEmpty(ActivePush?.Icon) ? "\uE7F4" : ActivePush!.Icon;
+    public string ActivePushTitle => ActivePush?.Title ?? string.Empty;
+    public string ActivePushBody => ActivePush?.Body ?? string.Empty;
+    public bool ActivePushHasBody => !string.IsNullOrEmpty(ActivePush?.Body);
+    public bool ActivePushHasProgress => ActivePush?.Progress is not null;
+    public double ActivePushProgress => Math.Clamp(ActivePush?.Progress ?? 0, 0, 1);
+    public bool ActivePushHasButtons => ActivePush?.Buttons is { Count: > 0 };
+    public IReadOnlyList<IslandPushButton> ActivePushButtons
+        => (IReadOnlyList<IslandPushButton>)(ActivePush?.Buttons ?? new List<IslandPushButton>());
+
+    /// <summary>估算文本宽度：中文/全角按 cjkPx，ASCII 按 asciiPx。</summary>
+    private static double MeasureText(string s, double cjkPx, double asciiPx)
+    {
+        double w = 0;
+        foreach (var ch in s) w += ch > 0x2E7F ? cjkPx : asciiPx;
+        return w;
+    }
+
+    /// <summary>估算紧凑宽度：按激活组件内容（时间/日期/天气/系统状态/歌曲）逐项累加，稳定可靠（不依赖 UI 布局时机）。</summary>
+    public double EstimatedCompactWidth
+    {
+        get
+        {
+            double w = 4; // 左内边距
+            foreach (var item in CompactItems)
+            {
+                switch (item.Kind)
+                {
+                    case "Time": w += 48; break;
+                    case "Weather": w += Math.Min(MeasureText(WeatherText, 12, 6.5) + 8, 90); break;
+                    case "Date": w += Math.Min(MeasureText(DateText, 13, 7) + 8, 100); break;
+                    case "Cpu": w += MeasureText(CpuText, 11, 6) + 16; break;
+                    case "Ram": w += MeasureText(RamText, 11, 6) + 16; break;
+                    case "Net": w += MeasureText(NetText, 11, 6) + 16; break;
+                    case "Battery": w += MeasureText(BatteryText, 11, 6) + 16; break;
+                    case "Song": w += 40 + 6 + Math.Min(MeasureText(Title, 13, 7), 90); break;
+                }
+                w += 8; // 组件间右边距（模板 Margin 0,0,8,0 左右），这里按单边即可
+            }
+            if (HasMedia) w += 68; // 播放/暂停 + 下一首 按钮
+            return Math.Clamp(w + 4, 260, 460);
+        }
+    }
+
+    /// <summary>估算紧凑高度：按内容实际高度计算（不再取手动设置值，避免上下留白过大）。</summary>
+    public double EstimatedCompactHeight
+    {
+        get
+        {
+            double contentH = 40; // 单行内容高（时间/日期/上岛单行/歌曲封面）
+            if (HasActivePush) contentH = Math.Max(contentH, _settings.Current.SingleLineMode ? 40 : Math.Min(PushCompactHeight, 160));
+            if (HasMedia && _settings.Current.ShowMediaInfo && !_settings.Current.SingleLineMode) contentH = Math.Max(contentH, 68);
+            return Math.Clamp(contentH + 12, 48, 160); // 内容高 + 上下内边距(6+6)
+        }
+    }
+
+    /// <summary>估算展开宽度：至少 420，有上岛推送时取推送宽度。</summary>
+    public double EstimatedExpandedWidth
+    {
+        get
+        {
+            var w = Math.Max(420, _settings.Current.ExpandedWidth);
+            if (HasActivePush) w = Math.Max(w, PushCompactWidth);
+            return Math.Clamp(w, 360, 640);
+        }
+    }
+
+    /// <summary>估算展开高度：按上岛卡片 + 歌曲各区块累加。</summary>
+    public double EstimatedExpandedHeight
+    {
+        get
+        {
+            double h = 24;
+            if (HasActivePush)
+            {
+                h += 96;
+                if (!string.IsNullOrEmpty(ActivePushBody)) h += 34;
+                if (ActivePushHasButtons) h += 40;
+                if (ActivePushHasProgress) h += 12;
+            }
+            if (HasMedia)
+            {
+                if (_settings.Current.ExpandedShowArtTitle) h += 90;
+                if (_settings.Current.ExpandedShowProgress) h += 40;
+                if (_settings.Current.ExpandedShowControls) h += 42;
+                if (_settings.Current.ExpandedShowLyrics) h += 190;
+            }
+            return Math.Clamp(h, 200, 620);
+        }
+    }
+
+    /// <summary>上岛推送时的紧凑宽度：按标题/正文/按钮中最宽者自适应（上限 640），推送消失后恢复原设置。</summary>
+    public double PushCompactWidth
+    {
+        get
+        {
+            var baseW = Math.Max(_settings.Current.CompactWidth, 300);
+            if (ActivePush is null) return baseW;
+            double need = 0;
+            need = Math.Max(need, MeasureText(ActivePush.Title ?? string.Empty, 15, 8));
+            if (!string.IsNullOrEmpty(ActivePush.Body))
+                need = Math.Max(need, Math.Min(MeasureText(ActivePush.Body, 13.5, 7), 460)); // 正文单行最宽，超出换行
+            if (ActivePush.Buttons is { Count: > 0 })
+            {
+                double btnW = 0;
+                foreach (var b in ActivePush.Buttons) btnW += MeasureText(b.Label ?? string.Empty, 12, 6.5) + 26;
+                btnW += (ActivePush.Buttons.Count - 1) * 8;
+                need = Math.Max(need, btnW);
+            }
+            // 基础宽 + 超出 180px 的部分，限制在 280~640
+            return Math.Clamp(baseW + Math.Max(0, need - 180), 280, 640);
+        }
+    }
+
+    /// <summary>上岛推送时的紧凑高度：按内容行数（标题/正文/进度/按钮）自适应；单行模式只显示图标+标题。</summary>
+    public double PushCompactHeight
+    {
+        get
+        {
+            if (ActivePush is null) return _settings.Current.CompactHeight;
+            if (_settings.Current.SingleLineMode) return Math.Max(46, _settings.Current.CompactHeight);
+            double h = 46; // 图标/标题行 + 内边距
+            if (!string.IsNullOrEmpty(ActivePush.Body))
+            {
+                var bodyW = Math.Min(MeasureText(ActivePush.Body, 13.5, 7), 460);
+                var lineW = Math.Max(90, PushCompactWidth - 40);
+                var lines = Math.Max(1, (int)Math.Ceiling(bodyW / lineW));
+                h += lines * 17 + 4;
+            }
+            if (ActivePush.Progress is not null) h += 12;
+            if (ActivePush.Buttons is { Count: > 0 }) h += 34;
+            return Math.Clamp(h, 54, 210);
+        }
+    }
+
+    /// <summary>上岛 API 收到推送：更新当前上岛卡片（同 id 覆盖），并按条显示时长安排过期。</summary>
+    public void PushIsland(IslandPush push)
+    {
+        // 若当前已有同 id 推送则保留原过期时间基础；否则用新计算的 ExpiresAt
+        var existing = ActivePush;
+        if (existing is not null && string.Equals(existing.Id, push.Id, StringComparison.Ordinal) && existing.ExpiresAt is DateTime e)
+        {
+            // 更新内容，保持原过期时间
+            push.ExpiresAt = e;
+        }
+        ActivePush = push;
+        AppLogger.Info($"Island push: '{push.Title}' (id={push.Id})");
+    }
+
+    /// <summary>上岛 API 移除/过期指定推送。</summary>
+    public void RemoveIslandPush(string id)
+    {
+        if (ActivePush is not null && string.Equals(ActivePush.Id, id, StringComparison.Ordinal))
+            ActivePush = null;
+    }
+
+    /// <summary>用户点击/关闭当前上岛卡片。</summary>
+    public void DismissActivePush()
+    {
+        if (ActivePush is not null) ActivePush = null;
+    }
+
+    /// <summary>执行上岛卡片按钮动作（打开 URL / 启动程序）。</summary>
+    public void ExecutePushAction(IslandPushButton button)
+    {
+        if (button is null || string.IsNullOrWhiteSpace(button.Value)) return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(button.Value)
+            {
+                UseShellExecute = true,
+            });
+            AppLogger.Info($"Island push action: {button.Action} -> {button.Value}");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"Island push action failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>每秒检查上岛推送是否过期（由 _widgetTimer 调用）。</summary>
+    private void CheckPushExpiry()
+    {
+        if (ActivePush?.ExpiresAt is DateTime expiry && DateTime.UtcNow >= expiry)
+            ActivePush = null;
+    }
+
     // ── Visibility / expansion ─────────────────────────────────
     public bool IsExpanded
     {
@@ -739,7 +951,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         var showWidgets = !hasMedia && (_settings.Current.ShowWidgetsWhenNoMedia || alwaysVisible || anyIdleComp);
         ShowIdleWidgets = !hasMedia; // 空闲面板可见性（内部按组件勾选）
 
-        var show = !_userHidden && (hasMedia || showWidgets || !_settings.Current.HideWhenNoMedia);
+        // 有上岛推送时也要显示灵动岛（否则第三方推送看不到）
+        var show = !_userHidden && (hasMedia || showWidgets || HasActivePush || !_settings.Current.HideWhenNoMedia);
         // 常驻时不因暂停而隐藏
         if (!alwaysVisible && hasMedia && Status == PlaybackStatus.Paused && !_settings.Current.ShowWhenPaused)
             show = false;
