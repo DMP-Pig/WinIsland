@@ -18,6 +18,11 @@ public sealed class TrayIcon : IDisposable
     private readonly MenuItem _showHideItem;
     private readonly MenuItem _lyricsItem;
     private readonly MenuItem _autoStartItem;
+    private readonly MenuItem _dndItem;
+    private readonly MenuItem _updateItem;
+    private readonly MenuItem _logsItem;
+    private readonly MenuItem _settingsItem;
+    private readonly MenuItem _exitItem;
     private readonly SettingsService _settings;
     private readonly ContextMenu _menu;
     private readonly Window _menuHost;
@@ -64,19 +69,37 @@ public sealed class TrayIcon : IDisposable
         };
         _autoStartItem.Click += (_, _) => AutoStartRequested?.Invoke(this, EventArgs.Empty);
 
-        var settingsItem = new MenuItem { Header = Localization.Get("Settings") };
-        settingsItem.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
+        _dndItem = new MenuItem
+        {
+            Header = Localization.Get("Tray_Dnd"),
+            IsCheckable = true,
+            IsChecked = DoNotDisturb.IsActive(_settings.Current),
+        };
+        _dndItem.Click += (_, _) => DoNotDisturbRequested?.Invoke(this, EventArgs.Empty);
 
-        var exitItem = new MenuItem { Header = Localization.Get("Exit") };
-        exitItem.Click += (_, _) => ExitRequested?.Invoke(this, EventArgs.Empty);
+        _updateItem = new MenuItem { Header = Localization.Get("Tray_CheckUpdates") };
+        _updateItem.Click += (_, _) => UpdateRequested?.Invoke(this, EventArgs.Empty);
+
+        _logsItem = new MenuItem { Header = Localization.Get("Tray_Logs") };
+        _logsItem.Click += (_, _) => LogsRequested?.Invoke(this, EventArgs.Empty);
+
+        _settingsItem = new MenuItem { Header = Localization.Get("Settings") };
+        _settingsItem.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
+
+        _exitItem = new MenuItem { Header = Localization.Get("Exit") };
+        _exitItem.Click += (_, _) => ExitRequested?.Invoke(this, EventArgs.Empty);
 
         _menu.Items.Add(_showHideItem);
         _menu.Items.Add(_lyricsItem);
         _menu.Items.Add(_autoStartItem);
+        _menu.Items.Add(_dndItem);
         _menu.Items.Add(new Separator());
-        _menu.Items.Add(settingsItem);
+        _menu.Items.Add(_updateItem);
+        _menu.Items.Add(_logsItem);
         _menu.Items.Add(new Separator());
-        _menu.Items.Add(exitItem);
+        _menu.Items.Add(_settingsItem);
+        _menu.Items.Add(new Separator());
+        _menu.Items.Add(_exitItem);
 
         _icon = new System.Windows.Forms.NotifyIcon
         {
@@ -95,6 +118,11 @@ public sealed class TrayIcon : IDisposable
         };
 
         Localization.LanguageChanged += (_, _) => RefreshText();
+        _settings.Changed += (_, _) =>
+        {
+            ApplyMenuTheme(_menuHost);
+            _dndItem.IsChecked = DoNotDisturb.IsActive(_settings.Current);
+        };
         RefreshText();
     }
 
@@ -102,10 +130,14 @@ public sealed class TrayIcon : IDisposable
     public event EventHandler? SettingsRequested;
     public event EventHandler? ToggleLyricsRequested;
     public event EventHandler? AutoStartRequested;
+    public event EventHandler? DoNotDisturbRequested;
+    public event EventHandler? UpdateRequested;
+    public event EventHandler? LogsRequested;
     public event EventHandler? ExitRequested;
 
     public void SetLyricsChecked(bool on) => _lyricsItem.IsChecked = on;
     public void SetAutoStartChecked(bool on) => _autoStartItem.IsChecked = on;
+    public void SetDoNotDisturbChecked(bool on) => _dndItem.IsChecked = on;
 
     /// <summary>Show a transient balloon notification (used sparingly).</summary>
     public void Notify(string title, string text)
@@ -136,8 +168,12 @@ public sealed class TrayIcon : IDisposable
         _showHideItem.Header = Localization.Get("ShowHide");
         _lyricsItem.Header = Localization.Get("LyricsWindow");
         _autoStartItem.Header = Localization.Get("AutoStart");
-        (_menu.Items[4] as MenuItem)!.Header = Localization.Get("Settings");
-        (_menu.Items[6] as MenuItem)!.Header = Localization.Get("Exit");
+        _dndItem.Header = Localization.Get("Tray_Dnd");
+        _updateItem.Header = Localization.Get("Tray_CheckUpdates");
+        _logsItem.Header = Localization.Get("Tray_Logs");
+        _settingsItem.Header = Localization.Get("Settings");
+        _exitItem.Header = Localization.Get("Exit");
+        _dndItem.IsChecked = DoNotDisturb.IsActive(_settings.Current);
     }
 
     /// <summary>按当前主题给托盘菜单设置液态玻璃配色（与灵动岛菜单一致）。</summary>

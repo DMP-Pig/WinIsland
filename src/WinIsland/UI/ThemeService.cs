@@ -45,6 +45,22 @@ public sealed class ThemeService
         Opacity = Math.Clamp(settings.Opacity, 0.3, 1.0);
         AccentColor = ThemeHelper.ParseColor(settings.AccentColor, Color.FromRgb(0x6C, 0x5C, 0xE7));
 
+        // 主题预设：覆盖强调色（Default 使用用户自定义强调色）
+        var preset = settings.ThemePreset;
+        if (!string.IsNullOrEmpty(preset) && preset != "Default")
+        {
+            AccentColor = preset switch
+            {
+                "Ocean" => Color.FromRgb(0x5B, 0x8D, 0xEF),
+                "Forest" => Color.FromRgb(0x00, 0xB8, 0x94),
+                "Sunset" => Color.FromRgb(0xE1, 0x70, 0x55),
+                "Neon" => Color.FromRgb(0xE8, 0x43, 0x93),
+                "Mono" => Color.FromRgb(0x8A, 0x8A, 0x93),
+                "Grape" => Color.FromRgb(0xA2, 0x9B, 0xFE),
+                _ => AccentColor,
+            };
+        }
+
         if (dark)
         {
             TintColor = Color.FromRgb(0x16, 0x16, 0x22);

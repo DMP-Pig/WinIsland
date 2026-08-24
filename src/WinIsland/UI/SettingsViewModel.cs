@@ -90,6 +90,16 @@ public sealed class SettingsViewModel : ObservableObject
             new EnumOption<MonitorSelection>(MonitorSelection.All, Localization.Get("Appearance_MonitorAll")),
             new EnumOption<MonitorSelection>(MonitorSelection.Index, Localization.Get("Appearance_MonitorIndex")),
         };
+        ThemePresetOptions = new[]
+        {
+            new EnumOption<string>("Default", Localization.Get("Appearance_PresetDefault")),
+            new EnumOption<string>("Ocean", Localization.Get("Appearance_PresetOcean")),
+            new EnumOption<string>("Forest", Localization.Get("Appearance_PresetForest")),
+            new EnumOption<string>("Sunset", Localization.Get("Appearance_PresetSunset")),
+            new EnumOption<string>("Neon", Localization.Get("Appearance_PresetNeon")),
+            new EnumOption<string>("Mono", Localization.Get("Appearance_PresetMono")),
+            new EnumOption<string>("Grape", Localization.Get("Appearance_PresetGrape")),
+        };
         _components = BuildComponents(Working.Components);
         _orderItems = new List<OrderItem>();
         RebuildOrderItems();
@@ -118,6 +128,7 @@ public sealed class SettingsViewModel : ObservableObject
     public IReadOnlyList<EnumOption<ThemeMode>> ThemeOptions { get; }
     public IReadOnlyList<EnumOption<IslandPosition>> PositionOptions { get; }
     public IReadOnlyList<EnumOption<MonitorSelection>> MonitorOptions { get; }
+    public IReadOnlyList<EnumOption<string>> ThemePresetOptions { get; } = Array.Empty<EnumOption<string>>();
     public IReadOnlyList<string> PresetColors { get; }
     public IReadOnlyList<ComponentRow> Components => _components;
     public IReadOnlyList<OrderItem> OrderItems => _orderItems;
@@ -137,6 +148,12 @@ public sealed class SettingsViewModel : ObservableObject
         new("Ram", "Comp_Ram", c, x => x.RamWhenIdle, (x, v) => x.RamWhenIdle = v, x => x.RamWhenPlaying, (x, v) => x.RamWhenPlaying = v, _ => RebuildOrderItems()),
         new("Net", "Comp_Net", c, x => x.NetWhenIdle, (x, v) => x.NetWhenIdle = v, x => x.NetWhenPlaying, (x, v) => x.NetWhenPlaying = v, _ => RebuildOrderItems()),
         new("Battery", "Comp_Battery", c, x => x.BatteryWhenIdle, (x, v) => x.BatteryWhenIdle = v, x => x.BatteryWhenPlaying, (x, v) => x.BatteryWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Volume", "Comp_Volume", c, x => x.VolumeWhenIdle, (x, v) => x.VolumeWhenIdle = v, x => x.VolumeWhenPlaying, (x, v) => x.VolumeWhenPlaying = v, _ => RebuildOrderItems()),
+        new("CapsLock", "Comp_CapsLock", c, x => x.CapsLockWhenIdle, (x, v) => x.CapsLockWhenIdle = v, x => x.CapsLockWhenPlaying, (x, v) => x.CapsLockWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Clipboard", "Comp_Clipboard", c, x => x.ClipboardWhenIdle, (x, v) => x.ClipboardWhenIdle = v, x => x.ClipboardWhenPlaying, (x, v) => x.ClipboardWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Todo", "Comp_Todo", c, x => x.TodoWhenIdle, (x, v) => x.TodoWhenIdle = v, x => x.TodoWhenPlaying, (x, v) => x.TodoWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Timer", "Comp_Timer", c, x => x.TimerWhenIdle, (x, v) => x.TimerWhenIdle = v, x => x.TimerWhenPlaying, (x, v) => x.TimerWhenPlaying = v, _ => RebuildOrderItems()),
+        new("Schedule", "Comp_Schedule", c, x => x.ScheduleWhenIdle, (x, v) => x.ScheduleWhenIdle = v, x => x.ScheduleWhenPlaying, (x, v) => x.ScheduleWhenPlaying = v, _ => RebuildOrderItems()),
     };
 
     private static readonly (string Key, string NameKey)[] OrderDefs =
@@ -148,6 +165,12 @@ public sealed class SettingsViewModel : ObservableObject
         ("Ram", "Comp_Ram"),
         ("Net", "Comp_Net"),
         ("Battery", "Comp_Battery"),
+        ("Volume", "Comp_Volume"),
+        ("CapsLock", "Comp_CapsLock"),
+        ("Clipboard", "Comp_Clipboard"),
+        ("Todo", "Comp_Todo"),
+        ("Timer", "Comp_Timer"),
+        ("Schedule", "Comp_Schedule"),
         ("Song", "Comp_Song"),
     };
 

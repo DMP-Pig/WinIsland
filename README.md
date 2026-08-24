@@ -44,11 +44,14 @@
 
 ### P1（已实现）
 - **组件系统（自定义灵动岛内容）**：设置 → 组件，可分别勾选「无歌曲播放时 / 有歌曲播放时」显示哪些组件，并拖拽调整摆放顺序：
-  - 时间、天气（Open-Meteo，需填写城市并联网）、日期、CPU 占用、内存占用、网络速度、电量；
+  - 时间、天气（Open-Meteo，需填写城市并联网）、日期、CPU 占用、内存占用、网络速度、电量、音量、键盘指示灯（CapsLock）、剪贴板、待办、番茄钟、日程；
   - 歌曲信息（封面/歌名/歌手/歌词/进度条，仅播放时显示，顺序条中始终保留）。
   - 顺序条只显示已勾选的组件；列表与顺序条支持鼠标滚轮和滚动条。
-  - **单行模式**（设置 → 外观）：紧凑态所有组件一行显示，歌曲信息只保留「封面 + 歌名 - 歌手」，歌词/进度条在展开卡片中仍完整显示。
+  - **单行模式**（设置 → 外观，默认开启）：紧凑态所有组件一行显示，歌曲信息只保留「封面 + 歌名 - 歌手」，歌词/进度条在展开卡片中仍完整显示。
 - **展开卡片内容自定义**：封面+标题、进度条、控制按钮与音量、歌词区可分别开关。
+- **外观个性化（现代液态玻璃设置页）**：7 种主题预设（默认 / 海洋 / 森林 / 日落 / 霓虹 / 单色 / 葡萄紫）、自定义字体、字号缩放（0.8–1.4）、圆角半径（16–40）；展开背景可随专辑封面取色；未读通知角标。设置改动即时生效，无需保存。
+- **声音波纹**：播放媒体时，控制按钮左侧显示随系统音量实时抖动的波纹（设置 → 外观可开关，默认开启）。
+- **效率工具（设置 → 效率工具）**：剪贴板历史（可选开启，最多保留 N 条）、番茄钟计时（工作/休息时长可调）、待办列表、日程提醒；对应组件可放入灵动岛展示。
 - **通知系统（右上角玻璃横幅，带 macOS 风格滑入/滑出动画）**：
   - 蓝牙设备连接/断开提示；
   - 接管 Windows 通知（尽力而为，UI 自动化镜像通知中心）；
@@ -63,12 +66,14 @@
 - **高 DPI**：PerMonitorV2，120/150/200% 缩放下不错位。
 - **自定义配置**：位置、偏移、不透明度、主题色、紧凑模式内容、无媒体时隐藏等，改动即时生效。
 - **无媒体播放时自动隐藏灵动岛**（可关闭）。
+- **勿扰模式**：手动一键开启或按时间段自动静默通知（托盘菜单一键切换，设置中可配置时段）。
+- **检查更新**：托盘菜单 / 设置中手动检查 GitHub 新版本；可选自动检查（默认关闭，需联网）。
 
 ### P2（已实现）
 - 简体中文 + English 界面切换。
 - 导出 / 导入 JSON 配置文件。
 - Windows 通知接入（蓝牙 / 系统通知接管 / 正在播放 / 低电量）。
-- 待定：来电 / 日历提醒（未实现）。
+- 待定：来电提醒（未实现）；日程提醒已实现（组件 + 效率工具）。
 
 ---
 
@@ -114,6 +119,15 @@ src/WinIsland/
 │   ├── BluetoothMonitor.cs    # 蓝牙设备连接/断开监控
 │   ├── SystemNotificationMonitor.cs # 接管 Windows 通知（UI 自动化镜像）
 │   ├── MediaAppRegistry.cs    # 媒体程序注册表（启用/禁用/排序）
+│   ├── AudioWaveService.cs    # 声音波纹（系统音量采样，驱动波纹抖动）
+│   ├── KeyboardIndicatorMonitor.cs # 键盘指示灯（CapsLock 状态监听）
+│   ├── ClipboardHistoryService.cs # 剪贴板历史
+│   ├── TodoService.cs         # 待办列表
+│   ├── PomodoroService.cs     # 番茄钟计时
+│   ├── ScheduleService.cs     # 日程提醒
+│   ├── DoNotDisturb.cs        # 勿扰模式（手动/时段）
+│   ├── UpdaterService.cs      # GitHub 更新检查
+│   ├── ProfileService.cs      # 配置档案（多套设置切换）
 │   ├── WeatherService.cs      # 天气组件（Open-Meteo，需联网）
 │   ├── PlaybackStateStore.cs  # 播放位置持久化（退出/暂停后恢复）
 │   ├── CiderTokenAutoDetect.cs # Cider API Token 自动检测
@@ -142,8 +156,7 @@ build/
 
 ## 快速开始
 
-> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.3/win-x64/WinIsland.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x64 / win-arm64 便携版及通用安装包）。
-## 快速开始
+> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.5/win-x64/WinIsland-1.0.5-win-x64.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x64 / win-arm64 便携版及通用安装包）。
 
 ### 环境要求
 - Windows 10 1809+ / Windows 11
@@ -172,9 +185,9 @@ dotnet run --project src\WinIsland -c Debug
 ### 安装包（可选）
 安装 [Inno Setup 6](https://jrsoftware.org/isinfo.php) 后：
 ```powershell
-iscc.exe build\release-1.0.3.iss
+iscc.exe build\release-1.0.5.iss
 ```
-生成 `releases\1.0.3\WinIsland-Setup-1.0.3.exe`（通用安装包，同时支持 x64 与 ARM64，自动按架构安装）。
+生成 `releases\<version>\WinIsland-Setup-<version>.exe`（通用安装包，同时支持 x64 与 ARM64，自动按架构安装）。稳定版发布时在 `build\` 下按版本复制一份 `release-<version>.iss` 并更新版本号。
 
 ---
 
@@ -186,9 +199,9 @@ iscc.exe build\release-1.0.3.iss
    - Cider → 详见 [Cider 集成](#cider-集成)；
    - 其它播放器 → 兜底窗口标题识别（仅展示）。
 3. **点击**灵动岛展开完整卡片（悬停不展开）：进度拖拽 seek、播放控制、音量、同步歌词；再点一下收回（移出卡片后 700ms 自动收回）。
-4. 托盘菜单：显示/隐藏、独立歌词窗口、开机自启、设置、退出。**关闭主窗口不会退出进程**（仅托盘化）。
+4. 托盘菜单：显示/隐藏、独立歌词窗口、开机自启、**勿扰模式**（勾选即静默通知）、**检查更新**、**查看日志**、设置、退出。**关闭主窗口不会退出进程**（仅托盘化）。
 5. 全局快捷键：`Ctrl+Alt+P` 播放/暂停 · `Ctrl+Alt+←/→` 上一首/下一首 · `Ctrl+Alt+I` 显示/隐藏灵动岛（可在设置中关闭）。
-6. 通知与提示（蓝牙 / Windows 通知 / 正在播放 / 低电量）默认在屏幕右上角弹出玻璃横幅，可在设置 → 通知中开关。
+6. 通知与提示（蓝牙 / Windows 通知 / 正在播放 / 低电量）默认在屏幕右上角弹出玻璃横幅，可在设置 → 通知中开关；**勿扰模式**开启时不弹横幅（角标仍计数）。
 7. 常用命令行参数：
    ```powershell
    WinIsland.exe --demo       # 演示模式（无媒体时预览界面 + 示例歌词）
@@ -205,6 +218,13 @@ iscc.exe build\release-1.0.3.iss
 | 键 | 默认 | 说明 |
 | --- | --- | --- |
 | `Language` | `zh-CN` | `zh-CN` / `en-US` |
+| `ThemePreset` | `Default` | 主题预设：`Default/Ocean/Forest/Sunset/Neon/Mono/Grape`（覆盖 AccentColor） |
+| `FontFamily` | `Segoe UI` | 界面字体 |
+| `FontScale` | `1.0` | 字号缩放 0.8–1.4 |
+| `CornerRadius` | `28` | 胶囊圆角 16–40 |
+| `BadgeEnabled` | `true` | 未读通知角标（右上角红点 + 数字） |
+| `CoverTintBackground` | `true` | 展开背景随专辑封面取色 |
+| `WaveVisualizerEnabled` | `true` | 播放媒体时控制按钮左侧声音波纹 |
 | `Theme` | `Auto` | `Auto` / `Light` / `Dark` |
 | `AccentColor` | `#6C5CE7` | 主题色（#RRGGBB） |
 | `Position` | `Center` | `Center` 顶部居中 / `Right` 顶部右侧 |
@@ -232,15 +252,24 @@ iscc.exe build\release-1.0.3.iss
 | `GlobalHotkeysEnabled` | `true` | 全局快捷键开关 |
 | `LowBatteryThreshold` | `20` | 低电量提醒阈值（%），0 关闭 |
 | `ExpandedShowArtTitle/Progress/Controls/Lyrics` | `true` | 展开卡片各区块（封面+标题/进度条/控制与音量/歌词）开关 |
-| `Components` | 对象 | 组件勾选：`Time/Weather/Date/Cpu/Ram/Net/Battery` 各有 `WhenIdle`/`WhenPlaying` 两列；`Cover/Title/Artist/Lyrics/Progress` 播放时显示 |
+| `Components` | 对象 | 组件勾选：`Time/Weather/Date/Cpu/Ram/Net/Battery/Volume/CapsLock/Clipboard/Todo/Timer/Schedule` 各有 `WhenIdle`/`WhenPlaying` 两列；`Cover/Title/Artist/Lyrics/Progress` 播放时显示 |
 | `WidgetOrder` | `Time,Weather,...` | 组件摆放顺序（逗号分隔键名，含 `Song`） |
 | `MediaApps` | `[]` | 媒体程序启用/禁用与优先级（空=全部启用） |
-| `CompactWidth` / `CompactHeight` | `360` / `72` | 紧凑长度 / 紧凑宽度 |
+| `CompactWidth` / `CompactHeight` | `360` / `72` | 紧凑长度 / 紧凑宽度（手动拖拽调整会自动关闭自动调整） |
+| `CompactWidthAuto` / `CompactHeightAuto` | `true` | 紧凑尺寸随组件内容自动调整（默认开启） |
+| `ExpandedWidthAuto` / `MaxExpandedHeightAuto` | `true` | 展开尺寸自动调整（默认开启） |
 | `ExpandedWidth` / `MaxExpandedHeight` | `400` / `384` | 展开长度 / 展开最大高度 |
 | `BluetoothNotifyEnabled` | `false` | 蓝牙连接/断开提示 |
 | `NotificationTakeoverEnabled` | `false` | 接管 Windows 通知（尽力而为） |
 | `NotificationTimeoutSeconds` | `6` | 通知横幅显示时长（秒） |
 | `NotificationPosition` | `TopRight` | 通知弹出位置（右上角） |
+| `DoNotDisturbEnabled` / `DoNotDisturbManual` | `false` | 勿扰：按时段自动 / 手动开关 |
+| `DoNotDisturbStartHour` / `DoNotDisturbEndHour` | `22` / `8` | 勿扰时段（小时） |
+| `ClipboardHistoryEnabled` / `ClipboardHistoryMax` | `false` / `15` | 剪贴板历史开关与条数上限 |
+| `PomodoroEnabled` / `PomodoroWorkMinutes` / `PomodoroBreakMinutes` | `false` / `25` / `5` | 番茄钟开关与工作/休息时长（分钟） |
+| `KeyIndicatorSeconds` | `3` | 键盘指示灯（CapsLock）出现时长（秒） |
+| `AutoUpdateCheck` | `false` | 自动检查 GitHub 新版本（默认关，需联网） |
+| `ActiveProfile` | `Default` | 配置档案名（多套设置切换） |
 
 ---
 
@@ -347,7 +376,7 @@ WinIsland 内置本地 HTTP 服务，其他软件可将信息实时推送到灵�
 
 - **逐字卡拉OK依赖歌词来源与进度**：无歌词或播放器不提供真实进度时，逐字效果降级为整句高亮（本地时钟推进）。
 - **播放器偶发回退进度**（如 Cider/SMTC 瞬间上报 0 或过期位置）：已做位置守卫——瞬间回退会被忽略，保持当前进度推进，不会把歌词/进度条打回开头；持续回退超过约 4 秒才判定为真正的重播或播放器端 seek。
-- **来电 / 日历提醒**：未实现（P2 可选）。已实现：蓝牙提示、Windows 通知接管（尽力而为）、正在播放通知、低电量提醒。
+- **来电提醒**：未实现（P2 可选）。已实现：蓝牙提示、Windows 通知接管（尽力而为）、正在播放通知、低电量提醒、日程提醒。
 - **SMTC 覆盖范围**：依赖播放器是否注册全局媒体会话；个别旧播放器不注册时仅能通过窗口标题兜底（无控制按钮）。
 - **Cider 1.x（端口 9000 旧 API）**：未适配，仅支持 2.x 及以上。
 

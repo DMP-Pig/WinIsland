@@ -48,12 +48,44 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     // ── 上岛推送（第三方软件推送到灵动岛）──
     private IslandPush? _activePush;
 
+    // ── 效率工具 / 波纹 / 键盘指示灯 / 通知角标 ──
+    private readonly AudioWaveService _wave;
+    private readonly KeyboardIndicatorMonitor _keyboard;
+    private readonly ClipboardHistoryService _clipboard;
+    private readonly TodoService _todo;
+    private readonly ScheduleService _schedule;
+    private readonly PomodoroService _pomodoro;
+    private readonly NotificationHistoryService _history;
+    private int _capsLockSecondsLeft;   // 键盘指示灯剩余显示秒数（由 _widgetTimer 每秒递减）
 
-    public IslandViewModel(MediaCoordinator coordinator, SettingsService settings, LyricsService lyricsService)
+
+    public IslandViewModel(MediaCoordinator coordinator, SettingsService settings, LyricsService lyricsService,
+        AudioWaveService? wave = null, KeyboardIndicatorMonitor? keyboard = null,
+        ClipboardHistoryService? clipboard = null, TodoService? todo = null,
+        ScheduleService? schedule = null, PomodoroService? pomodoro = null,
+        NotificationHistoryService? history = null)
     {
         _coordinator = coordinator;
         _settings = settings;
         _lyricsService = lyricsService;
+
+        // 效率工具 / 波纹 / 键盘指示灯 / 通知角标：默认自建实例（App 可注入共享实例）
+        _wave = wave ?? new AudioWaveService();
+        _keyboard = keyboard ?? new KeyboardIndicatorMonitor();
+        _clipboard = clipboard ?? new ClipboardHistoryService();
+        _todo = todo ?? new TodoService();
+        _schedule = schedule ?? new ScheduleService();
+        _pomodoro = pomodoro ?? new PomodoroService();
+        _history = history ?? new NotificationHistoryService();
+        _wave.Start();
+        _wave.SetPlaying(false);
+        _keyboard.StateChanged += OnKeyboardStateChanged;
+        _clipboard.Changed += RefreshClipboardSummary;
+        _todo.Changed += RefreshTodoSummary;
+        _schedule.Changed += RefreshScheduleSummary;
+        _pomodoro.Tick += RefreshTimerText;
+        _pomodoro.Completed += OnPomodoroCompleted;
+        _history.Changed += (_, _) => RefreshUnreadCount();
 
         // 启动时恢复上次退出的播放位置（暂停后重启不跳回开头）
         var restored = PlaybackStateStore.Load();
@@ -91,6 +123,11 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             DateText = DateTime.Now.ToString("M月d日 ddd", System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
             CheckPushExpiry();
             UpdateSystemStats();
+            UpdateCapsLockCountdown();
+            RefreshClipboardSummary();
+            RefreshTodoSummary();
+            RefreshScheduleSummary();
+            RefreshTimerText();
             if (ShowIdleWeather && ++_weatherTick % 60 == 1)
             {
                 var w = await _weather.GetWeatherAsync(_settings.Current.WeatherCity);
@@ -194,6 +231,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             if (!Set(ref _volume, Math.Clamp(value, 0, 1))) return;
             if (_suppressVolume) return;
             _ = _coordinator.SetVolumeAsync(_volume);
+            OnPropertyChanged(nameof(VolumeText));
         }
     }
 
@@ -265,8 +303,39 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool ShowIdleRam => HasMedia ? _settings.Current.Components.RamWhenPlaying : _settings.Current.Components.RamWhenIdle;
     public bool ShowIdleNet => HasMedia ? _settings.Current.Components.NetWhenPlaying : _settings.Current.Components.NetWhenIdle;
     public bool ShowIdleBattery => HasMedia ? _settings.Current.Components.BatteryWhenPlaying : _settings.Current.Components.BatteryWhenIdle;
+    public bool ShowIdleVolume => HasMedia ? _settings.Current.Components.VolumeWhenPlaying : _settings.Current.Components.VolumeWhenIdle;
+    public bool ShowIdleCapsLock => HasMedia ? _settings.Current.Components.CapsLockWhenPlaying : _settings.Current.Components.CapsLockWhenIdle;
+    public bool ShowIdleClipboard => HasMedia ? _settings.Current.Components.ClipboardWhenPlaying : _settings.Current.Components.ClipboardWhenIdle;
+    public bool ShowIdleTodo => HasMedia ? _settings.Current.Components.TodoWhenPlaying : _settings.Current.Components.TodoWhenIdle;
+    public bool ShowIdleTimer => HasMedia ? _settings.Current.Components.TimerWhenPlaying : _settings.Current.Components.TimerWhenIdle;
+    public bool ShowIdleSchedule => HasMedia ? _settings.Current.Components.ScheduleWhenPlaying : _settings.Current.Components.ScheduleWhenIdle;
     public bool ShowAnyWidget => ShowIdleTime || ShowIdleWeather || ShowIdleDate
-        || ShowIdleCpu || ShowIdleRam || ShowIdleNet || ShowIdleBattery;
+        || ShowIdleCpu || ShowIdleRam || ShowIdleNet || ShowIdleBattery
+        || ShowIdleVolume || ShowIdleCapsLock || ShowIdleClipboard || ShowIdleTodo
+        || ShowIdleTimer || ShowIdleSchedule;
+
+    // ── 效率工具 / 波纹 / 角标 文本 ──
+    /// <summary>波纹强度（0..1），由 AudioWaveService 实时采集/模拟，UI 轮询。</summary>
+    public double WaveLevel => _wave.Level;
+    public string VolumeText => HasVolumeControl ? $"{(_volume * 100):0}%" : string.Empty;
+
+    private string _capsLockText = string.Empty;
+    /// <summary>按键指示灯文本（如「Caps 开」），出现 N 秒后自动清空。</summary>
+    public string CapsLockText { get => _capsLockText; private set => Set(ref _capsLockText, value); }
+    private string _clipboardSummary = string.Empty;
+    public string ClipboardSummary { get => _clipboardSummary; private set => Set(ref _clipboardSummary, value); }
+    private string _todoSummary = string.Empty;
+    public string TodoSummary { get => _todoSummary; private set => Set(ref _todoSummary, value); }
+    private string _timerText = string.Empty;
+    public string TimerText { get => _timerText; private set => Set(ref _timerText, value); }
+    private string _scheduleSummary = string.Empty;
+    public string ScheduleSummary { get => _scheduleSummary; private set => Set(ref _scheduleSummary, value); }
+
+    private int _unreadCount;
+    /// <summary>未读通知数（展开灵动岛后清零）。</summary>
+    public int UnreadCount { get => _unreadCount; private set => Set(ref _unreadCount, value); }
+    public bool ShowBadge => _settings.Current.BadgeEnabled && UnreadCount > 0;
+    public string BadgeText => UnreadCount > 99 ? "99+" : UnreadCount.ToString();
 
     private IReadOnlyList<IslandComponent> _compactItems = Array.Empty<IslandComponent>();
     public IReadOnlyList<IslandComponent> CompactItems { get => _compactItems; private set => Set(ref _compactItems, value); }
@@ -277,7 +346,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         // 读取顺序，并补齐缺失的已知组件（兼容旧配置里只有 Time,Weather 的情况）
         var keys = (_settings.Current.WidgetOrder ?? "Time,Weather,Song")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-        foreach (var known in new[] { "Time", "Weather", "Date", "Cpu", "Ram", "Net", "Battery", "Song" })
+        foreach (var known in new[] { "Time", "Weather", "Date", "Cpu", "Ram", "Net", "Battery", "Song", "Volume", "CapsLock", "Clipboard", "Todo", "Timer", "Schedule" })
             if (!keys.Contains(known)) keys.Add(known);
 
         var items = new List<IslandComponent>();
@@ -291,6 +360,12 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             else if (key == "Net" && ShowIdleNet) items.Add(new IslandComponent("Net"));
             else if (key == "Battery" && ShowIdleBattery) items.Add(new IslandComponent("Battery"));
             else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(new IslandComponent("Song"));
+            else if (key == "Volume" && ShowIdleVolume && !string.IsNullOrEmpty(VolumeText)) items.Add(new IslandComponent("Volume"));
+            else if (key == "CapsLock" && ShowIdleCapsLock && !string.IsNullOrEmpty(CapsLockText)) items.Add(new IslandComponent("CapsLock"));
+            else if (key == "Clipboard" && ShowIdleClipboard && !string.IsNullOrEmpty(ClipboardSummary)) items.Add(new IslandComponent("Clipboard"));
+            else if (key == "Todo" && ShowIdleTodo && !string.IsNullOrEmpty(TodoSummary)) items.Add(new IslandComponent("Todo"));
+            else if (key == "Timer" && ShowIdleTimer && !string.IsNullOrEmpty(TimerText)) items.Add(new IslandComponent("Timer"));
+            else if (key == "Schedule" && ShowIdleSchedule && !string.IsNullOrEmpty(ScheduleSummary)) items.Add(new IslandComponent("Schedule"));
         }
 
         // 内容未变化时不重建，避免每个快照（每秒）都重创建组件导致闪烁
@@ -586,6 +661,60 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         if (ActivePush is not null) ActivePush = null;
     }
 
+    // ── 效率工具组件刷新（服务事件 → 摘要文本 → 重建组件）─────────
+    /// <summary>番茄钟阶段结束（由上层弹通知）。</summary>
+    public event Action<PomodoroPhase>? PomodoroCompletedRequested;
+
+    private void OnKeyboardStateChanged(string key)
+    {
+        var label = key switch
+        {
+            "CapsLock" => "Caps",
+            "NumLock" => "Num",
+            _ => "ScrLk",
+        };
+        var on = key switch
+        {
+            "CapsLock" => _keyboard.Current.Caps,
+            "NumLock" => _keyboard.Current.Num,
+            _ => _keyboard.Current.Scroll,
+        };
+        CapsLockText = $"{label} {(on ? Localization.Get("On") : Localization.Get("Off"))}";
+        _capsLockSecondsLeft = Math.Max(1, _settings.Current.KeyIndicatorSeconds);
+        RebuildCompactItems();
+    }
+
+    /// <summary>每秒递减键盘指示灯剩余秒数，到 0 后清空（组件消失）。</summary>
+    private void UpdateCapsLockCountdown()
+    {
+        if (_capsLockSecondsLeft <= 0) return;
+        if (--_capsLockSecondsLeft <= 0)
+        {
+            CapsLockText = string.Empty;
+            RebuildCompactItems();
+        }
+    }
+
+    private void RefreshClipboardSummary() { ClipboardSummary = _clipboard.Summary; RebuildCompactItems(); }
+    private void RefreshTodoSummary() { TodoSummary = _todo.Summary; RebuildCompactItems(); }
+    private void RefreshScheduleSummary() { ScheduleSummary = _schedule.Summary; RebuildCompactItems(); }
+    private void RefreshTimerText()
+    {
+        TimerText = _pomodoro.Phase == PomodoroPhase.Stopped ? string.Empty : _pomodoro.ClockText;
+        RebuildCompactItems();
+    }
+    private void OnPomodoroCompleted(PomodoroPhase phase)
+    {
+        RefreshTimerText();
+        PomodoroCompletedRequested?.Invoke(phase);
+    }
+    private void RefreshUnreadCount()
+    {
+        UnreadCount = _history.Entries.Count;
+        OnPropertyChanged(nameof(ShowBadge));
+        OnPropertyChanged(nameof(BadgeText));
+    }
+
     /// <summary>执行上岛卡片按钮动作（打开 URL / 启动程序）。</summary>
     public void ExecutePushAction(IslandPushButton button)
     {
@@ -619,6 +748,13 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         {
             if (!Set(ref _expanded, value)) return;
             OnPropertyChanged(nameof(ExpandedContentVisibility));
+            if (value)
+            {
+                // 展开即视为已读：清掉角标
+                UnreadCount = 0;
+                OnPropertyChanged(nameof(ShowBadge));
+                OnPropertyChanged(nameof(BadgeText));
+            }
         }
     }
 
@@ -760,6 +896,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _suppressVolume = true;
         Volume = snapshot.Volume ?? 0;
         _suppressVolume = false;
+        _wave.SetPlaying(IsPlaying);
+        OnPropertyChanged(nameof(VolumeText));
 
         if (snapshot.Track.ArtworkPath.Length > 0)
             Artwork = LoadImage(snapshot.Track.ArtworkPath);
@@ -805,6 +943,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         Progress = 0;
         _interpolatedPosition = 0;
         _positionStaleSinceUtc = null;
+        _wave.SetPlaying(false);
         LyricLines = Array.Empty<LyricLineViewModel>();
         _lyrics = LyricsResult.Empty;
         LyricIndex = -1;
@@ -975,6 +1114,15 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowIdleRam));
         OnPropertyChanged(nameof(ShowIdleNet));
         OnPropertyChanged(nameof(ShowIdleBattery));
+        OnPropertyChanged(nameof(ShowIdleVolume));
+        OnPropertyChanged(nameof(ShowIdleCapsLock));
+        OnPropertyChanged(nameof(ShowIdleClipboard));
+        OnPropertyChanged(nameof(ShowIdleTodo));
+        OnPropertyChanged(nameof(ShowIdleTimer));
+        OnPropertyChanged(nameof(ShowIdleSchedule));
+        OnPropertyChanged(nameof(VolumeText));
+        OnPropertyChanged(nameof(ShowBadge));
+        OnPropertyChanged(nameof(BadgeText));
 
         IsVisible = show;
     }
@@ -1146,6 +1294,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     {
         if (Status == value) return;
         Status = value;
+        _wave.SetPlaying(value == PlaybackStatus.Playing);
         OnPropertyChanged(nameof(IsPlaying));
         OnPropertyChanged(nameof(IsPaused));
         OnPropertyChanged(nameof(PlayPauseGlyph));
@@ -1157,6 +1306,12 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _widgetTimer.Stop();
         _coordinator.SnapshotChanged -= OnSnapshotChanged;
         _coordinator.MediaEnded -= OnMediaEnded;
+        // 释放效率工具服务（Stop/Dispose 幂等，App 退出时再次调用安全）
+        _keyboard.Dispose();
+        _clipboard.Dispose();
+        _schedule.Dispose();
+        _pomodoro.Dispose();
+        _wave.Stop();
     }
 }
 

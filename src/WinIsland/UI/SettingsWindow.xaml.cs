@@ -29,21 +29,54 @@ public partial class SettingsWindow : Window
     private readonly CiderMediaProvider? _cider;
     private readonly DispatcherTimer _autoApply;
     private readonly NotificationHistoryService? _history;
+    private readonly TodoService? _todo;
+    private readonly ScheduleService? _schedule;
+    private readonly ClipboardHistoryService? _clipboard;
+    private readonly PomodoroService? _pomodoro;
+    private readonly UpdaterService? _updater;
     private string _lastAppliedJson;
     private bool _sizeSlidersInitialized; // 初始化期间不触发"手动调整关闭自动"
 
     public SettingsWindow(SettingsViewModel vm, SettingsService service, CiderMediaProvider? cider,
-        NotificationHistoryService? history = null)
+        NotificationHistoryService? history = null,
+        TodoService? todo = null,
+        ScheduleService? schedule = null,
+        ClipboardHistoryService? clipboard = null,
+        PomodoroService? pomodoro = null,
+        UpdaterService? updater = null)
     {
         _vm = vm;
         _service = service;
         _cider = cider;
         _history = history;
+        _todo = todo;
+        _schedule = schedule;
+        _clipboard = clipboard;
+        _pomodoro = pomodoro;
+        _updater = updater;
         DataContext = vm;
         InitializeComponent();
         ApplyLocalization();
         RefreshHistory();
         if (_history is not null) _history.Changed += (_, _) => RefreshHistory();
+
+        // 效率工具：初值 + 变动刷新
+        if (_todo is not null)
+        {
+            TodoList.ItemsSource = _todo.Items;
+            _todo.Changed += () => TodoList.ItemsSource = _todo.Items;
+        }
+        if (_schedule is not null)
+        {
+            ScheduleList.ItemsSource = _schedule.Items;
+            ScheduleTimeInput.ToolTip = Localization.Get("Schedule_TimeHint");
+            _schedule.Changed += () => ScheduleList.ItemsSource = _schedule.Items;
+        }
+        if (_pomodoro is not null)
+        {
+            TxtPomodoroClock.Text = _pomodoro.ClockText;
+            _pomodoro.Tick += () => TxtPomodoroClock.Text = _pomodoro.ClockText;
+        }
 
         // 即时生效：轮询检测 Working 变化并立即应用（无保存按钮）
         _lastAppliedJson = JsonSerializer.Serialize(_vm.Working);
@@ -292,6 +325,99 @@ public partial class SettingsWindow : Window
         BtnOpenConfig.Content = Localization.Get("OpenConfigFolder");
         BtnDiagnostics.Content = Localization.Get("Diagnostics");
 
+        TabProductivity.Header = Localization.Get("Settings_Productivity");
+        TabUpdate.Header = Localization.Get("Settings_Update");
+        LblKeyCaps.Text = Localization.Get("General_KeyCaps");
+        LblThemePreset.Text = Localization.Get("Appearance_ThemePreset");
+        LblFontFamily.Text = Localization.Get("Appearance_FontFamily");
+        LblFontScale.Text = Localization.Get("Appearance_FontScale");
+        LblCornerRadius.Text = Localization.Get("Appearance_CornerRadius");
+        ChkBadge.Content = Localization.Get("Appearance_Badge");
+        ChkCoverTint.Content = Localization.Get("Appearance_CoverTint");
+        ChkWave.Content = Localization.Get("Wave_Enabled");
+        LblDndTitle.Text = Localization.Get("Dnd_Title");
+        ChkDndManual.Content = Localization.Get("Dnd_Manual");
+        ChkDndSchedule.Content = Localization.Get("Dnd_Schedule");
+        LblDndStart.Text = Localization.Get("Dnd_Start");
+        LblDndEnd.Text = Localization.Get("Dnd_End");
+        TxtDndNote.Text = Localization.Get("Dnd_Note");
+        LblProdClipboard.Text = Localization.Get("Prod_Clipboard");
+        ChkClipboardEnabled.Content = Localization.Get("Prod_ClipboardEnabled");
+        LblClipboardMax.Text = Localization.Get("Prod_ClipboardMax");
+        TxtClipboardNote.Text = Localization.Get("Prod_ClipboardNote");
+        LblProdPomodoro.Text = Localization.Get("Prod_Pomodoro");
+        ChkPomodoroEnabled.Content = Localization.Get("Prod_PomodoroEnabled");
+        LblWorkMinutes.Text = Localization.Get("Prod_WorkMinutes");
+        LblBreakMinutes.Text = Localization.Get("Prod_BreakMinutes");
+        BtnPomodoroStart.Content = Localization.Get("Pomodoro_StartWork");
+        BtnPomodoroBreak.Content = Localization.Get("Pomodoro_StartBreak");
+        BtnPomodoroStop.Content = Localization.Get("Pomodoro_Stop");
+        LblProdTodo.Text = Localization.Get("Prod_Todo");
+        LblProdSchedule.Text = Localization.Get("Prod_Schedule");
+        TxtProdNote.Text = Localization.Get("Prod_Note");
+        BtnScheduleAdd.Content = Localization.Get("Schedule_Add");
+        ChkAutoUpdateCheck.Content = Localization.Get("Update_Enabled");
+        BtnCheckUpdate.Content = Localization.Get("Update_CheckNow");
+        TxtUpdateNote.Text = Localization.Get("Update_Note");
+
+    }
+
+    // ── 效率工具：番茄钟 / 待办 / 日程 ──
+    private void PomodoroStart_Click(object sender, RoutedEventArgs e)
+        => _pomodoro?.StartWork(Math.Max(1, _vm.Working.PomodoroWorkMinutes));
+
+    private void PomodoroBreak_Click(object sender, RoutedEventArgs e)
+        => _pomodoro?.StartBreak(Math.Max(1, _vm.Working.PomodoroBreakMinutes));
+
+    private void PomodoroStop_Click(object sender, RoutedEventArgs e)
+        => _pomodoro?.Stop();
+
+    private void TodoAdd_Click(object sender, RoutedEventArgs e)
+    {
+        _todo?.Add(TodoInput.Text);
+        TodoInput.Clear();
+    }
+
+    private void TodoToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is TodoItem i) _todo?.Toggle(i.Id);
+    }
+
+    private void TodoRemove_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is TodoItem i) _todo?.Remove(i.Id);
+    }
+
+    private void ScheduleAdd_Click(object sender, RoutedEventArgs e)
+    {
+        var timeText = ScheduleTimeInput.Text.Trim();
+        DateTime when;
+        if (DateTime.TryParse(timeText, out var parsed)) when = parsed;
+        else when = DateTime.Today.Add(TimeSpan.TryParse(timeText, out var ts) ? ts : TimeSpan.MinValue);
+        _schedule?.Add(ScheduleTitleInput.Text, when); // 时间过去 / 标题为空时 Add 会忽略
+        ScheduleTitleInput.Clear();
+        ScheduleTimeInput.Clear();
+    }
+
+    private void ScheduleRemove_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is ScheduleItem i) _schedule?.Remove(i.Id);
+    }
+
+    private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        if (_updater is null) return;
+        BtnCheckUpdate.IsEnabled = false;
+        try
+        {
+            var found = await _updater.CheckAsync();
+            MessageBox.Show(this, found ? Localization.Get("Update_Found") : Localization.Get("Update_None"),
+                Localization.Get("Update_Title"), MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        finally
+        {
+            BtnCheckUpdate.IsEnabled = true;
+        }
     }
 
     // ── 组件顺序：横向拖拽排序 ──
