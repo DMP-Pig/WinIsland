@@ -158,12 +158,14 @@ public partial class App : Application
         _screenCapture = new ScreenCaptureMonitor();
         _screenCapture.ScreenshotTaken += () =>
         {
+            _vm?.NotifyScreenshotTaken(); // 灵动岛「已截图」临时指示
             if (_settings!.Current.ScreenCaptureNotifyEnabled && _settings.Current.ScreenshotNotifyEnabled)
                 _notifications?.Show(Localization.Get("ScreenCap_ScreenshotTitle"),
                     Localization.Get("ScreenCap_ScreenshotBody"), "\uE7B3", "WinIsland");
         };
         _screenCapture.RecordingChanged += (recording, app) =>
         {
+            _vm?.SetRecordingStatus(recording, app); // 灵动岛「录制中」指示
             if (!_settings!.Current.ScreenCaptureNotifyEnabled || !_settings.Current.RecordingNotifyEnabled) return;
             if (recording)
                 _notifications?.Show(Localization.Get("ScreenCap_RecordingTitle"),

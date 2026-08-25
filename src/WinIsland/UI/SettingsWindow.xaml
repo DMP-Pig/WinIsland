@@ -737,6 +737,18 @@
                             </Border>
                             <TextBlock x:Name="TxtCompNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                        TextWrapping="Wrap" Margin="0,8,0,0"/>
+
+                            <TextBlock x:Name="LblUsageMergeTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                            <CheckBox x:Name="ChkUsageMerge" IsChecked="{Binding Working.UsageMergeEnabled}"/>
+                            <TextBlock x:Name="LblUsageMergeItems" Style="{StaticResource Label}"/>
+                            <WrapPanel>
+                                <CheckBox x:Name="ChkUsageMergeMic" IsChecked="{Binding Working.UsageMergeMic}" Margin="0,0,16,6"/>
+                                <CheckBox x:Name="ChkUsageMergeCam" IsChecked="{Binding Working.UsageMergeCam}" Margin="0,0,16,6"/>
+                                <CheckBox x:Name="ChkUsageMergeMeeting" IsChecked="{Binding Working.UsageMergeMeeting}" Margin="0,0,16,6"/>
+                                <CheckBox x:Name="ChkUsageMergeRecording" IsChecked="{Binding Working.UsageMergeRecording}"/>
+                            </WrapPanel>
+                            <TextBlock x:Name="TxtUsageMergeNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" MaxWidth="520"/>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
@@ -869,6 +881,16 @@
                             <Slider Minimum="500" Maximum="20000" Value="{Binding Working.CopyProgressThreshold}" Width="300" HorizontalAlignment="Left"/>
                             <TextBlock x:Name="TxtCopyNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                        TextWrapping="Wrap" Margin="0,2,0,0"/>
+
+                            <TextBlock x:Name="LblFileCopyTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                            <CheckBox x:Name="ChkFileCopy" IsChecked="{Binding Working.FileCopyNotifyEnabled}"/>
+                            <TextBlock x:Name="TxtFileCopyNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" MaxWidth="520"/>
+
+                            <TextBlock x:Name="LblDownloadTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                            <CheckBox x:Name="ChkDownload" IsChecked="{Binding Working.DownloadProgressEnabled}"/>
+                            <TextBlock x:Name="TxtDownloadNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" MaxWidth="520"/>
 
                             <TextBlock x:Name="LblProdPomodoro" Style="{StaticResource Label}" Margin="0,16,0,0"/>
                             <CheckBox x:Name="ChkPomodoroEnabled" IsChecked="{Binding Working.PomodoroEnabled}"/>
@@ -1012,6 +1034,12 @@
                         <CheckBox x:Name="ChkRecordingNotify" IsChecked="{Binding Working.RecordingNotifyEnabled}"/>
                         <TextBlock x:Name="TxtScreenCapNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,6,0,0" MaxWidth="520"/>
+
+                        <TextBlock x:Name="LblVolTempTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                        <CheckBox x:Name="ChkVolTemp" IsChecked="{Binding Working.VolumeTempIndicatorEnabled}"/>
+                        <TextBlock x:Name="LblVolTempSeconds" Style="{StaticResource Label}"/>
+                        <Slider Minimum="1" Maximum="10" Value="{Binding Working.VolumeTempIndicatorSeconds}" Width="300" HorizontalAlignment="Left"
+                                IsSnapToTickEnabled="True" TickFrequency="1"/>
 
                         <TextBlock x:Name="LblCalendarTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
                         <CheckBox x:Name="ChkCalendarEnabled" IsChecked="{Binding Working.CalendarEnabled}"/>

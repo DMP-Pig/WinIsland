@@ -335,12 +335,19 @@
                                 </StackPanel>
                             </DataTemplate>
                             <DataTemplate x:Key="TimerItem">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
-                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
-                                    <TextBlock Text="{Binding DataContext.TimerText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
-                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
-                                </StackPanel>
+                                <Button Style="{StaticResource IconButton}" Width="Auto" Height="Auto" MinWidth="0" Padding="6,3" Margin="0,0,10,0"
+                                        Click="TimerItem_Click"
+                                        ToolTip="{Binding DataContext.TimerToolTip, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                        <TextBlock Text="{Binding DataContext.TimerText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                        <TextBlock Text="&#xE769;" FontFamily="Segoe MDL2 Assets" FontSize="9" VerticalAlignment="Center" Margin="3,0,0,0"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                                   Visibility="{Binding DataContext.TimerPaused, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource BoolToVis}}"/>
+                                    </StackPanel>
+                                </Button>
                             </DataTemplate>
                             <DataTemplate x:Key="ScheduleItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
@@ -363,6 +370,54 @@
                                     <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.MeetingText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="ScreenCapItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE7B3;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.ScreenshotStatusText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="RecordingItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE786;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.RecordingText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="VolumeTempItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.VolumeTempText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="UsageItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE7F3;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.UsageMergeText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="FileCopyItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.FileCopyText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="DownloadItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.DownloadText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                 </StackPanel>
                             </DataTemplate>
@@ -495,6 +550,24 @@
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Kind}" Value="Meeting">
                                                     <Setter Property="ContentTemplate" Value="{StaticResource MeetingItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="ScreenCap">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource ScreenCapItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Recording">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource RecordingItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="VolumeTemp">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource VolumeTempItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Usage">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource UsageItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="FileCopy">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource FileCopyItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Download">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource DownloadItem}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>

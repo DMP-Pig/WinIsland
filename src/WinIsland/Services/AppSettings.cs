@@ -248,12 +248,50 @@ public sealed class AppSettings
     public bool AutoUpdateCheck { get; set; } = false;          // 自动检查 GitHub 新版本（默认关，需联网）
     public int KeyIndicatorSeconds { get; set; } = 3;              // 键盘指示灯出现时长（秒）
 
+    // ── 1.0.10 新增：临时上岛 / 合并胶囊 ──
+    public bool VolumeTempIndicatorEnabled { get; set; } = true;   // 音量/静音临时上岛（调节音量后自动消失）
+    public int VolumeTempIndicatorSeconds { get; set; } = 4;       // 音量指示显示时长（秒）
+    public bool FileCopyNotifyEnabled { get; set; } = true;        // 文件复制/移动进行中上岛
+    public bool DownloadProgressEnabled { get; set; } = false;     // 下载进行中上岛（默认关）
+    public bool UsageMergeEnabled { get; set; } = false;           // 「使用中」合并胶囊（默认关）
+    public List<string> UsageMergeItems { get; set; } = new() { "Mic", "Cam", "Meeting", "Recording" }; // 参与合并的组件
+
+    /// <summary>合并胶囊中是否包含麦克风（方便设置界面勾选绑定）。</summary>
+    public bool UsageMergeMic
+    {
+        get => UsageMergeItems.Contains("Mic");
+        set { if (value && !UsageMergeItems.Contains("Mic")) UsageMergeItems.Add("Mic"); else if (!value) UsageMergeItems.Remove("Mic"); }
+    }
+
+    /// <summary>合并胶囊中是否包含摄像头。</summary>
+    public bool UsageMergeCam
+    {
+        get => UsageMergeItems.Contains("Cam");
+        set { if (value && !UsageMergeItems.Contains("Cam")) UsageMergeItems.Add("Cam"); else if (!value) UsageMergeItems.Remove("Cam"); }
+    }
+
+    /// <summary>合并胶囊中是否包含会议中。</summary>
+    public bool UsageMergeMeeting
+    {
+        get => UsageMergeItems.Contains("Meeting");
+        set { if (value && !UsageMergeItems.Contains("Meeting")) UsageMergeItems.Add("Meeting"); else if (!value) UsageMergeItems.Remove("Meeting"); }
+    }
+
+    /// <summary>合并胶囊中是否包含录屏中。</summary>
+    public bool UsageMergeRecording
+    {
+        get => UsageMergeItems.Contains("Recording");
+        set { if (value && !UsageMergeItems.Contains("Recording")) UsageMergeItems.Add("Recording"); else if (!value) UsageMergeItems.Remove("Recording"); }
+    }
+
+
     public string ActiveProfile { get; set; } = "Default";   // 当前配置档案名
 
     public AppSettings Clone()
     {
         var c = (AppSettings)MemberwiseClone();
         c.DnDAllowlist = new List<string>(DnDAllowlist);
+        c.UsageMergeItems = new List<string>(UsageMergeItems);
         c.MediaApps = new List<MediaAppEntry>(MediaApps);
         c.Rules = Rules.Where(r => r is not null).Select(r => new AppRule
         {

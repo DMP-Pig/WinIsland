@@ -10,10 +10,11 @@ using Brushes = System.Windows.Media.Brushes;
 namespace WinIsland.UI;
 
 /// <summary>
-/// 逐字卡拉OK歌词控件（带平滑过渡动画）。
+/// 逐字卡拉OK歌词控件（带平滑过渡动画 + 逐字点亮回弹反馈）。
 /// 按字符着色：已点亮字符用高亮色，边界字符在 60fps 下从基础色平滑混色到高亮色，
 /// 高亮按阅读顺序从左到右流动（换行也正确，不会出现多行同时点亮）；
-/// 每句从 0 开始，第一个字保持未点亮再逐步点亮。
+/// 每句从 0 开始，第一个字保持未点亮再逐步点亮；
+/// 每点亮一个新字时，整行做一次极轻微的放大-回弹（弹簧感），让逐字点亮更有「节奏感」。
 /// </summary>
 public class KaraokeTextBlock : TextBlock
 {
@@ -43,6 +44,10 @@ public class KaraokeTextBlock : TextBlock
     private double _currentFraction;   // 当前已点亮比例（0..1，平滑推进）
     private double _targetFraction;    // 目标比例（0..1，来自 HighlightFraction）
     private string _lastText = string.Empty;
+    private int _lastLitChars;         // 上次已完全点亮的字符数（用于检测「新字点亮」触发回弹）
+    private bool _popActive;           // 回弹动画进行中
+    private double _popScale = 1.0;    // 当前回弹缩放（1.0 = 静止）
+    private readonly ScaleTransform _pop = new(1.0, 1.0);
     // 缓存 3 个 Run：同一句歌词内只更新 Foreground（仅重绘、不触发布局），换句时才重建文本
     private Run? _litRun;      // 已完全点亮部分（高亮色）
     private Run? _blendRun;    // 边界字符（基础色→高亮色混色）
@@ -50,6 +55,8 @@ public class KaraokeTextBlock : TextBlock
 
     public KaraokeTextBlock()
     {
+        RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
+        RenderTransform = _pop;
         _animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) }; // ≈60fps
         _animTimer.Tick += (_, _) => TickAnimation();
         IsVisibleChanged += (_, _) =>
@@ -101,6 +108,7 @@ public class KaraokeTextBlock : TextBlock
         if (!string.Equals(text, _lastText, StringComparison.Ordinal))
         {
             _lastText = text;
+            _lastLitChars = 0; // 新句：还没有任何字点亮
             if (IsPlaying)
             {
                 // 播放中换句：从 0 开始，第一个字先不亮，随进度平滑点亮
@@ -117,7 +125,7 @@ public class KaraokeTextBlock : TextBlock
             return;
         }
 
-        if (Math.Abs(_currentFraction - _targetFraction) < 0.002)
+        if (Math.Abs(_currentFraction - _targetFraction) < 0.002 && !_popActive)
         {
             _currentFraction = _targetFraction;
             _animTimer.Stop();
@@ -135,7 +143,20 @@ public class KaraokeTextBlock : TextBlock
         if (Math.Abs(_currentFraction - _targetFraction) < 0.002)
         {
             _currentFraction = _targetFraction;
-            _animTimer.Stop();
+            // 颜色已到位，但回弹还没结束的话继续驱动动画
+            if (!_popActive) _animTimer.Stop();
+        }
+        // 回弹衰减：1.08 → 1.0 弹簧回落（指数衰减，平滑不生硬）
+        if (_popActive)
+        {
+            _popScale += (1.0 - _popScale) * 0.30;
+            if (1.0 - _popScale < 0.002)
+            {
+                _popScale = 1.0;
+                _popActive = false;
+                if (Math.Abs(_currentFraction - _targetFraction) < 0.002) _animTimer.Stop();
+            }
+            _pop.ScaleX = _pop.ScaleY = _popScale;
         }
         Render();
     }
@@ -165,6 +186,16 @@ public class KaraokeTextBlock : TextBlock
         var litChars = Math.Min((int)Math.Floor(f * len), len);      // 已完全点亮的字符数
         var blend = f * len - litChars;                              // 边界字符混色比例 0..1
         if (litChars >= len) blend = 1;                              // 整句点亮
+
+        // 逐字点亮回弹：播放中每「点亮一个新字」触发一次极轻微放大-回弹（1.08 → 1.0）
+        if (IsPlaying && !_popActive && litChars > _lastLitChars && litChars > 0 && litChars <= len)
+        {
+            _popScale = 1.08;
+            _popActive = true;
+            _pop.ScaleX = _pop.ScaleY = _popScale;
+            if (!_animTimer.IsEnabled) _animTimer.Start();
+        }
+        _lastLitChars = litChars;
 
         // 换句时才重建 Inlines（文本变化必然触发布局）；同一句只更新颜色（仅重绘，60fps 下不卡布局）
         if (_litRun is null || !string.Equals(_lastText, text, StringComparison.Ordinal))

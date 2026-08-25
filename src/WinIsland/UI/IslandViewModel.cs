@@ -58,6 +58,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private readonly ScheduleService _schedule;
     private readonly PomodoroService _pomodoro;
     private int _capsLockSecondsLeft;   // 键盘指示灯剩余显示秒数（由 _widgetTimer 每秒递减）
+    private int _volumeTempSecondsLeft;          // 音量指示剩余显示秒数
+    private double _lastVolumeTempValue = -1;    // 上次轮询到的系统音量（变化时触发上岛）
+    private bool _lastVolumeTempMuted;           // 上次轮询到的静音状态
     // ── 多播放器选择器（迷你播放器 / 设置中切换媒体来源）──
     private readonly ObservableCollection<MediaSessionItem> _mediaSessions = new();
     private MediaSessionItem? _selectedMediaSession;
@@ -121,6 +124,12 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _widgetTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _widgetTimer.Tick += async (_, _) =>
         {
+            // 始终轮询的轻量检测：即使灵动岛隐藏，音量/复制/下载/截图等事件也要能触发上岛
+            PollVolumeTemp();
+            UpdateVolumeTempCountdown();
+            PollFileCopy();
+            PollDownloadProgress();
+            UpdateScreenshotCountdown();
             if (!IsVisible) return;
             ClockText = DateTime.Now.ToString("HH:mm");
             DateText = DateTime.Now.ToString("M月d日 ddd", System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
@@ -313,6 +322,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             if (_suppressVolume) return;
             _ = _coordinator.SetVolumeAsync(_volume);
             OnPropertyChanged(nameof(VolumeText));
+            ShowVolumeTemp((int)Math.Round(_volume * 100), _volume < 0.001); // 拖动音量滑杆时临时上岛
         }
     }
 
@@ -411,30 +421,83 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private string _capsLockText = string.Empty;
     /// <summary>按键指示灯文本（如「Caps 开」），出现 N 秒后自动清空。</summary>
     public string CapsLockText { get => _capsLockText; private set => Set(ref _capsLockText, value); }
+    private string _screenshotStatusText = string.Empty;
+    /// <summary>截图临时指示文本（按 PrintScreen 后出现，几秒后自动消失）。</summary>
+    public string ScreenshotStatusText { get => _screenshotStatusText; private set => Set(ref _screenshotStatusText, value); }
+    private int _screenshotSecondsLeft;   // 截图指示剩余显示秒数（由 _widgetTimer 每秒递减）
+    private string _recordingText = string.Empty;
+    private string _volumeTempText = string.Empty;
+    /// <summary>音量/静音临时上岛文本（调节音量后出现，几秒后自动消失）。</summary>
+    public string VolumeTempText { get => _volumeTempText; private set => Set(ref _volumeTempText, value); }
+    private string _usageMergeText = string.Empty;
+    /// <summary>「使用中」合并胶囊文本（麦克风/摄像头/会议/录屏合并为一个状态胶囊）。</summary>
+    public string UsageMergeText { get => _usageMergeText; private set => Set(ref _usageMergeText, value); }
+    private string _fileCopyText = string.Empty;
+    /// <summary>文件复制/移动进行中文本。</summary>
+    public string FileCopyText { get => _fileCopyText; private set => Set(ref _fileCopyText, value); }
+    private string _downloadText = string.Empty;
+    /// <summary>下载进行中文本。</summary>
+    public string DownloadText { get => _downloadText; private set => Set(ref _downloadText, value); }
+    /// <summary>录屏进行中指示（如「录制中 · OBS」；停止录制后清空）。</summary>
+    public string RecordingText { get => _recordingText; private set => Set(ref _recordingText, value); }
     private string _clipboardSummary = string.Empty;
     public string ClipboardSummary { get => _clipboardSummary; private set => Set(ref _clipboardSummary, value); }
     private string _todoSummary = string.Empty;
     public string TodoSummary { get => _todoSummary; private set => Set(ref _todoSummary, value); }
     private string _timerText = string.Empty;
     public string TimerText { get => _timerText; private set => Set(ref _timerText, value); }
+    private bool _timerPaused;
+    /// <summary>番茄钟是否处于暂停态（组件显示 ⏸ 图标）。</summary>
+    public bool TimerPaused { get => _timerPaused; private set => Set(ref _timerPaused, value); }
+    private string _timerToolTip = string.Empty;
+    /// <summary>番茄钟组件悬停提示（点击暂停/继续）。</summary>
+    public string TimerToolTip { get => _timerToolTip; private set => Set(ref _timerToolTip, value); }
     private string _scheduleSummary = string.Empty;
     public string ScheduleSummary { get => _scheduleSummary; private set => Set(ref _scheduleSummary, value); }
 
     private IReadOnlyList<IslandComponent> _compactItems = Array.Empty<IslandComponent>();
     public IReadOnlyList<IslandComponent> CompactItems { get => _compactItems; private set => Set(ref _compactItems, value); }
 
-    /// <summary>按 WidgetOrder 重建紧凑胶囊组件顺序（播放时含歌曲信息，空闲时去掉）。</summary>
+    /// <summary>按 WidgetOrder 重建紧凑胶囊组件顺序（播放时含歌曲信息，闲置时去掉）。</summary>
     private void RebuildCompactItems()
     {
         // 读取顺序，并补齐缺失的已知组件（兼容旧配置里只有 Time,Weather 的情况）
         var keys = (_settings.Current.WidgetOrder ?? "Time,Weather,Song")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-        foreach (var known in new[] { "Time", "Weather", "Date", "Cpu", "Ram", "Gpu", "Mic", "Cam", "Net", "Battery", "Song", "Volume", "CapsLock", "Clipboard", "Todo", "Timer", "Schedule", "Holiday", "Meeting" })
+        foreach (var known in new[] { "Time", "Weather", "Date", "Cpu", "Ram", "Gpu", "Mic", "Cam", "Net", "Battery", "Song", "Volume", "CapsLock", "ScreenCap", "Recording", "VolumeTemp", "Usage", "FileCopy", "Download", "Clipboard", "Todo", "Timer", "Schedule", "Holiday", "Meeting" })
             if (!keys.Contains(known)) keys.Add(known);
 
+        // 「使用中」合并胶囊：把勾选的 Mic/Cam/Meeting/Recording 合并为单个状态胶囊（默认关闭）
+        var mergeItems = _settings.Current.UsageMergeItems ?? new List<string>();
+        var mergeEnabled = _settings.Current.UsageMergeEnabled && mergeItems.Count > 0;
+        var activeMerge = new List<string>();
+        if (mergeEnabled)
+        {
+            if (mergeItems.Contains("Mic") && ShowIdleMic && !string.IsNullOrEmpty(MicText)) activeMerge.Add(Localization.Get("Comp_Mic"));
+            if (mergeItems.Contains("Cam") && ShowIdleCam && !string.IsNullOrEmpty(CamText)) activeMerge.Add(Localization.Get("Comp_Cam"));
+            if (mergeItems.Contains("Meeting") && ShowIdleMeeting && !string.IsNullOrEmpty(MeetingText)) activeMerge.Add(Localization.Get("Comp_Meeting"));
+            if (mergeItems.Contains("Recording") && _settings.Current.ScreenCaptureNotifyEnabled && !string.IsNullOrEmpty(RecordingText)) activeMerge.Add(Localization.Get("ScreenCap_IslandRecording"));
+        }
+        var newUsageText = mergeEnabled && activeMerge.Count > 0
+            ? Localization.Get("Comp_Usage") + " · " + string.Join(" · ", activeMerge)
+            : string.Empty;
+        if (UsageMergeText != newUsageText) UsageMergeText = newUsageText;
+
         var items = new List<IslandComponent>();
+        var usageInserted = false;
         foreach (var key in keys)
         {
+            // 合并模式：参与合并的项不再单独显示；「使用中」胶囊放在第一个激活合并项的位置
+            var isMergedKey = mergeEnabled && mergeItems.Contains(key);
+            if (isMergedKey)
+            {
+                if (!usageInserted && UsageMergeText.Length > 0)
+                {
+                    items.Add(new IslandComponent("Usage"));
+                    usageInserted = true;
+                }
+                continue;
+            }
             if (key == "Time" && ShowIdleTime) items.Add(new IslandComponent("Time"));
             else if (key == "Weather" && ShowIdleWeather) items.Add(new IslandComponent("Weather"));
             else if (key == "Date" && ShowIdleDate) items.Add(new IslandComponent("Date"));
@@ -447,6 +510,11 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             else if (key == "Battery" && ShowIdleBattery) items.Add(new IslandComponent("Battery"));
             else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(new IslandComponent("Song"));
             else if (key == "CapsLock" && ShowIdleCapsLock && !string.IsNullOrEmpty(CapsLockText)) items.Add(new IslandComponent("CapsLock"));
+            else if (key == "ScreenCap" && _settings.Current.ScreenCaptureNotifyEnabled && !string.IsNullOrEmpty(ScreenshotStatusText)) items.Add(new IslandComponent("ScreenCap"));
+            else if (key == "Recording" && _settings.Current.ScreenCaptureNotifyEnabled && !string.IsNullOrEmpty(RecordingText)) items.Add(new IslandComponent("Recording"));
+            else if (key == "VolumeTemp" && _settings.Current.VolumeTempIndicatorEnabled && !string.IsNullOrEmpty(VolumeTempText)) items.Add(new IslandComponent("VolumeTemp"));
+            else if (key == "FileCopy" && _settings.Current.FileCopyNotifyEnabled && !string.IsNullOrEmpty(FileCopyText)) items.Add(new IslandComponent("FileCopy"));
+            else if (key == "Download" && _settings.Current.DownloadProgressEnabled && !string.IsNullOrEmpty(DownloadText)) items.Add(new IslandComponent("Download"));
             else if (key == "Clipboard" && ShowIdleClipboard && !string.IsNullOrEmpty(ClipboardSummary)) items.Add(new IslandComponent("Clipboard"));
             else if (key == "Todo" && ShowIdleTodo && !string.IsNullOrEmpty(TodoSummary)) items.Add(new IslandComponent("Todo"));
             else if (key == "Timer" && ShowIdleTimer && !string.IsNullOrEmpty(TimerText)) items.Add(new IslandComponent("Timer"));
@@ -901,6 +969,12 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                     case "Battery": w += MeasureText(BatteryText, 11, 6) + 16; break;
                     case "Holiday": w += Math.Min(MeasureText(HolidayText, 12, 6.5) + 8, 120); break;
                     case "Meeting": w += Math.Min(MeasureText(MeetingText, 11, 6) + 16, 160); break;
+                    case "ScreenCap": w += MeasureText(ScreenshotStatusText, 11, 6) + 16; break;
+                    case "Recording": w += Math.Min(MeasureText(RecordingText, 11, 6) + 16, 180); break;
+                    case "VolumeTemp": w += MeasureText(VolumeTempText, 11, 6) + 24; break;
+                    case "Usage": w += Math.Min(MeasureText(UsageMergeText, 11, 6) + 16, 200); break;
+                    case "FileCopy": w += Math.Min(MeasureText(FileCopyText, 11, 6) + 16, 220); break;
+                    case "Download": w += Math.Min(MeasureText(DownloadText, 11, 6) + 16, 220); break;
                     case "Song":
                         w += 40 + 6
                             + Math.Min(MeasureText(Title, 13, 7), 140)
@@ -1089,12 +1163,112 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             RebuildCompactItems();
         }
     }
+    /// <summary>截图事件：灵动岛显示「已截图」临时指示（由 ScreenCaptureMonitor 事件转发）。</summary>
+    public void NotifyScreenshotTaken()
+    {
+        if (!_settings.Current.ScreenCaptureNotifyEnabled) return;
+        ScreenshotStatusText = Localization.Get("ScreenCap_IslandScreenshot");
+        _screenshotSecondsLeft = Math.Max(1, _settings.Current.KeyIndicatorSeconds);
+        RebuildCompactItems();
+        UpdateVisibility(); // 无媒体且隐藏时也要能临时显示
+    }
+
+    /// <summary>录制状态变化：进入/退出录制时更新灵动岛「录制中」指示。</summary>
+    public void SetRecordingStatus(bool recording, string app)
+    {
+        if (!_settings.Current.ScreenCaptureNotifyEnabled) return;
+        RecordingText = recording
+            ? $"{Localization.Get("ScreenCap_IslandRecording")}{(string.IsNullOrEmpty(app) ? string.Empty : " · " + app)}"
+            : string.Empty;
+        RebuildCompactItems();
+        UpdateVisibility(); // 录制状态变化时重新评估可见性
+    }
+
+    /// <summary>每秒递减截图指示剩余秒数，到 0 后清空（组件消失）。</summary>
+    private void UpdateScreenshotCountdown()
+    {
+        if (_screenshotSecondsLeft <= 0) return;
+        if (--_screenshotSecondsLeft <= 0)
+        {
+            ScreenshotStatusText = string.Empty;
+            RebuildCompactItems();
+            UpdateVisibility(); // 临时指示消失后若原本隐藏则恢复隐藏
+        }
+    }
+    /// <summary>音量/静音变化：显示临时上岛指示（几秒后自动消失）。</summary>
+    public void ShowVolumeTemp(int percent, bool muted)
+    {
+        if (!_settings.Current.VolumeTempIndicatorEnabled) return;
+        VolumeTempText = muted ? Localization.Get("VolumeTemp_Muted") : $"{percent}%";
+        _volumeTempSecondsLeft = Math.Max(1, _settings.Current.VolumeTempIndicatorSeconds);
+        RebuildCompactItems();
+        UpdateVisibility(); // 无媒体且隐藏时也要能临时显示
+    }
+
+    /// <summary>每秒轮询系统音量（仅开启音量指示时）；变化时上岛。无变化时近乎零开销。</summary>
+    private void PollVolumeTemp()
+    {
+        if (!_settings.Current.VolumeTempIndicatorEnabled) return;
+        try
+        {
+            var v = SystemVolume.GetVolume();
+            var muted = SystemVolume.IsMuted();
+            if (v.HasValue && (Math.Abs(v.Value - _lastVolumeTempValue) > 0.001 || muted != _lastVolumeTempMuted))
+            {
+                _lastVolumeTempValue = v.Value;
+                _lastVolumeTempMuted = muted;
+                ShowVolumeTemp((int)Math.Round(v.Value * 100), muted);
+            }
+        }
+        catch { /* 音频服务不可用时忽略 */ }
+    }
+
+    /// <summary>每秒递减音量指示剩余秒数，到 0 后清空（组件消失）。</summary>
+    private void UpdateVolumeTempCountdown()
+    {
+        if (_volumeTempSecondsLeft <= 0) return;
+        if (--_volumeTempSecondsLeft <= 0)
+        {
+            VolumeTempText = string.Empty;
+            RebuildCompactItems();
+            UpdateVisibility();
+        }
+    }
+
+    /// <summary>每秒检测前台窗口是否正在复制/移动文件；变化时更新上岛文本。</summary>
+    private void PollFileCopy()
+    {
+        if (!_settings.Current.FileCopyNotifyEnabled) return;
+        var newText = FileTransferMonitor.IsCopyingOrMoving() ? Localization.Get("FileCopy_IslandText") : string.Empty;
+        if (FileCopyText != newText)
+        {
+            FileCopyText = newText;
+            RebuildCompactItems();
+            UpdateVisibility(); // 复制开始时若隐藏则临时显示；结束时若原本隐藏则恢复隐藏
+        }
+    }
+
+    /// <summary>每秒扫描下载目录中的浏览器临时文件；变化时更新上岛文本。</summary>
+    private void PollDownloadProgress()
+    {
+        if (!_settings.Current.DownloadProgressEnabled) return;
+        var count = DownloadDetector.ActiveDownloadCount();
+        var newText = count > 0 ? string.Format(Localization.Get("Download_IslandText"), count) : string.Empty;
+        if (DownloadText != newText)
+        {
+            DownloadText = newText;
+            RebuildCompactItems();
+            UpdateVisibility(); // 下载开始时若隐藏则临时显示；结束时若原本隐藏则恢复隐藏
+        }
+    }
 
     private void RefreshClipboardSummary() { ClipboardSummary = _clipboard.Summary; RebuildCompactItems(); }
     private void RefreshTodoSummary() { TodoSummary = _todo.Summary; RebuildCompactItems(); }
     private void RefreshScheduleSummary() { ScheduleSummary = _schedule.Summary; RebuildCompactItems(); }
     private void RefreshTimerText()
     {
+        TimerPaused = _pomodoro.IsPaused;
+        TimerToolTip = Localization.Get("Timer_ToggleHint");
         TimerText = _pomodoro.Phase == PomodoroPhase.Stopped ? string.Empty : _pomodoro.ClockText;
         RebuildCompactItems();
     }
@@ -1102,6 +1276,17 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     {
         RefreshTimerText();
         PomodoroCompletedRequested?.Invoke(phase);
+    }
+
+    /// <summary>点击灵动岛上的番茄钟组件：暂停/继续切换（不抛异常）。</summary>
+    public void ToggleTimerPause()
+    {
+        try
+        {
+            _pomodoro.TogglePause();
+            RefreshTimerText();
+        }
+        catch (Exception ex) { AppLogger.Warn($"Timer toggle failed: {ex.Message}"); }
     }
 
     /// <summary>执行上岛卡片按钮动作（打开 URL / 启动程序）。</summary>
@@ -1489,7 +1674,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         ShowIdleWidgets = !hasMedia; // 空闲面板可见性（内部按组件勾选）
 
         // 有上岛推送时也要显示灵动岛（否则第三方推送看不到）
-        var show = !_userHidden && (hasMedia || showWidgets || HasActivePush || !_settings.Current.HideWhenNoMedia);
+        // 截图/录屏/音量/复制/下载等临时指示激活时也强制显示（到期自动消失后恢复隐藏）
+        var anyTempStatus = (ScreenshotStatusText.Length > 0 || RecordingText.Length > 0 || VolumeTempText.Length > 0
+            || FileCopyText.Length > 0 || DownloadText.Length > 0);
+        var show = !_userHidden && (hasMedia || showWidgets || HasActivePush || !_settings.Current.HideWhenNoMedia || anyTempStatus);
         // 常驻时不因暂停而隐藏
         if (!alwaysVisible && hasMedia && Status == PlaybackStatus.Paused && !_settings.Current.ShowWhenPaused)
             show = false;
@@ -1647,6 +1835,11 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             _ => Localization.Get("LyricsUnavailable"),
         };
         OnPropertyChanged(nameof(LyricsStatus));
+        TimerToolTip = Localization.Get("Timer_ToggleHint");
+        // 语言切换后刷新含本地化文案的临时状态（复制/下载/合并胶囊）
+        PollFileCopy();
+        PollDownloadProgress();
+        RebuildCompactItems();
     }
 
     /// <summary>Begin a user drag on the progress slider.</summary>

@@ -381,6 +381,14 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         MenuOnlineLyrics.IsChecked = _settings.Current.OnlineLyricsEnabled;
     }
 
+    /// <summary>点击番茄钟组件：暂停/继续。</summary>
+    private void TimerItem_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.ToggleTimerPause();
+        e.Handled = true;
+    }
+
+
     /// <summary>上岛推送按钮点击：执行动作（打开 URL / 启动程序）后关闭当前推送。</summary>
     private void PushButton_Click(object sender, RoutedEventArgs e)
     {
