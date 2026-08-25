@@ -342,7 +342,6 @@ public partial class SettingsWindow : Window
         LblCompName.Text = Localization.Get("Comp_Header_Name");
         LblCompIdle.Text = Localization.Get("Comp_Header_Idle");
         LblCompPlaying.Text = Localization.Get("Comp_Header_Playing");
-        LblCompBadge.Text = Localization.Get("Comp_Header_Badge");
         TxtCompNote.Text = Localization.Get("Comp_Note");
         LblCompOrder.Text = Localization.Get("Comp_OrderHint");
         TabLyrics.Header = Localization.Get("Settings_Lyrics");

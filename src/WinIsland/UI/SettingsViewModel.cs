@@ -56,12 +56,6 @@ public sealed class ComponentRow : ObservableObject
         _onChanged = onChanged ?? (_ => { });
     }
 
-    /// <summary>组件角标文本（如 "3" / "!"；空串不显示），写入 Working.ComponentBadges 即时生效。</summary>
-    public string Badge
-    {
-        get => _settingsGet().ComponentBadges.TryGetValue(Key, out var b) ? b ?? string.Empty : string.Empty;
-        set { _settingsGet().ComponentBadges[Key] = value ?? string.Empty; OnPropertyChanged(); }
-    }
 
     public string Name => Localization.Get(_nameKey);
 

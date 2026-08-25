@@ -500,27 +500,6 @@
                                         </Style>
                                     </ContentControl.Style>
                                 </ContentControl>
-                                <!-- 自定义组件角标：在设置-组件中填写角标文本后显示在组件右上角 -->
-                                <Border x:Name="CompBadge" MinWidth="15" Height="15" CornerRadius="7.5" Padding="4,0"
-                                        Background="#E81123" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                        Margin="0,-2,-2,0" RenderTransformOrigin="0.5,0.5" Visibility="Visible">
-                                    <Border.RenderTransform>
-                                        <ScaleTransform x:Name="CompBadgeScale" ScaleX="0.85" ScaleY="0.85"/>
-                                    </Border.RenderTransform>
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Badge}" Value="">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <TextBlock Text="{Binding Badge}" FontSize="8.5" Foreground="White"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               TextTrimming="CharacterEllipsis" MaxWidth="80"/>
-                                </Border>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

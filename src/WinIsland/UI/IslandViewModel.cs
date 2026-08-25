@@ -370,8 +370,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private string _weatherDetailText = string.Empty;
     public string WeatherDetailText { get => _weatherDetailText; private set => Set(ref _weatherDetailText, value); }
 
-    /// <summary>紧凑胶囊里的一个顺序组件（Badge 为自定义角标文本，空串不显示）。</summary>
-    public sealed record IslandComponent(string Kind, string Badge = ""); // "Time" | "Weather" | "Song"
+    /// <summary>紧凑胶囊里的一个顺序组件。</summary>
+    public sealed record IslandComponent(string Kind); // "Time" | "Weather" | "Song"
     // 歌曲相关组件（封面/歌名/歌手/歌词/进度条）：只在播放时显示，固定开启
     public bool ShowCover => HasMedia;
     public bool ShowTitle => HasMedia;
@@ -403,7 +403,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         || ShowIdleVolume || ShowIdleCapsLock || ShowIdleClipboard || ShowIdleTodo
         || ShowIdleTimer || ShowIdleSchedule || ShowIdleHoliday || ShowIdleMeeting;
 
-    // ── 效率工具 / 波纹 / 角标 文本 ──
+    // ── 效率工具 / 波纹 文本 ──
     /// <summary>波纹强度（0..1），由 AudioWaveService 实时采集/模拟，UI 轮询。</summary>
     public double WaveLevel => _wave.Level;
     public string VolumeText => HasVolumeControl ? $"{(_volume * 100):0}%" : string.Empty;
@@ -435,25 +435,24 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         var items = new List<IslandComponent>();
         foreach (var key in keys)
         {
-            var badge = BadgeFor(key);
-            if (key == "Time" && ShowIdleTime) items.Add(new IslandComponent("Time", badge));
-            else if (key == "Weather" && ShowIdleWeather) items.Add(new IslandComponent("Weather", badge));
-            else if (key == "Date" && ShowIdleDate) items.Add(new IslandComponent("Date", badge));
-            else if (key == "Cpu" && ShowIdleCpu) items.Add(new IslandComponent("Cpu", badge));
-            else if (key == "Ram" && ShowIdleRam) items.Add(new IslandComponent("Ram", badge));
-            else if (key == "Gpu" && ShowIdleGpu) items.Add(new IslandComponent("Gpu", badge));
-            else if (key == "Mic" && ShowIdleMic && !string.IsNullOrEmpty(MicText)) items.Add(new IslandComponent("Mic", badge));
-            else if (key == "Cam" && ShowIdleCam && !string.IsNullOrEmpty(CamText)) items.Add(new IslandComponent("Cam", badge));
-            else if (key == "Net" && ShowIdleNet) items.Add(new IslandComponent("Net", badge));
-            else if (key == "Battery" && ShowIdleBattery) items.Add(new IslandComponent("Battery", badge));
-            else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(new IslandComponent("Song", badge));
-            else if (key == "CapsLock" && ShowIdleCapsLock && !string.IsNullOrEmpty(CapsLockText)) items.Add(new IslandComponent("CapsLock", badge));
-            else if (key == "Clipboard" && ShowIdleClipboard && !string.IsNullOrEmpty(ClipboardSummary)) items.Add(new IslandComponent("Clipboard", badge));
-            else if (key == "Todo" && ShowIdleTodo && !string.IsNullOrEmpty(TodoSummary)) items.Add(new IslandComponent("Todo", badge));
-            else if (key == "Timer" && ShowIdleTimer && !string.IsNullOrEmpty(TimerText)) items.Add(new IslandComponent("Timer", badge));
-            else if (key == "Schedule" && ShowIdleSchedule && !string.IsNullOrEmpty(ScheduleSummary)) items.Add(new IslandComponent("Schedule", badge));
-            else if (key == "Holiday" && ShowIdleHoliday && !string.IsNullOrEmpty(HolidayText)) items.Add(new IslandComponent("Holiday", badge));
-            else if (key == "Meeting" && ShowIdleMeeting && !string.IsNullOrEmpty(MeetingText)) items.Add(new IslandComponent("Meeting", badge));
+            if (key == "Time" && ShowIdleTime) items.Add(new IslandComponent("Time"));
+            else if (key == "Weather" && ShowIdleWeather) items.Add(new IslandComponent("Weather"));
+            else if (key == "Date" && ShowIdleDate) items.Add(new IslandComponent("Date"));
+            else if (key == "Cpu" && ShowIdleCpu) items.Add(new IslandComponent("Cpu"));
+            else if (key == "Ram" && ShowIdleRam) items.Add(new IslandComponent("Ram"));
+            else if (key == "Gpu" && ShowIdleGpu) items.Add(new IslandComponent("Gpu"));
+            else if (key == "Mic" && ShowIdleMic && !string.IsNullOrEmpty(MicText)) items.Add(new IslandComponent("Mic"));
+            else if (key == "Cam" && ShowIdleCam && !string.IsNullOrEmpty(CamText)) items.Add(new IslandComponent("Cam"));
+            else if (key == "Net" && ShowIdleNet) items.Add(new IslandComponent("Net"));
+            else if (key == "Battery" && ShowIdleBattery) items.Add(new IslandComponent("Battery"));
+            else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(new IslandComponent("Song"));
+            else if (key == "CapsLock" && ShowIdleCapsLock && !string.IsNullOrEmpty(CapsLockText)) items.Add(new IslandComponent("CapsLock"));
+            else if (key == "Clipboard" && ShowIdleClipboard && !string.IsNullOrEmpty(ClipboardSummary)) items.Add(new IslandComponent("Clipboard"));
+            else if (key == "Todo" && ShowIdleTodo && !string.IsNullOrEmpty(TodoSummary)) items.Add(new IslandComponent("Todo"));
+            else if (key == "Timer" && ShowIdleTimer && !string.IsNullOrEmpty(TimerText)) items.Add(new IslandComponent("Timer"));
+            else if (key == "Schedule" && ShowIdleSchedule && !string.IsNullOrEmpty(ScheduleSummary)) items.Add(new IslandComponent("Schedule"));
+            else if (key == "Holiday" && ShowIdleHoliday && !string.IsNullOrEmpty(HolidayText)) items.Add(new IslandComponent("Holiday"));
+            else if (key == "Meeting" && ShowIdleMeeting && !string.IsNullOrEmpty(MeetingText)) items.Add(new IslandComponent("Meeting"));
         }
 
         // 内容未变化时不重建，避免每个快照（每秒）都重创建组件导致闪烁
@@ -463,9 +462,6 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         CompactItems = items;
     }
 
-    /// <summary>读取组件角标文本（设置里 ComponentBadges 字典，空串/无则返回空）。</summary>
-    private string BadgeFor(string key)
-        => _settings.Current.ComponentBadges.TryGetValue(key, out var b) ? b ?? string.Empty : string.Empty;
 
     private int _statsTick;
     private float? _cpuValue;

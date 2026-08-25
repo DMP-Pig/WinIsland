@@ -188,7 +188,7 @@ public sealed class AppSettings
     // ── 外观增强（主题预设 / 字体 / 字号 / 圆角 / 封面取色）──
     public string ThemePreset { get; set; } = "Default";   // 皮肤预设：Default | Ocean | Forest | Sunset | Neon | Mono | Grape | Sky | Rose | Amber | Lime | Teal | Lavender | Crimson | Midnight | Coffee | Sakura | Aurora | Custom
     public string ThemeTint { get; set; } = "";
-    public Dictionary<string, string> ComponentBadges { get; set; } = new();   // 组件角标：组件键 -> 角标文本（如 "3" / "!"），空串不显示              // 「Custom」自定义皮肤的背景色（#RRGGBB，留空跟随明暗默认底色）
+    // 「Custom」自定义皮肤的背景色（#RRGGBB，留空跟随明暗默认底色）
     public string FontFamily { get; set; } = "Segoe UI";   // 界面字体
     public double FontScale { get; set; } = 1.0;           // 字号缩放 0.8 ~ 1.4
     public double CornerRadius { get; set; } = 28;         // 胶囊圆角 16 ~ 40
@@ -255,7 +255,6 @@ public sealed class AppSettings
         var c = (AppSettings)MemberwiseClone();
         c.DnDAllowlist = new List<string>(DnDAllowlist);
         c.MediaApps = new List<MediaAppEntry>(MediaApps);
-        c.ComponentBadges = new Dictionary<string, string>(ComponentBadges);
         c.Rules = Rules.Where(r => r is not null).Select(r => new AppRule
         {
             Enabled = r.Enabled, Name = r.Name, Condition = r.Condition,
@@ -299,7 +298,6 @@ public sealed class SettingsService
                 {
                     // 兼容旧配置：补齐新增字段
                     loaded.Components ??= new ComponentFlags();
-                    loaded.ComponentBadges ??= new Dictionary<string, string>();
                     return loaded;
                 }
             }
