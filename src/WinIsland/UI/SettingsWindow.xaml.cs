@@ -101,8 +101,52 @@ public partial class SettingsWindow : Window
         Closed += (_, _) => { try { _vm.Save(); } catch { } };
 
         // 初始化完成后才允许"手动调整关闭自动"
-        Loaded += (_, _) => _sizeSlidersInitialized = true;
+        Loaded += (_, _) =>
+        {
+            _sizeSlidersInitialized = true;
+            FixInheritedBlackText();
+            // Tab 切换后可能延迟创建可视元素，重新执行黑字兜底修复
+            if (MainTabs != null)
+            {
+                MainTabs.SelectionChanged += (_, _) =>
+                    Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(FixInheritedBlackText));
+            }
+        };
     }
+        /// <summary>兜底修复：深色模式下模板/继承链断裂处 TextBlock 会回退为默认黑色。
+        /// 遍历可视树，将“未显式设置前景色且当前继承结果为纯黑”的文本统一改为主题主文字色（动态资源，跟随深浅主题）。</summary>
+        private void FixInheritedBlackText()
+        {
+            try
+            {
+                WalkTextBlocks(this);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Warn($"FixInheritedBlackText failed: {ex.Message}");
+            }
+        }
+
+        private void WalkTextBlocks(DependencyObject parent)
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is System.Windows.Controls.TextBlock tb)
+                {
+                    if (tb.ReadLocalValue(System.Windows.Controls.TextBlock.ForegroundProperty) == DependencyProperty.UnsetValue)
+                    {
+                        var eff = tb.Foreground as SolidColorBrush;
+                        if (eff != null && eff.Color == Colors.Black)
+                        {
+                            tb.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, "TextPrimaryBrush");
+                            AppLogger.Info($"Fix black text: '{tb.Text}' name={tb.Name}");
+                        }
+                    }
+                }
+                WalkTextBlocks(child);
+            }
+        }
 
     /// <summary>填充音频输出设备下拉框（默认选中系统当前默认设备）。</summary>
     private void InitAudioOutput()

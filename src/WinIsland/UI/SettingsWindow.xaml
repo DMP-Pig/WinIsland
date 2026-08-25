@@ -33,10 +33,10 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" CornerRadius="10" Background="{TemplateBinding Background}"
+                        <Border x:Name="Bd" CornerRadius="10" Background="{TemplateBinding Background}" TextElement.Foreground="{TemplateBinding Foreground}"
                                 BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
                                 Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -67,7 +67,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
-                        <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <StackPanel Orientation="Horizontal" Background="Transparent" TextElement.Foreground="{TemplateBinding Foreground}">
                             <Border x:Name="Box" Width="18" Height="18" CornerRadius="6" BorderThickness="1.2"
                                     Background="{DynamicResource ControlBgBrush}" BorderBrush="{DynamicResource ControlBorderBrush}"
                                     VerticalAlignment="Center">
@@ -75,7 +75,7 @@
                                            Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"
                                            Visibility="Collapsed" Margin="0,-1,0,0"/>
                             </Border>
-                            <ContentPresenter Margin="9,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                            <ContentPresenter Margin="9,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True" TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </StackPanel>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
@@ -107,7 +107,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
-                        <Border x:Name="Bd" CornerRadius="9" Background="{TemplateBinding Background}"
+                        <Border x:Name="Bd" CornerRadius="9" Background="{TemplateBinding Background}" TextElement.Foreground="{TemplateBinding Foreground}"
                                 BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
                             <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
                         </Border>
@@ -127,7 +127,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
-                        <Grid>
+                        <Grid TextElement.Foreground="{TemplateBinding Foreground}">
                             <ToggleButton x:Name="Toggle" Focusable="False" ClickMode="Press"
                                           IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
                                 <ToggleButton.Template>
@@ -139,7 +139,7 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center"
+                                                <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"
                                                                   Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"
                                                                   ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource AncestorType=ComboBox}}"/>
                                                 <TextBlock Grid.Column="1" Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="10"
@@ -177,8 +177,8 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBoxItem">
-                        <Border x:Name="Bd" CornerRadius="7" Padding="{TemplateBinding Padding}" Background="Transparent">
-                            <ContentPresenter/>
+                        <Border x:Name="Bd" CornerRadius="7" Padding="{TemplateBinding Padding}" Background="Transparent" TextElement.Foreground="{TemplateBinding Foreground}">
+                            <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
@@ -265,8 +265,8 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="Bd" CornerRadius="9" Padding="13,6" Margin="2" Background="Transparent" Cursor="Hand">
-                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center"/>
+                        <Border x:Name="Bd" CornerRadius="9" Padding="13,6" Margin="2" Background="Transparent" Cursor="Hand" TextElement.Foreground="{TemplateBinding Foreground}">
+                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -373,8 +373,8 @@
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
-                                        <Border x:Name="Bd" CornerRadius="9" Padding="10,7" Margin="1,1" Background="Transparent">
-                                            <ContentPresenter/>
+                                        <Border x:Name="Bd" CornerRadius="9" Padding="10,7" Margin="1,1" Background="Transparent" TextElement.Foreground="{TemplateBinding Foreground}">
+                                            <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
