@@ -51,6 +51,37 @@ public sealed class TimeSpanToTextConverter : IValueConverter
 }
 
 /// <summary>Converts an opacity double (0..1) to a Visibility (used for fade-out in compact mode).</summary>
+
+
+/// <summary>
+/// Converts an icon string to the proper font family:
+/// Segoe MDL2 Assets for private-use-area glyphs (U+E000-U+F8FF), otherwise Segoe UI Emoji.
+/// Used by component icons so users can enter either MDL2 glyphs or emoji.
+/// </summary>
+public sealed class Mdl2GlyphFontConverter : IValueConverter
+{
+    private static readonly System.Windows.Media.FontFamily Mdl2 = new("Segoe MDL2 Assets");
+    private static readonly System.Windows.Media.FontFamily Emoji = new("Segoe UI Emoji");
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        try
+        {
+            var s = value?.ToString();
+            if (!string.IsNullOrEmpty(s))
+            {
+                var cp = char.ConvertToUtf32(s, 0);
+                if (cp >= 0xE000 && cp <= 0xF8FF) return Mdl2;
+            }
+        }
+        catch { /* fall through */ }
+        return Emoji;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 public sealed class OpacityToVisibilityConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

@@ -27,6 +27,7 @@ public partial class App : Application
     private AppSettings? _lastPositionSettings;
     private BluetoothMonitor? _bluetooth;
     private SystemNotificationMonitor? _systemNotifications;
+    private NetworkStatusMonitor? _network;
     private NotificationService? _notifications;
     private NotificationHistoryService? _notificationHistory;
     private GlobalHotkeyService? _hotkeys;
@@ -114,6 +115,18 @@ public partial class App : Application
         _bluetooth.DeviceDisconnected += (_, name) => _notifications.Show("蓝牙设备已断开", name, "\uE702", "Bluetooth");
         _systemNotifications = new SystemNotificationMonitor();
         _systemNotifications.NotificationCaptured += (_, n) => _notifications.Show(n.Title, n.Body, "\uE945", n.AppName);
+        // 断网 / 网络恢复提醒（每次状态变化只提示一次；去抖在服务内部）
+        _network = new NetworkStatusMonitor();
+        _network.NetworkLost += (_, _) =>
+        {
+            if (_settings!.Current.NetworkNotifyEnabled)
+                _notifications?.Show(Localization.Get("Network_LostTitle"), Localization.Get("Network_LostBody"), "\uE945", "WinIsland");
+        };
+        _network.NetworkRestored += (_, _) =>
+        {
+            if (_settings!.Current.NetworkNotifyEnabled)
+                _notifications?.Show(Localization.Get("Network_BackTitle"), Localization.Get("Network_BackBody"), "\uE945", "WinIsland");
+        };
 
         // ── 效率工具 / 波纹 / 更新服务 ──
         _wave = new AudioWaveService();
@@ -147,6 +160,12 @@ public partial class App : Application
         //     _notifications?.Show(Localization.Get("NowPlaying_Title"), string.IsNullOrEmpty(artist) ? title : $"{title} - {artist}", "\uE8D6");
         _vm.LowBatteryRequested += percent =>
             _notifications?.Show(Localization.Get("LowBattery_Title"), $"{percent}%", "\uEBA0", "WinIsland");
+        _vm.ChargedRequested += percent =>
+            _notifications?.Show(Localization.Get("Charged_Title"),
+                string.Format(Localization.Get("Charged_Body"), percent), "\uEBA0", "WinIsland");
+        _vm.DiskLowRequested += gb =>
+            _notifications?.Show(Localization.Get("Disk_Title"),
+                string.Format(Localization.Get("Disk_Body"), gb), "\uEDA2", "WinIsland");
 
         // ── 上岛 API：第三方软件推送信息到灵动岛 ──
         _islandApi = new IslandApiServer(_settings);
@@ -360,6 +379,7 @@ public partial class App : Application
 
         if (_settings.Current.BluetoothNotifyEnabled) _bluetooth?.Start();
         if (_settings.Current.NotificationTakeoverEnabled) _systemNotifications?.Start();
+        _network?.Start(); // 网络监控很轻量，始终启动；是否弹横幅由 NetworkNotifyEnabled 开关控制
         _vm.UpdateVisibility();
 
         if (_settings.Current.StandaloneLyricsWindow)
@@ -606,6 +626,7 @@ public partial class App : Application
             _coordinator?.Dispose();
             _bluetooth?.Dispose();
             _systemNotifications?.Dispose();
+            _network?.Dispose();
             _hotkeys?.Dispose();
             _islandApi?.Dispose();
             _screenCapture?.Dispose();

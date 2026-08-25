@@ -23,6 +23,7 @@
         <conv:BoolToVisibilityConverter x:Key="BoolToVisInvert" Invert="True"/>
         <conv:NullToVisibilityConverter x:Key="NullToVis"/>
         <conv:NullToVisibilityConverter x:Key="NullToVisInvert" Invert="True"/>
+        <conv:Mdl2GlyphFontConverter x:Key="GlyphFont"/>
 
         <!-- Icon button (transparent, hover highlight) -->
         <Style x:Key="IconButton" TargetType="Button">
@@ -235,6 +236,14 @@
                                            ToolTip="{Binding DataContext.WeatherDetailText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                            Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                             </DataTemplate>
+                            <DataTemplate x:Key="DiskItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.DiskText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
                             <DataTemplate x:Key="DateItem">
                                 <TextBlock Text="{Binding DataContext.DateText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                            FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"
@@ -242,7 +251,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="CpuItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE950;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.CpuText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -250,7 +259,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="GpuItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.GpuText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -258,7 +267,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="MicItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE720;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.MicText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -266,7 +275,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="CamItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE722;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.CamText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -274,7 +283,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="RamItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.RamText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -282,7 +291,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="NetItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE968;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.NetText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -296,7 +305,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="BatteryItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xEBA0;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.BatteryText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -304,7 +313,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="VolumeItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.VolumeText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -312,7 +321,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="CapsLockItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE765;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.CapsLockText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -320,7 +329,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="ClipboardItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.ClipboardSummary, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -328,10 +337,43 @@
                             </DataTemplate>
                             <DataTemplate x:Key="TodoItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE73A;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.TodoSummary, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="InputMethodItem">
+                                <Button Style="{StaticResource IconButton}" Width="Auto" Height="Auto" MinWidth="0" Padding="6,3" Margin="0,0,10,0"
+                                        Click="InputMethodItem_Click"
+                                        ToolTip="{Binding DataContext.InputMethodHint, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                        <TextBlock Text="{Binding DataContext.InputMethodText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                            <DataTemplate x:Key="QuickTogglesItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0"
+                                            ToolTip="{Binding DataContext.QuickTogglesHint, RelativeSource={RelativeSource AncestorType=Window}}">
+                                    <Button Style="{StaticResource IconButton}" Width="Auto" Height="Auto" MinWidth="0" Padding="6,3" Margin="0,0,4,0" Tag="wifi" Click="QuickToggle_Click">
+                                        <TextBlock Text="{Binding DataContext.QuickWifiText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    </Button>
+                                    <Button Style="{StaticResource IconButton}" Width="Auto" Height="Auto" MinWidth="0" Padding="6,3" Margin="0,0,4,0" Tag="bluetooth" Click="QuickToggle_Click">
+                                        <TextBlock Text="{Binding DataContext.QuickBtText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    </Button>
+                                    <Button Style="{StaticResource IconButton}" Width="Auto" Height="Auto" MinWidth="0" Padding="6,3" Margin="0,0,4,0" Tag="night" Click="QuickToggle_Click">
+                                        <TextBlock Text="{Binding DataContext.QuickNightText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    </Button>
+                                    <Button Style="{StaticResource IconButton}" Width="Auto" Height="Auto" MinWidth="0" Padding="6,3" Margin="0,0,0,0" Tag="mute" Click="QuickToggle_Click">
+                                        <TextBlock Text="{Binding DataContext.QuickMuteText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    </Button>
                                 </StackPanel>
                             </DataTemplate>
                             <DataTemplate x:Key="TimerItem">
@@ -339,7 +381,7 @@
                                         Click="TimerItem_Click"
                                         ToolTip="{Binding DataContext.TimerToolTip, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                        <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                    Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                         <TextBlock Text="{Binding DataContext.TimerText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                    Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -351,7 +393,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="ScheduleItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.ScheduleSummary, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -359,7 +401,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="HolidayItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.HolidayText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -367,7 +409,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="MeetingItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.MeetingText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -375,7 +417,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="ScreenCapItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE7B3;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.ScreenshotStatusText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -383,7 +425,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="RecordingItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE786;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.RecordingText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -391,7 +433,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="VolumeTempItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.VolumeTempText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -399,7 +441,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="UsageItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE7F3;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.UsageMergeText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -407,7 +449,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="FileCopyItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.FileCopyText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -415,7 +457,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="DownloadItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.DownloadText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
@@ -428,16 +470,24 @@
                                         <Grid>
                                             <Image Source="{Binding DataContext.Artwork, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="UniformToFill"
                                                    Visibility="{Binding DataContext.Artwork, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource NullToVis}}"/>
-                                            <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"
+                                            <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="18" Foreground="White"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                                        Visibility="{Binding DataContext.Artwork, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource NullToVisInvert}}"/>
                                         </Grid>
                                     </Border>
                                     <!-- 多行模式（默认）：歌名 / 歌手 / 歌词 / 进度条 -->
                                     <StackPanel x:Name="MultiLineInfo" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding DataContext.Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="13" FontWeight="SemiBold"
-                                                   Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                                   TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DataContext.Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                                       TextTrimming="CharacterEllipsis" MaxWidth="220" VerticalAlignment="Center"/>
+                                            <!-- 播放来源徽标（如 Spotify / 网易云音乐），无来源名时隐藏 -->
+                                            <Border CornerRadius="6" Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center"
+                                                    Visibility="{Binding DataContext.HasSourceDetail, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="{Binding DataContext.SourceDetail, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="9" MaxWidth="70" TextTrimming="CharacterEllipsis"
+                                                           Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                            </Border>
+                                        </StackPanel>
                                         <TextBlock Text="{Binding DataContext.Artist, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="11" Margin="0,1,0,0"
                                                    Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                                    TextTrimming="CharacterEllipsis"/>
@@ -505,6 +555,15 @@
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Kind}" Value="Date">
                                                     <Setter Property="ContentTemplate" Value="{StaticResource DateItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Disk">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource DiskItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="InputMethod">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource InputMethodItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="QuickToggles">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource QuickTogglesItem}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Kind}" Value="Cpu">
                                                     <Setter Property="ContentTemplate" Value="{StaticResource CpuItem}"/>
@@ -845,6 +904,19 @@
                         </StackPanel>
                     </Grid>
 
+                    <!-- 歌词快捷操作：翻译开关 + 复制当前句 -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0"
+                                Visibility="{Binding HasLyrics, Converter={StaticResource BoolToVis}}">
+                        <Button Style="{StaticResource IconButton}" Padding="9,3" Margin="0,0,8,0" Click="LyricTranslate_Click"
+                                ToolTip="{Binding LyricTranslateHint}">
+                            <TextBlock Text="{Binding LyricTranslateText}" FontSize="11"/>
+                        </Button>
+                        <Button Style="{StaticResource IconButton}" Padding="9,3" Click="CopyCurrentLyric_Click"
+                                ToolTip="{Binding LyricCopyHint}">
+                            <TextBlock Text="{Binding LyricCopyText}" FontSize="11"/>
+                        </Button>
+                    </StackPanel>
+
                     <!-- 歌词（无边框，干净排版） -->
                     <ScrollViewer x:Name="LyricsScroll" Height="180" Margin="0,8,0,0"
                                   VerticalScrollBarVisibility="Hidden"
@@ -853,13 +925,32 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border Style="{StaticResource LyricLineBorder}" HorizontalAlignment="Center">
-                                        <karaoke:KaraokeTextBlock
-                                            KaraokeText="{Binding Text}"
-                                            HighlightFraction="{Binding HighlightFraction}"
-                                            IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=False}"
-                                            HighlightBrush="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                            BaseBrush="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
-                                            Style="{StaticResource LyricLineText}"/>
+                                        <StackPanel>
+                                            <karaoke:KaraokeTextBlock
+                                                KaraokeText="{Binding Text}"
+                                                HighlightFraction="{Binding HighlightFraction}"
+                                                IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=False}"
+                                                HighlightBrush="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                                BaseBrush="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                                Style="{StaticResource LyricLineText}"/>
+                                            <!-- 翻译行：随「翻译开关」显隐 -->
+                                            <TextBlock Text="{Binding Translation}" FontSize="10.5" Margin="0,1,0,0" Opacity="0.72" HorizontalAlignment="Center"
+                                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding ShowTranslation}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding HasTranslation}" Value="False">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </StackPanel>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>

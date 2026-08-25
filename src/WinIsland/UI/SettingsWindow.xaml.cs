@@ -384,6 +384,7 @@ public partial class SettingsWindow : Window
 
         TabComponents.Header = Localization.Get("Settings_Components");
         LblCompName.Text = Localization.Get("Comp_Header_Name");
+        LblCompIcon.Text = Localization.Get("Comp_Header_Icon");
         LblCompIdle.Text = Localization.Get("Comp_Header_Idle");
         LblCompPlaying.Text = Localization.Get("Comp_Header_Playing");
         TxtCompNote.Text = Localization.Get("Comp_Note");
@@ -456,6 +457,7 @@ public partial class SettingsWindow : Window
         CbiDcNone.Content = Localization.Get("DoubleClick_None");
         ChkReduceMotion.Content = Localization.Get("General_ReduceMotion");
         ChkLowPower.Content = Localization.Get("General_LowPower");
+        ChkShowLunar.Content = Localization.Get("General_ShowLunar");
         ChkGlobalHotkeys.Content = Localization.Get("General_GlobalHotkeys");
         TxtHotkeysHint.Text = Localization.Get("General_HotkeysHint");
         LblHotkeyToggle.Text = Localization.Get("General_HotkeyToggle");
@@ -469,6 +471,10 @@ public partial class SettingsWindow : Window
         LblHotkeyClipboard.Text = Localization.Get("General_HotkeyClipboard");
         LblLowBattery.Text = Localization.Get("General_LowBattery");
         TxtLowBatteryHint.Text = Localization.Get("General_LowBatteryHint");
+        LblCharged.Text = Localization.Get("General_Charged");
+        ChkChargedNotify.Content = Localization.Get("General_ChargedCheck");
+        LblChargedThreshold.Text = Localization.Get("General_ChargedThreshold");
+        TxtChargedHint.Text = Localization.Get("General_ChargedHint");
         LblHistory.Text = Localization.Get("Notifications_History");
         TxtHistoryEmpty.Text = Localization.Get("Notifications_HistoryEmpty");
         BtnClearHistory.Content = Localization.Get("Notifications_HistoryClear");
@@ -482,6 +488,10 @@ public partial class SettingsWindow : Window
         ChkBilingual.Content = Localization.Get("MediaInfo_Bilingual");
         ChkCiderEnabled.Content = Localization.Get("Cider_Enabled");
         ChkBluetoothNotify.Content = Localization.Get("Notifications_Bluetooth");
+        ChkNetworkNotify.Content = Localization.Get("Notifications_Network");
+        ChkDiskAlert.Content = Localization.Get("Notifications_Disk");
+        LblDiskThreshold.Text = Localization.Get("Disk_Threshold");
+        TxtDiskThresholdHint.Text = Localization.Get("Disk_ThresholdHint");
         ChkNotifyTakeover.Content = Localization.Get("Notifications_Takeover");
         LblNotifyTimeout.Text = Localization.Get("Notifications_Timeout");
         TxtNotifyNote.Text = Localization.Get("Notifications_Note");

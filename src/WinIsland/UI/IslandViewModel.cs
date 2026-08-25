@@ -132,7 +132,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             UpdateScreenshotCountdown();
             if (!IsVisible) return;
             ClockText = DateTime.Now.ToString("HH:mm");
-            DateText = DateTime.Now.ToString("M月d日 ddd", System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
+            DateText = FormatDateText(DateTime.Now);
             CheckPushExpiry();
             if (_activePush is not null) OnPropertyChanged(nameof(ActivePushProgress)); // v3 动态进度按秒推进
             UpdateSystemStats();
@@ -155,6 +155,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                     RebuildCompactItems();
                 }
             }
+            if (ShowIdleInputMethod) InputMethodText = InputMethodMonitor.GetStatusText();
+            if (ShowIdleQuickToggles) RefreshQuickToggles();
             if (ShowIdleWeather && ++_weatherTick % 60 == 1)
             {
                 var w = await _weather.GetWeatherAsync(_settings.Current.WeatherCity);
@@ -251,7 +253,17 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public string SourceLabel { get => _sourceLabel; private set => Set(ref _sourceLabel, value); }
 
     private string _sourceDetail = string.Empty;
-    public string SourceDetail { get => _sourceDetail; private set => Set(ref _sourceDetail, value); }
+    public string SourceDetail
+    {
+        get => _sourceDetail;
+        private set
+        {
+            if (Set(ref _sourceDetail, value))
+                OnPropertyChanged(nameof(HasSourceDetail));
+        }
+    }
+    /// <summary>是否有播放来源名（歌名旁的小徽标是否显示）。</summary>
+    public bool HasSourceDetail => !string.IsNullOrEmpty(_sourceDetail);
 
     private ImageSource? _artwork;
     public ImageSource? Artwork { get => _artwork; private set => Set(ref _artwork, value); }
@@ -360,6 +372,30 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private string _currentLyricText = string.Empty;
     public string CurrentLyricText { get => _currentLyricText; private set => Set(ref _currentLyricText, value); }
 
+    /// <summary>是否显示歌词翻译行（展开歌词快捷操作：翻译开关）。</summary>
+    private bool _showLyricTranslation = true;
+    public bool ShowLyricTranslation
+    {
+        get => _showLyricTranslation;
+        private set
+        {
+            if (Set(ref _showLyricTranslation, value))
+            {
+                // 同步到每一行歌词（翻译行显隐）
+                foreach (var l in LyricLines) l.ShowTranslation = value;
+                OnPropertyChanged(nameof(LyricTranslateText));
+            }
+        }
+    }
+    /// <summary>翻译开关按钮文本（如「翻译：开」）。</summary>
+    public string LyricTranslateText => Localization.Get("Lyric_Translation") + "：" + (ShowLyricTranslation ? Localization.Get("Quick_On") : Localization.Get("Quick_Off"));
+    /// <summary>「复制当前句」按钮文本。</summary>
+    public string LyricCopyText => Localization.Get("Lyric_CopyCurrent");
+    /// <summary>翻译开关提示。</summary>
+    public string LyricTranslateHint => Localization.Get("Lyric_TranslateHint");
+    /// <summary>复制当前句提示。</summary>
+    public string LyricCopyHint => Localization.Get("Lyric_CopyHint");
+
     /// <summary>紧凑态逐字卡拉OK已点亮字符数。</summary>
     private double _compactHighlightFraction;
     public double CompactHighlightFraction { get => _compactHighlightFraction; private set => Set(ref _compactHighlightFraction, value); }
@@ -381,7 +417,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public string WeatherDetailText { get => _weatherDetailText; private set => Set(ref _weatherDetailText, value); }
 
     /// <summary>紧凑胶囊里的一个顺序组件。</summary>
-    public sealed record IslandComponent(string Kind); // "Time" | "Weather" | "Song"
+    /// <summary>紧凑胶囊里的一个顺序组件（Kind=组件标识，Icon=显示图标字符，支持用户定制）。</summary>
+    public sealed record IslandComponent(string Kind, string Icon); // "Time" | "Weather" | "Song"
     // 歌曲相关组件（封面/歌名/歌手/歌词/进度条）：只在播放时显示，固定开启
     public bool ShowCover => HasMedia;
     public bool ShowTitle => HasMedia;
@@ -408,10 +445,13 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool ShowIdleSchedule => HasMedia ? _settings.Current.Components.ScheduleWhenPlaying : _settings.Current.Components.ScheduleWhenIdle;
     public bool ShowIdleHoliday => HasMedia ? _settings.Current.Components.HolidayWhenPlaying : _settings.Current.Components.HolidayWhenIdle;
     public bool ShowIdleMeeting => HasMedia ? _settings.Current.Components.MeetingWhenPlaying : _settings.Current.Components.MeetingWhenIdle;
+    public bool ShowIdleDisk => HasMedia ? _settings.Current.Components.DiskWhenPlaying : _settings.Current.Components.DiskWhenIdle;
+    public bool ShowIdleInputMethod => HasMedia ? _settings.Current.Components.InputMethodWhenPlaying : _settings.Current.Components.InputMethodWhenIdle;
+    public bool ShowIdleQuickToggles => HasMedia ? _settings.Current.Components.QuickTogglesWhenPlaying : _settings.Current.Components.QuickTogglesWhenIdle;
     public bool ShowAnyWidget => ShowIdleTime || ShowIdleWeather || ShowIdleDate
         || ShowIdleCpu || ShowIdleRam || ShowIdleGpu || ShowIdleNet || ShowIdleBattery || ShowIdleMic || ShowIdleCam
         || ShowIdleVolume || ShowIdleCapsLock || ShowIdleClipboard || ShowIdleTodo
-        || ShowIdleTimer || ShowIdleSchedule || ShowIdleHoliday || ShowIdleMeeting;
+        || ShowIdleTimer || ShowIdleSchedule || ShowIdleHoliday || ShowIdleMeeting || ShowIdleDisk || ShowIdleInputMethod || ShowIdleQuickToggles;
 
     // ── 效率工具 / 波纹 文本 ──
     /// <summary>波纹强度（0..1），由 AudioWaveService 实时采集/模拟，UI 轮询。</summary>
@@ -461,6 +501,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     /// <summary>按 WidgetOrder 重建紧凑胶囊组件顺序（播放时含歌曲信息，闲置时去掉）。</summary>
     private void RebuildCompactItems()
     {
+        // 局部工厂：按组件 Kind 解析显示图标（用户自定义优先，否则默认字形）
+        IslandComponent I(string kind) => new(kind, ComponentIcons.Resolve(kind, _settings.Current.ComponentIcons));
+
         // 读取顺序，并补齐缺失的已知组件（兼容旧配置里只有 Time,Weather 的情况）
         var keys = (_settings.Current.WidgetOrder ?? "Time,Weather,Song")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
@@ -493,34 +536,37 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             {
                 if (!usageInserted && UsageMergeText.Length > 0)
                 {
-                    items.Add(new IslandComponent("Usage"));
+                    items.Add(I("Usage"));
                     usageInserted = true;
                 }
                 continue;
             }
-            if (key == "Time" && ShowIdleTime) items.Add(new IslandComponent("Time"));
-            else if (key == "Weather" && ShowIdleWeather) items.Add(new IslandComponent("Weather"));
-            else if (key == "Date" && ShowIdleDate) items.Add(new IslandComponent("Date"));
-            else if (key == "Cpu" && ShowIdleCpu) items.Add(new IslandComponent("Cpu"));
-            else if (key == "Ram" && ShowIdleRam) items.Add(new IslandComponent("Ram"));
-            else if (key == "Gpu" && ShowIdleGpu) items.Add(new IslandComponent("Gpu"));
-            else if (key == "Mic" && ShowIdleMic && !string.IsNullOrEmpty(MicText)) items.Add(new IslandComponent("Mic"));
-            else if (key == "Cam" && ShowIdleCam && !string.IsNullOrEmpty(CamText)) items.Add(new IslandComponent("Cam"));
-            else if (key == "Net" && ShowIdleNet) items.Add(new IslandComponent("Net"));
-            else if (key == "Battery" && ShowIdleBattery) items.Add(new IslandComponent("Battery"));
-            else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(new IslandComponent("Song"));
-            else if (key == "CapsLock" && ShowIdleCapsLock && !string.IsNullOrEmpty(CapsLockText)) items.Add(new IslandComponent("CapsLock"));
-            else if (key == "ScreenCap" && _settings.Current.ScreenCaptureNotifyEnabled && !string.IsNullOrEmpty(ScreenshotStatusText)) items.Add(new IslandComponent("ScreenCap"));
-            else if (key == "Recording" && _settings.Current.ScreenCaptureNotifyEnabled && !string.IsNullOrEmpty(RecordingText)) items.Add(new IslandComponent("Recording"));
-            else if (key == "VolumeTemp" && _settings.Current.VolumeTempIndicatorEnabled && !string.IsNullOrEmpty(VolumeTempText)) items.Add(new IslandComponent("VolumeTemp"));
-            else if (key == "FileCopy" && _settings.Current.FileCopyNotifyEnabled && !string.IsNullOrEmpty(FileCopyText)) items.Add(new IslandComponent("FileCopy"));
-            else if (key == "Download" && _settings.Current.DownloadProgressEnabled && !string.IsNullOrEmpty(DownloadText)) items.Add(new IslandComponent("Download"));
-            else if (key == "Clipboard" && ShowIdleClipboard && !string.IsNullOrEmpty(ClipboardSummary)) items.Add(new IslandComponent("Clipboard"));
-            else if (key == "Todo" && ShowIdleTodo && !string.IsNullOrEmpty(TodoSummary)) items.Add(new IslandComponent("Todo"));
-            else if (key == "Timer" && ShowIdleTimer && !string.IsNullOrEmpty(TimerText)) items.Add(new IslandComponent("Timer"));
-            else if (key == "Schedule" && ShowIdleSchedule && !string.IsNullOrEmpty(ScheduleSummary)) items.Add(new IslandComponent("Schedule"));
-            else if (key == "Holiday" && ShowIdleHoliday && !string.IsNullOrEmpty(HolidayText)) items.Add(new IslandComponent("Holiday"));
-            else if (key == "Meeting" && ShowIdleMeeting && !string.IsNullOrEmpty(MeetingText)) items.Add(new IslandComponent("Meeting"));
+            if (key == "Time" && ShowIdleTime) items.Add(I("Time"));
+            else if (key == "Weather" && ShowIdleWeather) items.Add(I("Weather"));
+            else if (key == "Date" && ShowIdleDate) items.Add(I("Date"));
+            else if (key == "Cpu" && ShowIdleCpu) items.Add(I("Cpu"));
+            else if (key == "Ram" && ShowIdleRam) items.Add(I("Ram"));
+            else if (key == "Gpu" && ShowIdleGpu) items.Add(I("Gpu"));
+            else if (key == "Mic" && ShowIdleMic && !string.IsNullOrEmpty(MicText)) items.Add(I("Mic"));
+            else if (key == "Cam" && ShowIdleCam && !string.IsNullOrEmpty(CamText)) items.Add(I("Cam"));
+            else if (key == "Net" && ShowIdleNet) items.Add(I("Net"));
+            else if (key == "Battery" && ShowIdleBattery) items.Add(I("Battery"));
+            else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(I("Song"));
+            else if (key == "CapsLock" && ShowIdleCapsLock && !string.IsNullOrEmpty(CapsLockText)) items.Add(I("CapsLock"));
+            else if (key == "ScreenCap" && _settings.Current.ScreenCaptureNotifyEnabled && !string.IsNullOrEmpty(ScreenshotStatusText)) items.Add(I("ScreenCap"));
+            else if (key == "Recording" && _settings.Current.ScreenCaptureNotifyEnabled && !string.IsNullOrEmpty(RecordingText)) items.Add(I("Recording"));
+            else if (key == "VolumeTemp" && _settings.Current.VolumeTempIndicatorEnabled && !string.IsNullOrEmpty(VolumeTempText)) items.Add(I("VolumeTemp"));
+            else if (key == "FileCopy" && _settings.Current.FileCopyNotifyEnabled && !string.IsNullOrEmpty(FileCopyText)) items.Add(I("FileCopy"));
+            else if (key == "Download" && _settings.Current.DownloadProgressEnabled && !string.IsNullOrEmpty(DownloadText)) items.Add(I("Download"));
+            else if (key == "Clipboard" && ShowIdleClipboard && !string.IsNullOrEmpty(ClipboardSummary)) items.Add(I("Clipboard"));
+            else if (key == "Todo" && ShowIdleTodo && !string.IsNullOrEmpty(TodoSummary)) items.Add(I("Todo"));
+            else if (key == "Timer" && ShowIdleTimer && !string.IsNullOrEmpty(TimerText)) items.Add(I("Timer"));
+            else if (key == "Schedule" && ShowIdleSchedule && !string.IsNullOrEmpty(ScheduleSummary)) items.Add(I("Schedule"));
+            else if (key == "Holiday" && ShowIdleHoliday && !string.IsNullOrEmpty(HolidayText)) items.Add(I("Holiday"));
+            else if (key == "Meeting" && ShowIdleMeeting && !string.IsNullOrEmpty(MeetingText)) items.Add(I("Meeting"));
+            else if (key == "Disk" && ShowIdleDisk) items.Add(I("Disk"));
+            else if (key == "InputMethod" && ShowIdleInputMethod) items.Add(I("InputMethod"));
+            else if (key == "QuickToggles" && ShowIdleQuickToggles) items.Add(I("QuickToggles"));
         }
 
         // 内容未变化时不重建，避免每个快照（每秒）都重创建组件导致闪烁
@@ -635,6 +681,50 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                     LowBatteryRequested?.Invoke((int)battery);
                 }
                 if (battery > _settings.Current.LowBatteryThreshold + 5) _lowBatteryNotified = false;
+            }
+
+            // 充电完成提醒（每个充电周期提醒一次；连接电源且电量达到阈值时）
+            if (hasBattery && _settings.Current.ChargedNotifyEnabled && _settings.Current.ChargedThreshold > 0)
+            {
+                var acOnline = ps.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
+                if (!_chargedNotified && acOnline && battery >= _settings.Current.ChargedThreshold)
+                {
+                    _chargedNotified = true;
+                    ChargedRequested?.Invoke((int)Math.Round(battery));
+                }
+                if (!acOnline || battery < _settings.Current.ChargedThreshold - 5) _chargedNotified = false;
+            }
+
+            // 磁盘剩余空间（系统盘；仅组件开启或提醒开启时查询，查询开销小）
+            if (ShowIdleDisk || _settings.Current.DiskAlertEnabled)
+            {
+                try
+                {
+                    var root = Path.GetPathRoot(Environment.SystemDirectory);
+                    if (root is not null)
+                    {
+                        var di = new DriveInfo(root);
+                        if (di.IsReady)
+                        {
+                            var freeGb = di.AvailableFreeSpace / (1024d * 1024d * 1024d);
+                            var totalGb = di.TotalSize / (1024d * 1024d * 1024d);
+                            DiskText = $"{root.TrimEnd('\\')} {freeGb:0}GB / {totalGb:0}GB";
+                            // 剩余空间低于阈值提醒（恢复后复位，每个周期只提醒一次）
+                            if (_settings.Current.DiskAlertEnabled && _settings.Current.DiskAlertThresholdGB > 0)
+                            {
+                                if (!_diskAlertNotified && freeGb < _settings.Current.DiskAlertThresholdGB)
+                                {
+                                    _diskAlertNotified = true;
+                                    DiskLowRequested?.Invoke((int)Math.Floor(freeGb));
+                                }
+                                if (freeGb > _settings.Current.DiskAlertThresholdGB + 5) _diskAlertNotified = false;
+                            }
+                        }
+                        else DiskText = string.Empty;
+                    }
+                    else DiskText = string.Empty;
+                }
+                catch { DiskText = string.Empty; }
             }
 
             // CPU / 内存（每 2 秒；计数器实例复用，避免首次采样为 0）
@@ -767,17 +857,100 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public string NetCurvePoints { get => _netCurvePoints; private set => Set(ref _netCurvePoints, value); }
     private string _batteryText = string.Empty;
     public string BatteryText { get => _batteryText; private set => Set(ref _batteryText, value); }
+    private string _inputMethodText = string.Empty;
+    /// <summary>输入法状态文本（如「中 · 微软拼音」）。</summary>
+    public string InputMethodText { get => _inputMethodText; private set => Set(ref _inputMethodText, value); }
+    /// <summary>输入法组件提示（点击切换中/英）。</summary>
+    public string InputMethodHint => Localization.Get("Comp_InputMethodHint");
+    private string _quickWifiText = string.Empty;
+    /// <summary>快捷开关：WiFi 状态文本（如「WiFi 开」）。</summary>
+    public string QuickWifiText { get => _quickWifiText; private set => Set(ref _quickWifiText, value); }
+    private string _quickBtText = string.Empty;
+    /// <summary>快捷开关：蓝牙状态文本。</summary>
+    public string QuickBtText { get => _quickBtText; private set => Set(ref _quickBtText, value); }
+    private string _quickNightText = string.Empty;
+    /// <summary>快捷开关：夜间模式状态文本。</summary>
+    public string QuickNightText { get => _quickNightText; private set => Set(ref _quickNightText, value); }
+    private string _quickMuteText = string.Empty;
+    /// <summary>快捷开关：静音状态文本。</summary>
+    public string QuickMuteText { get => _quickMuteText; private set => Set(ref _quickMuteText, value); }
+    /// <summary>快捷开关组件提示（点击各开关即时切换）。</summary>
+    public string QuickTogglesHint => Localization.Get("Comp_QuickTogglesHint");
+    private string _diskText = string.Empty;
+    /// <summary>系统盘剩余空间文本（如「C: 385GB / 510GB」；无可用盘符时为空）。</summary>
+    public string DiskText { get => _diskText; private set => Set(ref _diskText, value); }
 
     /// <summary>切歌时触发（参数：歌名、歌手），用于 Now Playing 横幅。</summary>
     public event Action<string, string>? NowPlayingRequested;
     /// <summary>低电量触发（参数：电量百分比）。</summary>
     public event Action<int>? LowBatteryRequested;
+    /// <summary>充电完成触发（参数：电量百分比）。</summary>
+    public event Action<int>? ChargedRequested;
     private bool _lowBatteryNotified;
+    private bool _chargedNotified;
+    /// <summary>磁盘剩余不足触发（参数：剩余 GB）。</summary>
+    public event Action<int>? DiskLowRequested;
+    private bool _diskAlertNotified;
     private string _holidayText = string.Empty;
     public string HolidayText { get => _holidayText; private set => Set(ref _holidayText, value); }
     private string _meetingText = string.Empty;
     /// <summary>会议中状态文本（如「会议中 · Microsoft Teams」；非会议时为空，组件随之消失）。</summary>
     public string MeetingText { get => _meetingText; private set => Set(ref _meetingText, value); }
+
+    // ── 农历 / 节气（纯本地计算，ChineseLunisolarCalendar + 节气近似公式，不联网）──
+    private static readonly string[] LunarMonths =
+        { "正月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "冬月", "腊月" };
+    private static readonly string[] LunarDays =
+        { "初一", "初二", "初三", "初四", "初五", "初六", "初七", "初八", "初九", "初十",
+          "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八", "十九", "二十",
+          "廿一", "廿二", "廿三", "廿四", "廿五", "廿六", "廿七", "廿八", "廿九", "三十" };
+    private static readonly string[] SolarTermNames =
+        { "小寒", "大寒", "立春", "雨水", "惊蛰", "春分", "清明", "谷雨", "立夏", "小满", "芒种", "夏至",
+          "小暑", "大暑", "立秋", "处暑", "白露", "秋分", "寒露", "霜降", "立冬", "小雪", "大雪", "冬至" };
+    // 24 节气日期近似公式常数（平气法，1900-2100 误差 ≤1 天）
+    private static readonly double[] SolarTermBase =
+        { 0, 21208, 42467, 63836, 85337, 107014, 128867, 150921, 173149, 195551, 218072, 240693,
+          263343, 285989, 308563, 331033, 353350, 375494, 397447, 419210, 440795, 462224, 483532, 504758 };
+
+    /// <summary>日期组件文本：公历 + 农历月日（+ 当日节气）。</summary>
+    private string FormatDateText(DateTime now)
+    {
+        var baseText = now.ToString("M月d日 ddd", System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
+        if (!_settings.Current.ShowLunarOnDate) return baseText;
+        try
+        {
+            var cal = new System.Globalization.ChineseLunisolarCalendar();
+            var year = cal.GetYear(now);
+            var monthVal = cal.GetMonth(now);
+            var leap = cal.IsLeapMonth(year, monthVal);
+            var monthNum = leap ? monthVal - 1 : monthVal;
+            var lunar = (leap ? "闰" : "") + LunarMonths[Math.Clamp(monthNum, 1, 12) - 1]
+                + LunarDays[Math.Clamp(cal.GetDayOfMonth(now), 1, 30) - 1];
+            var suffix = " 农历" + lunar;
+            var term = SolarTermOf(now);
+            if (term.Length > 0) suffix += " · " + term;
+            return baseText + suffix;
+        }
+        catch { return baseText; } // 计算失败优雅降级为纯公历
+    }
+
+    /// <summary>当日节气名（不是节气返回空字符串）。</summary>
+    private static string SolarTermOf(DateTime now)
+    {
+        try
+        {
+            var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var baseMs = new DateTime(1900, 1, 6, 2, 5, 0, DateTimeKind.Utc).Subtract(epoch).TotalMilliseconds;
+            for (int i = 0; i < SolarTermBase.Length; i++)
+            {
+                var ms = 31556925974.7 * (now.Year - 1900) + SolarTermBase[i] * 60000 + baseMs;
+                var d = DateTimeOffset.FromUnixTimeMilliseconds((long)ms).UtcDateTime;
+                if (d.Month == now.Month && d.Day == now.Day) return SolarTermNames[i];
+            }
+            return string.Empty;
+        }
+        catch { return string.Empty; }
+    }
 
     /// <summary>内置节假日表（年份+公历/农历日期整理，纯本地不联网；如需可自行补充条目）。</summary>
     private static readonly (string Name, int Year, int Month, int Day)[] HolidayTable =
@@ -1669,7 +1842,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         var comp = _settings.Current.Components;
         // 空闲时是否有任意组件（或常驻/旧开关）需要显示
         var anyIdleComp = comp.TimeWhenIdle || comp.WeatherWhenIdle || comp.CoverWhenIdle
-            || comp.TitleWhenIdle || comp.ArtistWhenIdle || comp.LyricsWhenIdle || comp.ProgressWhenIdle;
+            || comp.TitleWhenIdle || comp.ArtistWhenIdle || comp.LyricsWhenIdle || comp.ProgressWhenIdle
+            || comp.DiskWhenIdle;
         var showWidgets = !hasMedia && (_settings.Current.ShowWidgetsWhenNoMedia || alwaysVisible || anyIdleComp);
         ShowIdleWidgets = !hasMedia; // 空闲面板可见性（内部按组件勾选）
 
@@ -1717,10 +1891,100 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowIdleTimer));
         OnPropertyChanged(nameof(ShowIdleSchedule));
         OnPropertyChanged(nameof(ShowIdleHoliday));
+        OnPropertyChanged(nameof(ShowIdleMeeting));
+        OnPropertyChanged(nameof(ShowIdleDisk));
+        OnPropertyChanged(nameof(ShowIdleInputMethod));
+        OnPropertyChanged(nameof(ShowIdleQuickToggles));
         OnPropertyChanged(nameof(HolidayText));
         OnPropertyChanged(nameof(VolumeText));
 
         IsVisible = show;
+    }
+
+    /// <summary>点击输入法组件：切换中/英输入法后立即刷新状态文本。</summary>
+    public void ToggleInputMethod()
+    {
+        InputMethodMonitor.ToggleChineseEnglish();
+        InputMethodText = InputMethodMonitor.GetStatusText();
+    }
+
+    /// <summary>刷新快捷开关状态文本（Radio 2 秒缓存，其余本地即时读取；值不变不触发通知）。</summary>
+    public async void RefreshQuickToggles()
+    {
+        try
+        {
+            await QuickSwitchService.RefreshRadiosAsync();
+            QuickWifiText = FormatQuickSwitch("Quick_Wifi", QuickSwitchService.HasWifi, QuickSwitchService.IsWifiOn);
+            QuickBtText = FormatQuickSwitch("Quick_Bluetooth", QuickSwitchService.HasBluetooth, QuickSwitchService.IsBluetoothOn);
+            QuickNightText = Localization.Get("Quick_Night") + " " + (QuickSwitchService.IsNightMode ? Localization.Get("Quick_On") : Localization.Get("Quick_Off"));
+            QuickMuteText = Localization.Get("Quick_Mute") + " " + (QuickSwitchService.IsMuted ? Localization.Get("Quick_On") : Localization.Get("Quick_Off"));
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"RefreshQuickToggles failed: {ex.Message}");
+        }
+    }
+
+    private static string FormatQuickSwitch(string nameKey, bool available, bool on)
+    {
+        if (!available) return Localization.Get(nameKey) + " " + Localization.Get("Quick_NA");
+        return Localization.Get(nameKey) + " " + (on ? Localization.Get("Quick_On") : Localization.Get("Quick_Off"));
+    }
+
+    /// <summary>切换歌词翻译显示开关。</summary>
+    public void ToggleLyricTranslation()
+    {
+        ShowLyricTranslation = !ShowLyricTranslation;
+    }
+
+    /// <summary>复制当前歌词句到剪贴板（无歌词时无操作）。</summary>
+    public void CopyCurrentLyric()
+    {
+        try
+        {
+            var text = CurrentLyricText;
+            if (string.IsNullOrEmpty(text)) return;
+            System.Windows.Clipboard.SetText(text);
+            AppLogger.Info("Current lyric copied to clipboard.");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"CopyCurrentLyric failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>点击快捷开关（which: wifi / bluetooth / night / mute）。</summary>
+    public async void ToggleQuickSwitch(string which)
+    {
+        switch (which)
+        {
+            case "wifi":
+                var ok = await QuickSwitchService.SetRadioAsync(false, !QuickSwitchService.IsWifiOn);
+                if (!ok) TryOpenNetworkSettings(); // Radio 不可控（硬件/驱动限制）时兜底：打开系统网络设置
+                break;
+            case "bluetooth":
+                await QuickSwitchService.SetRadioAsync(true, !QuickSwitchService.IsBluetoothOn);
+                break;
+            case "night":
+                QuickSwitchService.ToggleNightMode();
+                break;
+            case "mute":
+                QuickSwitchService.ToggleMute();
+                break;
+        }
+        RefreshQuickToggles();
+    }
+
+    private static void TryOpenNetworkSettings()
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:network-wifi") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"Open network settings failed: {ex.Message}");
+        }
     }
 
     public void ToggleUserVisible()

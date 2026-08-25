@@ -388,6 +388,35 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         e.Handled = true;
     }
 
+    /// <summary>点击输入法组件：切换中/英输入法。</summary>
+    private void InputMethodItem_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.ToggleInputMethod();
+        e.Handled = true;
+    }
+
+    /// <summary>点击快捷开关（Button.Tag: wifi / bluetooth / night / mute）。</summary>
+    private void QuickToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is string which)
+            _vm.ToggleQuickSwitch(which);
+        e.Handled = true;
+    }
+
+    /// <summary>歌词翻译开关：显示 / 隐藏翻译行。</summary>
+    private void LyricTranslate_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.ToggleLyricTranslation();
+        e.Handled = true;
+    }
+
+    /// <summary>复制当前歌词句到剪贴板。</summary>
+    private void CopyCurrentLyric_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.CopyCurrentLyric();
+        e.Handled = true;
+    }
+
 
     /// <summary>上岛推送按钮点击：执行动作（打开 URL / 启动程序）后关闭当前推送。</summary>
     private void PushButton_Click(object sender, RoutedEventArgs e)

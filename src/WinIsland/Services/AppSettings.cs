@@ -65,6 +65,12 @@ public sealed class ComponentFlags
     public bool HolidayWhenPlaying { get; set; } = false;
     public bool MeetingWhenIdle { get; set; } = false;      // 会议中状态（开会静音助手）
     public bool MeetingWhenPlaying { get; set; } = false;
+    public bool DiskWhenIdle { get; set; } = false;         // 磁盘剩余空间（系统盘）
+    public bool DiskWhenPlaying { get; set; } = false;
+    public bool InputMethodWhenIdle { get; set; } = false;   // 输入法状态（中/英 + 输入法名）
+    public bool InputMethodWhenPlaying { get; set; } = false;
+    public bool QuickTogglesWhenIdle { get; set; } = false;  // 快捷开关（WiFi/蓝牙/夜间模式/静音）
+    public bool QuickTogglesWhenPlaying { get; set; } = false;
 }
 /// <summary>Persisted user configuration. JSON at %APPDATA%\WinIsland\settings.json.</summary>
 public sealed class AppSettings
@@ -81,6 +87,9 @@ public sealed class AppSettings
     public double OffsetX { get; set; } = 0;
     public double OffsetY { get; set; } = 8;
     public double Opacity { get; set; } = 0.92;
+
+    // ── 组件图标定制（Key=组件 Kind，Value=图标字符；空字典表示全部用默认字形）──
+    public Dictionary<string, string> ComponentIcons { get; set; } = new();
 
     // ── Behavior ───────────────────────────────────────────────
     public bool IsLocked { get; set; } = true;   // 上锁后不可拖动，解锁后可拖动
@@ -105,6 +114,10 @@ public sealed class AppSettings
     public string HotkeyClipboardPanel { get; set; } = "Ctrl+Alt+V";   // 剪贴板历史面板快捷键
     public bool ClipboardPanelEnabled { get; set; } = true;             // 剪贴板历史面板开关
     public int LowBatteryThreshold { get; set; } = 20;             // 低电量提醒阈值（%）
+    public bool ChargedNotifyEnabled { get; set; } = true;          // 充电完成提醒：连接电源且电量达到阈值时弹一次
+    public int ChargedThreshold { get; set; } = 100;                // 充电完成提醒阈值（%）
+    public bool DiskAlertEnabled { get; set; } = true;       // 磁盘剩余空间不足提醒
+    public int DiskAlertThresholdGB { get; set; } = 10;      // 磁盘剩余空间提醒阈值（GB）
     public bool ShowWhenPaused { get; set; } = true;
     public bool StartWithWindows { get; set; } = false;
     public bool StartHidden { get; set; } = false;
@@ -114,6 +127,7 @@ public sealed class AppSettings
     public bool CompactShowTitle { get; set; } = true;
     public bool CompactShowProgress { get; set; } = false;
     public bool SingleLineMode { get; set; } = true;    // 单行模式：紧凑态所有组件一行显示（默认开启）
+    public bool ShowLunarOnDate { get; set; } = true;      // 日期组件附加显示农历与节气
 
     // ── Expanded card sections（展开卡片里可独立开关的区块）──
     public bool ExpandedShowArtTitle { get; set; } = true;   // 大封面 + 歌名/歌手/专辑
@@ -171,6 +185,7 @@ public sealed class AppSettings
     public List<MediaAppEntry> MediaApps { get; set; } = new();
     // ── Notifications ──────────────────────────────────────────
     public bool BluetoothNotifyEnabled { get; set; } = false;   // 蓝牙设备连接/断开提示
+    public bool NetworkNotifyEnabled { get; set; } = true;       // 断网/网络恢复提示
     public bool NotificationTakeoverEnabled { get; set; } = false; // 接管 Windows 通知（尽力而为）
     public int NotificationTimeoutSeconds { get; set; } = 6;      // 横幅显示时长
     public string NotificationPosition { get; set; } = "TopRight"; // TopRight = 右上角

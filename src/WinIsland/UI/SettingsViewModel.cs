@@ -62,6 +62,32 @@ public sealed class ComponentRow : ObservableObject
     public bool Idle { get => _idleGet(_c); set { _idleSet(_c, value); OnPropertyChanged(); _onChanged(this); } }
     public bool Playing { get => _playGet(_c); set { _playSet(_c, value); OnPropertyChanged(); _onChanged(this); } }
 
+    /// <summary>该组件是否支持图标定制（有默认图标才支持）。</summary>
+    public bool SupportsIcon => ComponentIcons.SupportsIcon(Key);
+
+    /// <summary>组件显示图标（写入用户自定义图标字典；清空则恢复默认）。</summary>
+    public string Icon
+    {
+        get
+        {
+            var icons = _settingsGet().ComponentIcons;
+            return icons is not null && icons.TryGetValue(Key, out var v) ? v.Trim() : ComponentIcons.Default(Key);
+        }
+        set
+        {
+            var icons = _settingsGet().ComponentIcons;
+            if (icons is null) return;
+            var trimmed = (value ?? string.Empty).Trim();
+            if (trimmed.Length == 0) icons.Remove(Key);
+            else icons[Key] = trimmed;
+            OnPropertyChanged();
+            _onChanged(this);
+        }
+    }
+
+    /// <summary>图标输入提示（默认字形说明）。</summary>
+    public string IconPlaceholder => SupportsIcon ? ComponentIcons.Default(Key) : string.Empty;
+
     public void RefreshName() => OnPropertyChanged(nameof(Name));
 }
 
@@ -267,6 +293,9 @@ public sealed class SettingsViewModel : ObservableObject
         new("Schedule", "Comp_Schedule", c, x => x.ScheduleWhenIdle, (x, v) => x.ScheduleWhenIdle = v, x => x.ScheduleWhenPlaying, (x, v) => x.ScheduleWhenPlaying = v, sget, _ => RebuildOrderItems()),
         new("Holiday", "Comp_Holiday", c, x => x.HolidayWhenIdle, (x, v) => x.HolidayWhenIdle = v, x => x.HolidayWhenPlaying, (x, v) => x.HolidayWhenPlaying = v, sget, _ => RebuildOrderItems()),
         new("Meeting", "Comp_Meeting", c, x => x.MeetingWhenIdle, (x, v) => x.MeetingWhenIdle = v, x => x.MeetingWhenPlaying, (x, v) => x.MeetingWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Disk", "Comp_Disk", c, x => x.DiskWhenIdle, (x, v) => x.DiskWhenIdle = v, x => x.DiskWhenPlaying, (x, v) => x.DiskWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("InputMethod", "Comp_InputMethod", c, x => x.InputMethodWhenIdle, (x, v) => x.InputMethodWhenIdle = v, x => x.InputMethodWhenPlaying, (x, v) => x.InputMethodWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("QuickToggles", "Comp_QuickToggles", c, x => x.QuickTogglesWhenIdle, (x, v) => x.QuickTogglesWhenIdle = v, x => x.QuickTogglesWhenPlaying, (x, v) => x.QuickTogglesWhenPlaying = v, sget, _ => RebuildOrderItems()),
         };
     }
 
@@ -289,6 +318,9 @@ public sealed class SettingsViewModel : ObservableObject
         ("Schedule", "Comp_Schedule"),
         ("Holiday", "Comp_Holiday"),
         ("Meeting", "Comp_Meeting"),
+        ("Disk", "Comp_Disk"),
+        ("InputMethod", "Comp_InputMethod"),
+        ("QuickToggles", "Comp_QuickToggles"),
         ("Song", "Comp_Song"),
     };
 

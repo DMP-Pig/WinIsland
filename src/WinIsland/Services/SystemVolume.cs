@@ -103,6 +103,29 @@ public static class SystemVolume
         catch { return false; }
     }
 
+    /// <summary>设置系统主音量静音/取消静音。</summary>
+    public static void SetMute(bool muted)
+    {
+        try
+        {
+            var vol = GetEndpointVolume();
+            if (vol is null) return;
+            try
+            {
+                var context = Guid.Empty;
+                vol.SetMute(muted, ref context);
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(vol!);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"SystemVolume.SetMute failed: {ex.Message}");
+        }
+    }
+
 
     // ── 音频输出设备（8 音频输出切换）─────────────────────────────
 

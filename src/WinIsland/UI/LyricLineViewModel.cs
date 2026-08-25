@@ -7,6 +7,7 @@ public sealed class LyricLineViewModel : ObservableObject
 {
     private readonly LyricLine _line;
     private bool _isCurrent;
+    private bool _showTranslation = true;
     private double _highlightFraction;
 
     public LyricLineViewModel(LyricLine line, string? translation = null)
@@ -20,6 +21,13 @@ public sealed class LyricLineViewModel : ObservableObject
 
     /// <summary>翻译行文本（可能为 null）。</summary>
     public string? Translation { get; }
+
+    /// <summary>是否显示翻译行（由「展开歌词快捷操作」的翻译开关统一控制）。</summary>
+    public bool ShowTranslation
+    {
+        get => _showTranslation;
+        set => Set(ref _showTranslation, value);
+    }
 
     public bool HasTranslation => Translation is not null;
 
