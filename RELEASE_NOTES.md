@@ -1,3 +1,23 @@
+## WinIsland 1.0.9beta1（测试版 / Beta）
+
+一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新内容
+- **新组件**：GPU 占用、麦克风 / 摄像头使用中、节假日倒计时、会议中；网络组件可显示最近 32 秒迷你曲线
+- **组件角标**：设置 → 组件可为每个组件填角标文本，紧凑态显示在组件右上角（红色小角标）
+- **双击快捷动作**：设置 → 通用可设双击灵动岛动作为「播放 / 暂停」「打开设置」或「无动作」
+- **开会静音助手**：识别会议窗口（Teams / Zoom / 腾讯会议 / 钉钉 / 飞书 / Webex / Slack / Discord / Google Meet），会议中自动勿扰（纯本地启发式）
+- **屏幕录制 / 截图提示**：PrintScreen 截图提示 + 录制软件（OBS / Bandicam / Xbox Game Bar 等）检测提示
+- **日历事件提醒（.ics）**：解析本地 iCalendar 文件，事件到点（可提前 N 分钟）弹横幅，纯本地
+- **RSS 订阅提醒**：轮询 RSS 2.0 / Atom，新条目弹横幅
+- **邮件提醒（POP3）**：只读邮件头，新邮件弹横幅，建议使用授权码
+- **快速启动器（Spotlight 风格）**：`Ctrl+Space` 搜索应用 / 输入网址打开
+- **剪贴板历史面板**：`Ctrl+Alt+V` 独立窗口，点击复制回剪贴板
+- **规则（自动化）**：条件（始终 / 未播放 / 播放中 / 时间段 / 指定媒体程序）× 动作（隐藏 / 强制收起 / 强制显示）
+- **上岛 API v3**：图片（data URI / http）、动态进度（from/to/duration 自动推进）、心跳续期（heartbeat_seconds）、PATCH 部分更新、WebSocket 通道（/v3/ws）
+- **外观**：18 种主题皮肤预设、自定义背景色、4 种动效皮肤、低功耗模式
+- 设置页改为 macOS System Settings 风格（左侧导航 + 右侧内容），所有改动即时生效
+
 ## WinIsland 1.0.7（正式版 / Stable）
 
 一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.

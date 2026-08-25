@@ -125,16 +125,36 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             ClockText = DateTime.Now.ToString("HH:mm");
             DateText = DateTime.Now.ToString("M月d日 ddd", System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
             CheckPushExpiry();
+            if (_activePush is not null) OnPropertyChanged(nameof(ActivePushProgress)); // v3 动态进度按秒推进
             UpdateSystemStats();
             UpdateCapsLockCountdown();
             RefreshClipboardSummary();
             RefreshTodoSummary();
             RefreshScheduleSummary();
             RefreshTimerText();
+            // 开会静音助手：检测前台窗口会议状态（仅勾选组件或开启会议勿扰时才有意义，但检测开销极小）
+            if (ShowIdleMeeting || (_settings.Current.MeetingAssistantEnabled && _settings.Current.MeetingAutoDnd))
+            {
+                MeetingMonitor.SetCustomKeywords(_settings.Current.MeetingKeywords);
+                var meetingChanged = MeetingMonitor.Check();
+                var newMeetingText = MeetingMonitor.IsInMeeting
+                    ? $"{Localization.Get("Comp_Meeting")} · {MeetingMonitor.AppName}"
+                    : string.Empty;
+                if (meetingChanged || MeetingText != newMeetingText)
+                {
+                    MeetingText = newMeetingText;
+                    RebuildCompactItems();
+                }
+            }
             if (ShowIdleWeather && ++_weatherTick % 60 == 1)
             {
                 var w = await _weather.GetWeatherAsync(_settings.Current.WeatherCity);
-                if (w is not null && WeatherText != w) WeatherText = w; // 失败保留旧值，避免天气忽有忽无
+                if (w is not null) // 失败保留旧值，避免天气忽有忽无
+                {
+                    _weatherInfo = w;
+                    WeatherText = FormatWeatherCompact(w);
+                    WeatherDetailText = FormatWeatherDetail(w);
+                }
             }
         };
         _widgetTimer.Start();
@@ -344,11 +364,14 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private string _clockText = string.Empty;
     public string ClockText { get => _clockText; private set => Set(ref _clockText, value); }
 
+    private WeatherInfo? _weatherInfo;
     private string _weatherText = string.Empty;
     public string WeatherText { get => _weatherText; private set => Set(ref _weatherText, value); }
+    private string _weatherDetailText = string.Empty;
+    public string WeatherDetailText { get => _weatherDetailText; private set => Set(ref _weatherDetailText, value); }
 
-    /// <summary>紧凑胶囊里的一个顺序组件。</summary>
-    public sealed record IslandComponent(string Kind); // "Time" | "Weather" | "Song"
+    /// <summary>紧凑胶囊里的一个顺序组件（Badge 为自定义角标文本，空串不显示）。</summary>
+    public sealed record IslandComponent(string Kind, string Badge = ""); // "Time" | "Weather" | "Song"
     // 歌曲相关组件（封面/歌名/歌手/歌词/进度条）：只在播放时显示，固定开启
     public bool ShowCover => HasMedia;
     public bool ShowTitle => HasMedia;
@@ -363,6 +386,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool ShowIdleCpu => HasMedia ? _settings.Current.Components.CpuWhenPlaying : _settings.Current.Components.CpuWhenIdle;
     public bool ShowIdleRam => HasMedia ? _settings.Current.Components.RamWhenPlaying : _settings.Current.Components.RamWhenIdle;
     public bool ShowIdleNet => HasMedia ? _settings.Current.Components.NetWhenPlaying : _settings.Current.Components.NetWhenIdle;
+    public bool ShowIdleGpu => HasMedia ? _settings.Current.Components.GpuWhenPlaying : _settings.Current.Components.GpuWhenIdle;
+    public bool ShowIdleMic => HasMedia ? _settings.Current.Components.MicWhenPlaying : _settings.Current.Components.MicWhenIdle;
+    public bool ShowIdleCam => HasMedia ? _settings.Current.Components.CamWhenPlaying : _settings.Current.Components.CamWhenIdle;
     public bool ShowIdleBattery => HasMedia ? _settings.Current.Components.BatteryWhenPlaying : _settings.Current.Components.BatteryWhenIdle;
     public bool ShowIdleVolume => HasMedia ? _settings.Current.Components.VolumeWhenPlaying : _settings.Current.Components.VolumeWhenIdle;
     public bool ShowIdleCapsLock => HasMedia ? _settings.Current.Components.CapsLockWhenPlaying : _settings.Current.Components.CapsLockWhenIdle;
@@ -371,10 +397,11 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool ShowIdleTimer => HasMedia ? _settings.Current.Components.TimerWhenPlaying : _settings.Current.Components.TimerWhenIdle;
     public bool ShowIdleSchedule => HasMedia ? _settings.Current.Components.ScheduleWhenPlaying : _settings.Current.Components.ScheduleWhenIdle;
     public bool ShowIdleHoliday => HasMedia ? _settings.Current.Components.HolidayWhenPlaying : _settings.Current.Components.HolidayWhenIdle;
+    public bool ShowIdleMeeting => HasMedia ? _settings.Current.Components.MeetingWhenPlaying : _settings.Current.Components.MeetingWhenIdle;
     public bool ShowAnyWidget => ShowIdleTime || ShowIdleWeather || ShowIdleDate
-        || ShowIdleCpu || ShowIdleRam || ShowIdleNet || ShowIdleBattery
+        || ShowIdleCpu || ShowIdleRam || ShowIdleGpu || ShowIdleNet || ShowIdleBattery || ShowIdleMic || ShowIdleCam
         || ShowIdleVolume || ShowIdleCapsLock || ShowIdleClipboard || ShowIdleTodo
-        || ShowIdleTimer || ShowIdleSchedule || ShowIdleHoliday;
+        || ShowIdleTimer || ShowIdleSchedule || ShowIdleHoliday || ShowIdleMeeting;
 
     // ── 效率工具 / 波纹 / 角标 文本 ──
     /// <summary>波纹强度（0..1），由 AudioWaveService 实时采集/模拟，UI 轮询。</summary>
@@ -402,26 +429,31 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         // 读取顺序，并补齐缺失的已知组件（兼容旧配置里只有 Time,Weather 的情况）
         var keys = (_settings.Current.WidgetOrder ?? "Time,Weather,Song")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-        foreach (var known in new[] { "Time", "Weather", "Date", "Cpu", "Ram", "Net", "Battery", "Song", "Volume", "CapsLock", "Clipboard", "Todo", "Timer", "Schedule", "Holiday" })
+        foreach (var known in new[] { "Time", "Weather", "Date", "Cpu", "Ram", "Gpu", "Mic", "Cam", "Net", "Battery", "Song", "Volume", "CapsLock", "Clipboard", "Todo", "Timer", "Schedule", "Holiday", "Meeting" })
             if (!keys.Contains(known)) keys.Add(known);
 
         var items = new List<IslandComponent>();
         foreach (var key in keys)
         {
-            if (key == "Time" && ShowIdleTime) items.Add(new IslandComponent("Time"));
-            else if (key == "Weather" && ShowIdleWeather) items.Add(new IslandComponent("Weather"));
-            else if (key == "Date" && ShowIdleDate) items.Add(new IslandComponent("Date"));
-            else if (key == "Cpu" && ShowIdleCpu) items.Add(new IslandComponent("Cpu"));
-            else if (key == "Ram" && ShowIdleRam) items.Add(new IslandComponent("Ram"));
-            else if (key == "Net" && ShowIdleNet) items.Add(new IslandComponent("Net"));
-            else if (key == "Battery" && ShowIdleBattery) items.Add(new IslandComponent("Battery"));
-            else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(new IslandComponent("Song"));
-            else if (key == "CapsLock" && ShowIdleCapsLock && !string.IsNullOrEmpty(CapsLockText)) items.Add(new IslandComponent("CapsLock"));
-            else if (key == "Clipboard" && ShowIdleClipboard && !string.IsNullOrEmpty(ClipboardSummary)) items.Add(new IslandComponent("Clipboard"));
-            else if (key == "Todo" && ShowIdleTodo && !string.IsNullOrEmpty(TodoSummary)) items.Add(new IslandComponent("Todo"));
-            else if (key == "Timer" && ShowIdleTimer && !string.IsNullOrEmpty(TimerText)) items.Add(new IslandComponent("Timer"));
-            else if (key == "Schedule" && ShowIdleSchedule && !string.IsNullOrEmpty(ScheduleSummary)) items.Add(new IslandComponent("Schedule"));
-            else if (key == "Holiday" && ShowIdleHoliday && !string.IsNullOrEmpty(HolidayText)) items.Add(new IslandComponent("Holiday"));
+            var badge = BadgeFor(key);
+            if (key == "Time" && ShowIdleTime) items.Add(new IslandComponent("Time", badge));
+            else if (key == "Weather" && ShowIdleWeather) items.Add(new IslandComponent("Weather", badge));
+            else if (key == "Date" && ShowIdleDate) items.Add(new IslandComponent("Date", badge));
+            else if (key == "Cpu" && ShowIdleCpu) items.Add(new IslandComponent("Cpu", badge));
+            else if (key == "Ram" && ShowIdleRam) items.Add(new IslandComponent("Ram", badge));
+            else if (key == "Gpu" && ShowIdleGpu) items.Add(new IslandComponent("Gpu", badge));
+            else if (key == "Mic" && ShowIdleMic && !string.IsNullOrEmpty(MicText)) items.Add(new IslandComponent("Mic", badge));
+            else if (key == "Cam" && ShowIdleCam && !string.IsNullOrEmpty(CamText)) items.Add(new IslandComponent("Cam", badge));
+            else if (key == "Net" && ShowIdleNet) items.Add(new IslandComponent("Net", badge));
+            else if (key == "Battery" && ShowIdleBattery) items.Add(new IslandComponent("Battery", badge));
+            else if (key == "Song" && HasMedia && _settings.Current.ShowMediaInfo) items.Add(new IslandComponent("Song", badge));
+            else if (key == "CapsLock" && ShowIdleCapsLock && !string.IsNullOrEmpty(CapsLockText)) items.Add(new IslandComponent("CapsLock", badge));
+            else if (key == "Clipboard" && ShowIdleClipboard && !string.IsNullOrEmpty(ClipboardSummary)) items.Add(new IslandComponent("Clipboard", badge));
+            else if (key == "Todo" && ShowIdleTodo && !string.IsNullOrEmpty(TodoSummary)) items.Add(new IslandComponent("Todo", badge));
+            else if (key == "Timer" && ShowIdleTimer && !string.IsNullOrEmpty(TimerText)) items.Add(new IslandComponent("Timer", badge));
+            else if (key == "Schedule" && ShowIdleSchedule && !string.IsNullOrEmpty(ScheduleSummary)) items.Add(new IslandComponent("Schedule", badge));
+            else if (key == "Holiday" && ShowIdleHoliday && !string.IsNullOrEmpty(HolidayText)) items.Add(new IslandComponent("Holiday", badge));
+            else if (key == "Meeting" && ShowIdleMeeting && !string.IsNullOrEmpty(MeetingText)) items.Add(new IslandComponent("Meeting", badge));
         }
 
         // 内容未变化时不重建，避免每个快照（每秒）都重创建组件导致闪烁
@@ -431,17 +463,79 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         CompactItems = items;
     }
 
+    /// <summary>读取组件角标文本（设置里 ComponentBadges 字典，空串/无则返回空）。</summary>
+    private string BadgeFor(string key)
+        => _settings.Current.ComponentBadges.TryGetValue(key, out var b) ? b ?? string.Empty : string.Empty;
+
     private int _statsTick;
     private float? _cpuValue;
-    private long _lastNetBytes;
+    private long _lastNetDownBytes;
+    private long _lastNetUpBytes;
     private DateTime _lastNetTime = DateTime.UtcNow;
+    // 网速迷你曲线：环形缓冲最近 32 秒下行速率（KB/s）
+    private const int NetCurveSamples = 32;
+    private readonly double[] _netCurveSamples = new double[NetCurveSamples];
+    private int _netCurvePos;
     // 性能计数器复用实例：新建实例的第一次 NextValue() 会返回 0，导致 CPU 显示错乱
     private readonly System.Diagnostics.PerformanceCounter? _cpuCounter;
     private readonly System.Diagnostics.PerformanceCounter? _ramCounter;
+    // GPU 占用：读取「GPU Engine」分类下所有 3D 引擎实例的最大利用率（实例随进程启停变化，需定期刷新）
+    private readonly Dictionary<string, System.Diagnostics.PerformanceCounter> _gpuCounters = new();
+    private bool _gpuProbed;
+    private bool _gpuAvailable;
 
     private System.Diagnostics.PerformanceCounter? CreateCounter(string cat, string name, string? inst)
     {
         try { return inst is null ? new System.Diagnostics.PerformanceCounter(cat, name) : new System.Diagnostics.PerformanceCounter(cat, name, inst); }
+        catch { return null; }
+    }
+
+    /// <summary>刷新 GPU 计数器实例并返回当前最大 3D 引擎利用率（%）；本机无 GPU Engine 计数器或新实例预热时返回 null。</summary>
+    private double? SampleGpuUsage()
+    {
+        try
+        {
+            if (!_gpuProbed)
+            {
+                _gpuProbed = true;
+                _gpuAvailable = System.Diagnostics.PerformanceCounterCategory.Exists("GPU Engine");
+                if (!_gpuAvailable) return null;
+            }
+            if (!_gpuAvailable) return null;
+
+            var names = new System.Diagnostics.PerformanceCounterCategory("GPU Engine").GetInstanceNames()
+                .Where(n => n.IndexOf("engtype_3D", StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
+
+            // 清理已退出进程的引擎实例
+            foreach (var k in _gpuCounters.Keys.ToList())
+                if (!names.Contains(k, StringComparer.OrdinalIgnoreCase))
+                {
+                    try { _gpuCounters[k].Dispose(); } catch { }
+                    _gpuCounters.Remove(k);
+                }
+
+            // 新建实例：首次 NextValue() 返回 0，先预热不显示
+            bool created = false;
+            foreach (var n in names)
+            {
+                if (_gpuCounters.ContainsKey(n)) continue;
+                try
+                {
+                    var c = new System.Diagnostics.PerformanceCounter("GPU Engine", "Utilization Percentage", n);
+                    _gpuCounters[n] = c;
+                    created = true;
+                }
+                catch { }
+            }
+            if (created) return null;
+
+            double max = 0;
+            foreach (var c in _gpuCounters.Values)
+            {
+                try { max = Math.Max(max, c.NextValue()); } catch { }
+            }
+            return max;
+        }
         catch { return null; }
     }
 
@@ -453,7 +547,20 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             var ps = System.Windows.Forms.SystemInformation.PowerStatus;
             var hasBattery = ps.BatteryChargeStatus != System.Windows.Forms.BatteryChargeStatus.NoSystemBattery;
             var battery = ps.BatteryLifePercent * 100f;
-            BatteryText = hasBattery ? $"{battery:0}%" : string.Empty;
+            if (hasBattery)
+            {
+                // 电池预估剩余时间（秒 → 时:分；充电中/未知时仅显示百分比）
+                var text = $"{battery:0}%";
+                var remainSecs = ps.BatteryLifeRemaining;
+                if (remainSecs > 0 && battery > 0)
+                {
+                    var ts = TimeSpan.FromSeconds(remainSecs);
+                    var t = ts.TotalHours >= 1 ? $"{(int)ts.TotalHours}:{ts.Minutes:00}" : $"{Math.Max(1, ts.Minutes)}:{ts.Seconds:00}";
+                    text += $" \u00b7 {t}";
+                }
+                BatteryText = text;
+            }
+            else BatteryText = string.Empty;
 
             // 低电量提醒（每个充电周期提醒一次）
             if (hasBattery && _settings.Current.LowBatteryThreshold > 0)
@@ -478,6 +585,20 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                     }
                 }
                 catch { CpuText = "--"; }
+                // GPU：与 CPU 同节奏采样（新实例先预热，避免首采显示 0%）
+                if (ShowIdleGpu)
+                {
+                    var gpu = SampleGpuUsage();
+                    GpuText = gpu.HasValue ? $"{gpu.Value:0}%" : "--";
+                }
+                // 麦克风/摄像头占用（隐私注册表，Start > Stop 表示占用中；仅勾选时轮询）
+                if (ShowIdleMic || ShowIdleCam)
+                {
+                    var (mic, cam) = PrivacyDeviceMonitor.GetUsage();
+                    if (ShowIdleMic) MicText = mic ? Localization.Get("Comp_Mic") : string.Empty;
+                    if (ShowIdleCam) CamText = cam ? Localization.Get("Comp_Cam") : string.Empty;
+                    RebuildCompactItems();
+                }
                 try
                 {
                     if (_ramCounter is not null)
@@ -489,7 +610,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                 catch { RamText = "--"; }
             }
 
-            // 网络速度（每秒）
+            // 网络速度（每秒）：下行文字 + 上行文字 + 迷你曲线
             try
             {
                 var iface = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
@@ -498,17 +619,20 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                 if (iface is not null)
                 {
                     var stats = iface.GetIPv4Statistics();
-                    var bytes = stats.BytesReceived + stats.BytesSent;
                     var now = DateTime.UtcNow;
                     var secs = Math.Max(0.1, (now - _lastNetTime).TotalSeconds);
-                    var kbs = (bytes - _lastNetBytes) / 1024.0 / secs;
-                    _lastNetBytes = bytes;
+                    var downKbs = (stats.BytesReceived - _lastNetDownBytes) / 1024.0 / secs;
+                    var upKbs = (stats.BytesSent - _lastNetUpBytes) / 1024.0 / secs;
+                    _lastNetDownBytes = stats.BytesReceived;
+                    _lastNetUpBytes = stats.BytesSent;
                     _lastNetTime = now;
-                    NetText = kbs >= 1024 ? $"{kbs / 1024:0.0} MB/s" : $"{kbs:0} KB/s";
+                    NetText = FormatKbs(downKbs);
+                    NetTextUp = FormatKbs(upKbs);
+                    PushNetSample(downKbs);
                 }
-                else NetText = string.Empty;
+                else { NetText = string.Empty; NetTextUp = string.Empty; }
             }
-            catch { NetText = string.Empty; }
+            catch { NetText = string.Empty; NetTextUp = string.Empty; }
 
             // 节假日倒计时（仅勾选显示时计算，纯本地）
             if (ShowIdleHoliday)
@@ -521,6 +645,38 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         catch { /* 忽略性能计数器/电量异常 */ }
     }
 
+    private static string FormatKbs(double kbs) =>
+        kbs >= 1024 ? $"{kbs / 1024:0.0} MB/s" : $"{kbs:0} KB/s";
+
+    /// <summary>把一次下行采样推入环形缓冲，并按需重建曲线点串（仅网络组件勾选时才有意义）。</summary>
+    private void PushNetSample(double downKbs)
+    {
+        _netCurveSamples[_netCurvePos] = downKbs;
+        _netCurvePos = (_netCurvePos + 1) % NetCurveSamples;
+        if (_settings.Current.NetCurveEnabled && ShowIdleNet)
+            NetCurvePoints = BuildNetCurvePoints();
+    }
+
+    /// <summary>生成 32 秒下行速率曲线点串（自动按峰值缩放）。</summary>
+    private string BuildNetCurvePoints()
+    {
+        const double w = 64, h = 14;
+        double max = 1.0;
+        foreach (var v in _netCurveSamples) if (v > max) max = v;
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < NetCurveSamples; i++)
+        {
+            var idx = (_netCurvePos + i) % NetCurveSamples;
+            var v = _netCurveSamples[idx];
+            var x = i * (w / (NetCurveSamples - 1));
+            var y = h - (Math.Min(v, max) / max) * (h - 1);
+            sb.Append(x.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)).Append(',')
+              .Append(y.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+            if (i < NetCurveSamples - 1) sb.Append(' ');
+        }
+        return sb.ToString();
+    }
+
     // 组件摆放顺序（WidgetOrder 中的下标决定左右列）
     public double WidgetTimeFontSize => HasMedia ? 14 : 16; // 空闲时钟字号适中，启动不突兀
 
@@ -531,8 +687,20 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public string CpuText { get => _cpuText; private set => Set(ref _cpuText, value); }
     private string _ramText = string.Empty;
     public string RamText { get => _ramText; private set => Set(ref _ramText, value); }
+    private string _gpuText = string.Empty;
+    public string GpuText { get => _gpuText; private set => Set(ref _gpuText, value); }
+    private string _micText = string.Empty;
+    /// <summary>麦克风占用指示文本（占用中显示「麦克风」，否则为空，组件随之出现/消失）。</summary>
+    public string MicText { get => _micText; private set => Set(ref _micText, value); }
+    private string _camText = string.Empty;
+    /// <summary>摄像头占用指示文本（占用中显示「摄像头」，否则为空）。</summary>
+    public string CamText { get => _camText; private set => Set(ref _camText, value); }
     private string _netText = string.Empty;
     public string NetText { get => _netText; private set => Set(ref _netText, value); }
+    private string _netTextUp = string.Empty;
+    public string NetTextUp { get => _netTextUp; private set => Set(ref _netTextUp, value); }
+    private string _netCurvePoints = string.Empty;
+    public string NetCurvePoints { get => _netCurvePoints; private set => Set(ref _netCurvePoints, value); }
     private string _batteryText = string.Empty;
     public string BatteryText { get => _batteryText; private set => Set(ref _batteryText, value); }
 
@@ -543,6 +711,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private bool _lowBatteryNotified;
     private string _holidayText = string.Empty;
     public string HolidayText { get => _holidayText; private set => Set(ref _holidayText, value); }
+    private string _meetingText = string.Empty;
+    /// <summary>会议中状态文本（如「会议中 · Microsoft Teams」；非会议时为空，组件随之消失）。</summary>
+    public string MeetingText { get => _meetingText; private set => Set(ref _meetingText, value); }
 
     /// <summary>内置节假日表（年份+公历/农历日期整理，纯本地不联网；如需可自行补充条目）。</summary>
     private static readonly (string Name, int Year, int Month, int Day)[] HolidayTable =
@@ -587,6 +758,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(ActivePushHasBody));
             OnPropertyChanged(nameof(ActivePushHasProgress));
             OnPropertyChanged(nameof(ActivePushProgress));
+            OnPropertyChanged(nameof(ActivePushHasImage));
+            OnPropertyChanged(nameof(ActivePushImageSource));
             OnPropertyChanged(nameof(ActivePushHasButtons));
             OnPropertyChanged(nameof(ActivePushButtons));
             OnPropertyChanged(nameof(ActivePushHasClick));
@@ -602,8 +775,47 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool ActivePushHasSubtitle => !string.IsNullOrEmpty(ActivePush?.Subtitle);
     public string ActivePushBody => ActivePush?.Body ?? string.Empty;
     public bool ActivePushHasBody => !string.IsNullOrEmpty(ActivePush?.Body);
-    public bool ActivePushHasProgress => ActivePush?.Progress is not null;
-    public double ActivePushProgress => Math.Clamp(ActivePush?.Progress ?? 0, 0, 1);
+    public bool ActivePushHasProgress => ActivePush?.EffectiveProgress is not null;
+    public double ActivePushProgress => Math.Clamp(ActivePush?.EffectiveProgress ?? 0, 0, 1);
+
+    /// <summary>上岛推送图片（v3）：data URI 或 http(s) 链接。</summary>
+    public bool ActivePushHasImage => !string.IsNullOrEmpty(ActivePush?.Image);
+
+    /// <summary>上岛推送图片源：data URI 解码为本地位图；http(s) 直接加载。</summary>
+    public ImageSource? ActivePushImageSource
+    {
+        get
+        {
+            var img = ActivePush?.Image;
+            if (string.IsNullOrWhiteSpace(img)) return null;
+            if (img.StartsWith("data:image", StringComparison.OrdinalIgnoreCase))
+            {
+                var idx = img.IndexOf("base64,", StringComparison.OrdinalIgnoreCase);
+                if (idx < 0) return null;
+                try
+                {
+                    var b64 = img.Substring(idx + 7).Trim();
+                    var bytes = Convert.FromBase64String(b64);
+                    using var ms = new MemoryStream(bytes);
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.StreamSource = ms;
+                    bmp.EndInit();
+                    bmp.Freeze();
+                    return bmp;
+                }
+                catch { return null; }
+            }
+            if (img.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                img.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                try { return new BitmapImage(new Uri(img, UriKind.Absolute)); }
+                catch { return null; }
+            }
+            return null;
+        }
+    }
     public bool ActivePushHasButtons => ActivePush?.Buttons is { Count: > 0 };
     public IReadOnlyList<IslandPushButton> ActivePushButtons
         => (IReadOnlyList<IslandPushButton>)(ActivePush?.Buttons ?? new List<IslandPushButton>());
@@ -620,6 +832,57 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         return w;
     }
 
+    /// <summary>天气图标（按 WMO weather_code 选 emoji）。</summary>
+    private static string WeatherIcon(int code) => code switch
+    {
+        0 => "\u2600\uFE0F",          // ☀️
+        1 => "\uD83C\uDF24\uFE0F",   // 🌤️
+        2 => "\u26C5",                  // ⛅
+        3 => "\u2601\uFE0F",          // ☁️
+        45 or 48 => "\uD83C\uDF2B\uFE0F", // 🌫️
+        >= 51 and <= 57 => "\uD83C\uDF26\uFE0F", // 🌦️
+        >= 61 and <= 67 => "\uD83C\uDF27\uFE0F", // 🌧️
+        >= 71 and <= 77 => "\uD83C\uDF28\uFE0F", // 🌨️
+        >= 80 and <= 82 => "\uD83C\uDF27\uFE0F", // 🌧️
+        85 or 86 => "\uD83C\uDF28\uFE0F",        // 🌨️
+        >= 95 => "\u26C8\uFE0F",      // ⛈️
+        _ => "\uD83C\uDF21\uFE0F",   // 🌡️
+    };
+
+    /// <summary>天气描述（本地化）。</summary>
+    private static string WeatherDesc(int code) => code switch
+    {
+        0 => Localization.Get("Weather_Desc0"),
+        1 or 2 => Localization.Get("Weather_Desc12"),
+        3 => Localization.Get("Weather_Desc3"),
+        45 or 48 => Localization.Get("Weather_Desc45"),
+        >= 51 and <= 57 => Localization.Get("Weather_Desc51"),
+        >= 61 and <= 67 => Localization.Get("Weather_Desc61"),
+        >= 71 and <= 77 => Localization.Get("Weather_Desc71"),
+        >= 80 and <= 82 => Localization.Get("Weather_Desc80"),
+        85 or 86 => Localization.Get("Weather_Desc85"),
+        >= 95 => Localization.Get("Weather_Desc95"),
+        _ => Localization.Get("Weather_Desc12"),
+    };
+
+    /// <summary>紧凑模式天气文案：图标 + 温度 + 描述 + 今日高/低温。</summary>
+    private static string FormatWeatherCompact(WeatherInfo w)
+    {
+        var range = w.Low < w.High ? $" {w.Low:0}/{w.High:0}°" : string.Empty;
+        return $"{WeatherIcon(w.Code)} {w.Temperature:0}° {WeatherDesc(w.Code)}{range}";
+    }
+
+    /// <summary>悬浮提示的完整天气信息（体感 / 湿度 / 风速 / 降水 / 更新时间）。</summary>
+    private string FormatWeatherDetail(WeatherInfo w)
+    {
+        var feels = $"{Localization.Get("Weather_Feels")} {w.FeelsLike:0}°";
+        var hum = $"{Localization.Get("Weather_Humidity")} {w.Humidity:0}%";
+        var wind = $"{Localization.Get("Weather_Wind")} {w.WindSpeed:0}km/h";
+        var precip = $"{Localization.Get("Weather_Precip")} {w.Precipitation:0}mm";
+        var updated = $"{Localization.Get("Weather_Updated")} {w.Updated}";
+        return $"{WeatherDesc(w.Code)} · {string.Join(" · ", feels, hum, wind, precip, updated)}";
+    }
+
     /// <summary>估算紧凑宽度：按激活组件内容（时间/日期/天气/系统状态/歌曲）逐项累加，稳定可靠（不依赖 UI 布局时机）。</summary>
     public double EstimatedCompactWidth
     {
@@ -631,13 +894,17 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                 switch (item.Kind)
                 {
                     case "Time": w += 48; break;
-                    case "Weather": w += Math.Min(MeasureText(WeatherText, 12, 6.5) + 8, 90); break;
+                    case "Weather": w += Math.Min(MeasureText(WeatherText, 12, 6.5) + 8, 140); break;
                     case "Date": w += Math.Min(MeasureText(DateText, 13, 7) + 8, 100); break;
                     case "Cpu": w += MeasureText(CpuText, 11, 6) + 16; break;
                     case "Ram": w += MeasureText(RamText, 11, 6) + 16; break;
+                    case "Gpu": w += MeasureText(GpuText, 11, 6) + 16; break;
+                    case "Mic": w += MeasureText(MicText, 11, 6) + 16; break;
+                    case "Cam": w += MeasureText(CamText, 11, 6) + 16; break;
                     case "Net": w += MeasureText(NetText, 11, 6) + 16; break;
                     case "Battery": w += MeasureText(BatteryText, 11, 6) + 16; break;
                     case "Holiday": w += Math.Min(MeasureText(HolidayText, 12, 6.5) + 8, 120); break;
+                    case "Meeting": w += Math.Min(MeasureText(MeetingText, 11, 6) + 16, 160); break;
                     case "Song":
                         w += 40 + 6
                             + Math.Min(MeasureText(Title, 13, 7), 140)
@@ -1237,7 +1504,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         else if (ruleEval.ForceShow) show = true;
         if (ruleEval.ForceCollapse && IsExpanded) IsExpanded = false;
 
-        if (!ShowIdleWeather) WeatherText = string.Empty; // 仅天气组件不显示时才清空
+        if (!ShowIdleWeather) { WeatherText = string.Empty; WeatherDetailText = string.Empty; } // 仅天气组件不显示时才清空
+        if (!ShowIdleMic) MicText = string.Empty;    // 麦克风/摄像头组件不勾选时清空
+        if (!ShowIdleCam) CamText = string.Empty;
 
         // 通知界面组件可见性变化
         OnPropertyChanged(nameof(ShowCover));
@@ -1252,6 +1521,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(WidgetTimeFontSize));
         OnPropertyChanged(nameof(ShowIdleDate));
         OnPropertyChanged(nameof(ShowIdleCpu));
+        OnPropertyChanged(nameof(ShowIdleMic));
+        OnPropertyChanged(nameof(ShowIdleCam));
         OnPropertyChanged(nameof(ShowIdleRam));
         OnPropertyChanged(nameof(ShowIdleNet));
         OnPropertyChanged(nameof(ShowIdleBattery));

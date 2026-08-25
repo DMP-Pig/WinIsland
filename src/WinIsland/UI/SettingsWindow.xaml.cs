@@ -64,8 +64,10 @@ public partial class SettingsWindow : Window
         MainTabs.SelectedIndex = 0;
 
         ApplyLocalization();
+        TxtMailPass.Password = _vm.Working.MailPassword; // PasswordBox 不支持绑定，回填初值
         RefreshHistory();
         InitAudioOutput();
+        InitCardStyle();
         if (_history is not null) _history.Changed += (_, _) => RefreshHistory();
 
         // 效率工具：初值 + 变动刷新
@@ -328,10 +330,19 @@ public partial class SettingsWindow : Window
         ChkExpandedControls.Content = Localization.Get("MediaInfo_Controls");
         ChkExpandedLyrics.Content = Localization.Get("MediaInfo_Lyrics");
         TxtMediaInfoNote.Text = Localization.Get("MediaInfo_Note");
+        LblCardStyle.Text = Localization.Get("MediaInfo_CardStyle");
+        if (CboCardStyle is not null)
+        {
+            var prev = CboCardStyle.SelectedValue as string;
+            InitCardStyle();
+            CboCardStyle.SelectedValue = prev ?? _vm.Working.ExpandedCardStyle;
+        }
+
         TabComponents.Header = Localization.Get("Settings_Components");
         LblCompName.Text = Localization.Get("Comp_Header_Name");
         LblCompIdle.Text = Localization.Get("Comp_Header_Idle");
         LblCompPlaying.Text = Localization.Get("Comp_Header_Playing");
+        LblCompBadge.Text = Localization.Get("Comp_Header_Badge");
         TxtCompNote.Text = Localization.Get("Comp_Note");
         LblCompOrder.Text = Localization.Get("Comp_OrderHint");
         TabLyrics.Header = Localization.Get("Settings_Lyrics");
@@ -396,6 +407,10 @@ public partial class SettingsWindow : Window
         ChkHideWhenNoMedia.Content = Localization.Get("General_HideWhenNoMedia");
         ChkShowWhenPaused.Content = Localization.Get("General_ShowWhenPaused");
         ChkAlwaysVisible.Content = Localization.Get("General_AlwaysVisible");
+        LblDoubleClick.Text = Localization.Get("General_DoubleClick");
+        CbiDcPlayPause.Content = Localization.Get("DoubleClick_PlayPause");
+        CbiDcOpenSettings.Content = Localization.Get("DoubleClick_OpenSettings");
+        CbiDcNone.Content = Localization.Get("DoubleClick_None");
         ChkReduceMotion.Content = Localization.Get("General_ReduceMotion");
         ChkLowPower.Content = Localization.Get("General_LowPower");
         ChkGlobalHotkeys.Content = Localization.Get("General_GlobalHotkeys");
@@ -405,6 +420,10 @@ public partial class SettingsWindow : Window
         LblHotkeyNext.Text = Localization.Get("General_HotkeyNext");
         LblHotkeyPrev.Text = Localization.Get("General_HotkeyPrev");
         LblHotkeyExpand.Text = Localization.Get("General_HotkeyExpand");
+        ChkQuickLauncher.Content = Localization.Get("General_QuickLauncher");
+        LblHotkeyLauncher.Text = Localization.Get("General_HotkeyLauncher");
+        ChkClipboardPanel.Content = Localization.Get("General_ClipboardPanel");
+        LblHotkeyClipboard.Text = Localization.Get("General_HotkeyClipboard");
         LblLowBattery.Text = Localization.Get("General_LowBattery");
         TxtLowBatteryHint.Text = Localization.Get("General_LowBatteryHint");
         LblHistory.Text = Localization.Get("Notifications_History");
@@ -446,6 +465,8 @@ public partial class SettingsWindow : Window
         TabUpdate.Header = Localization.Get("Settings_Update");
         LblKeyCaps.Text = Localization.Get("General_KeyCaps");
         LblThemePreset.Text = Localization.Get("Appearance_ThemePreset");
+        LblThemeTint.Text = Localization.Get("Appearance_ThemeTint");
+        TxtThemeTintNote.Text = Localization.Get("Appearance_ThemeTintNote");
         LblAnimationStyle.Text = Localization.Get("Appearance_AnimStyle");
         LblFontFamily.Text = Localization.Get("Appearance_FontFamily");
         LblFontScale.Text = Localization.Get("Appearance_FontScale");
@@ -453,6 +474,7 @@ public partial class SettingsWindow : Window
         ChkCoverTint.Content = Localization.Get("Appearance_CoverTint");
         ChkWave.Content = Localization.Get("Wave_Enabled");
         ChkWaveSync.Content = Localization.Get("Wave_Sync");
+        ChkNetCurve.Content = Localization.Get("Appearance_NetCurve");
         LblWaveSensitivity.Text = Localization.Get("Wave_Sensitivity");
         LblWaveHeight.Text = Localization.Get("Wave_Height");
         TxtWaveNote.Text = Localization.Get("Wave_Note");
@@ -463,6 +485,37 @@ public partial class SettingsWindow : Window
         LblDndEnd.Text = Localization.Get("Dnd_End");
         TxtDndNote.Text = Localization.Get("Dnd_Note");
         LblDndAllowlist.Text = Localization.Get("Dnd_Allowlist");
+        LblMeetingTitle.Text = Localization.Get("Meeting_Title");
+        ChkMeetingEnabled.Content = Localization.Get("Meeting_Enabled");
+        ChkMeetingAutoDnd.Content = Localization.Get("Meeting_AutoDnd");
+        LblMeetingKeywords.Text = Localization.Get("Meeting_Keywords");
+        TxtMeetingNote.Text = Localization.Get("Meeting_Note");
+        LblScreenCapTitle.Text = Localization.Get("ScreenCap_Title");
+        ChkScreenCapEnabled.Content = Localization.Get("ScreenCap_Enabled");
+        ChkScreenshotNotify.Content = Localization.Get("ScreenCap_Screenshot");
+        ChkRecordingNotify.Content = Localization.Get("ScreenCap_Recording");
+        TxtScreenCapNote.Text = Localization.Get("ScreenCap_Note");
+        LblCalendarTitle.Text = Localization.Get("Calendar_Title");
+        ChkCalendarEnabled.Content = Localization.Get("Calendar_Enabled");
+        LblCalendarPath.Text = Localization.Get("Calendar_Path");
+        BtnCalendarPick.Content = Localization.Get("Calendar_Browse");
+        LblCalendarAdvance.Text = Localization.Get("Calendar_Advance");
+        TxtCalendarNote.Text = Localization.Get("Calendar_Note");
+        LblRssTitle.Text = Localization.Get("Rss_Title");
+        ChkRssEnabled.Content = Localization.Get("Rss_Enabled");
+        LblRssUrls.Text = Localization.Get("Rss_Urls");
+        LblRssInterval.Text = Localization.Get("Rss_Interval");
+        TxtRssNote.Text = Localization.Get("Rss_Note");
+        LblMailTitle.Text = Localization.Get("Mail_Title");
+        ChkMailEnabled.Content = Localization.Get("Mail_Enabled");
+        LblMailServer.Text = Localization.Get("Mail_Server");
+        ChkMailSsl.Content = Localization.Get("Mail_Ssl");
+        LblMailUser.Text = Localization.Get("Mail_User");
+        LblMailPass.Text = Localization.Get("Mail_Pass");
+        LblMailInterval.Text = Localization.Get("Mail_Interval");
+        TxtMailNote.Text = Localization.Get("Mail_Note");
+
+
         LblProdClipboard.Text = Localization.Get("Prod_Clipboard");
         ChkClipboardEnabled.Content = Localization.Get("Prod_ClipboardEnabled");
         LblClipboardMax.Text = Localization.Get("Prod_ClipboardMax");
@@ -622,6 +675,40 @@ public partial class SettingsWindow : Window
         };
         if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             _vm.Working.LyricsFolder = dlg.SelectedPath;
+    }
+
+    /// <summary>邮箱密码由 PasswordBox 输入（PasswordBox 不支持绑定），实时写入 Working，随自动保存立即生效。</summary>
+    private void MailPass_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        _vm.Working.MailPassword = TxtMailPass.Password;
+    }
+
+    /// <summary>填充展开卡片模板下拉框（经典/媒体大卡片）。</summary>
+    private void InitCardStyle()
+    {
+        if (CboCardStyle is null) return;
+        CboCardStyle.ItemsSource = new[]
+        {
+            new KeyValuePair<string, string>("Classic", Localization.Get("MediaInfo_CardClassic")),
+            new KeyValuePair<string, string>("Hero", Localization.Get("MediaInfo_CardHero")),
+        };
+        CboCardStyle.DisplayMemberPath = "Value";
+        CboCardStyle.SelectedValuePath = "Key";
+        CboCardStyle.SelectedValue = _vm.Working.ExpandedCardStyle;
+    }
+
+    /// <summary>模板切换即时生效（应用层 Settings.Changed 会刷新展开区块可见性）。</summary>
+    private void CardStyle_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CboCardStyle.SelectedValue is string style && style != _vm.Working.ExpandedCardStyle)
+            _vm.Working.ExpandedCardStyle = style;
+    }
+
+    private void CalendarPick_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new OpenFileDialog { Filter = "iCalendar 文件 (*.ics)|*.ics|所有文件 (*.*)|*.*", DefaultExt = ".ics" };
+        if (dlg.ShowDialog() == true)
+            _vm.Working.CalendarIcsPath = dlg.FileName;
     }
 
     private void OpenConfigFolder_Click(object sender, RoutedEventArgs e)

@@ -71,6 +71,10 @@ public sealed class GlobalHotkeyService : IDisposable
     public event Action? ToggleVisibilityPressed;
     /// <summary>展开 / 收起灵动岛（35 全局快捷键大全新增）。</summary>
     public event Action? ExpandPressed;
+    /// <summary>打开 / 收起快速启动器（Ctrl+Space，Spotlight 风格）。</summary>
+    public event Action? LauncherPressed;
+    /// <summary>打开 / 收起剪贴板历史面板。</summary>
+    public event Action? ClipboardPanelPressed;
 
     /// <summary>启用或禁用全部快捷键。</summary>
     public void SetEnabled(bool enabled)
@@ -89,6 +93,8 @@ public sealed class GlobalHotkeyService : IDisposable
         AddBinding(0xC013, settings.HotkeyPrev, PreviousPressed);
         AddBinding(0xC014, settings.HotkeyToggleVisible, ToggleVisibilityPressed);
         AddBinding(0xC015, settings.HotkeyExpand, ExpandPressed);
+        AddBinding(0xC016, settings.QuickLauncherEnabled ? settings.HotkeyLauncher : "", LauncherPressed);
+        AddBinding(0xC017, settings.ClipboardPanelEnabled ? settings.HotkeyClipboardPanel : "", ClipboardPanelPressed);
         if (_enabled) RegisterAll();
     }
 

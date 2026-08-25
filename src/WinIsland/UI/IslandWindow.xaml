@@ -168,10 +168,15 @@
                         </Border.RenderTransform>
                         <StackPanel VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal">
-                                <Border Width="30" Height="30" CornerRadius="9" Margin="0,0,8,0"
+                                <Border Width="30" Height="30" CornerRadius="9" Margin="0,0,8,0" ClipToBounds="True"
                                         Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
-                                    <TextBlock Text="{Binding ActivePushIcon}" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="White"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <Grid>
+                                        <TextBlock Text="{Binding ActivePushIcon}" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="White"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Visibility="{Binding ActivePushHasImage, Converter={StaticResource BoolToVisInvert}}"/>
+                                        <Image Source="{Binding ActivePushImageSource}" Stretch="UniformToFill"
+                                               Visibility="{Binding ActivePushHasImage, Converter={StaticResource BoolToVis}}"/>
+                                    </Grid>
                                 </Border>
                                 <TextBlock Text="{Binding ActivePushTitle}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                                            Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
@@ -226,7 +231,8 @@
                             </DataTemplate>
                             <DataTemplate x:Key="WeatherItem">
                                 <TextBlock Text="{Binding DataContext.WeatherText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                           FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"
+                                           FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0" TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding DataContext.WeatherDetailText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                            Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                             </DataTemplate>
                             <DataTemplate x:Key="DateItem">
@@ -239,6 +245,30 @@
                                     <TextBlock Text="&#xE950;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.CpuText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="GpuItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.GpuText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="MicItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE720;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.MicText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="CamItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE722;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.CamText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                 </StackPanel>
                             </DataTemplate>
@@ -256,6 +286,12 @@
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.NetText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.NetTextUp, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center" Margin="3,0,0,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <Polyline Points="{Binding DataContext.NetCurvePoints, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                              Stroke="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"
+                                              StrokeThickness="1.5" Width="64" Height="14" Stretch="None" Margin="6,0,0,0"
+                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
                                 </StackPanel>
                             </DataTemplate>
                             <DataTemplate x:Key="BatteryItem">
@@ -319,6 +355,14 @@
                                     <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                     <TextBlock Text="{Binding DataContext.HolidayText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="MeetingItem">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <TextBlock Text="{Binding DataContext.MeetingText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                 </StackPanel>
                             </DataTemplate>
@@ -392,6 +436,7 @@
                         </ItemsControl.Resources>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
+                                <Grid>
                                 <ContentControl Focusable="False" Content="{Binding}">
                                     <ContentControl.Style>
                                         <Style TargetType="ContentControl">
@@ -408,6 +453,15 @@
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Kind}" Value="Cpu">
                                                     <Setter Property="ContentTemplate" Value="{StaticResource CpuItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Gpu">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource GpuItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Mic">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource MicItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Cam">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource CamItem}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Kind}" Value="Ram">
                                                     <Setter Property="ContentTemplate" Value="{StaticResource RamItem}"/>
@@ -439,10 +493,35 @@
                                                 <DataTrigger Binding="{Binding Kind}" Value="Holiday">
                                                     <Setter Property="ContentTemplate" Value="{StaticResource HolidayItem}"/>
                                                 </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Meeting">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource MeetingItem}"/>
+                                                </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </ContentControl.Style>
                                 </ContentControl>
+                                <!-- 自定义组件角标：在设置-组件中填写角标文本后显示在组件右上角 -->
+                                <Border x:Name="CompBadge" MinWidth="15" Height="15" CornerRadius="7.5" Padding="4,0"
+                                        Background="#E81123" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Margin="0,-2,-2,0" RenderTransformOrigin="0.5,0.5" Visibility="Visible">
+                                    <Border.RenderTransform>
+                                        <ScaleTransform x:Name="CompBadgeScale" ScaleX="0.85" ScaleY="0.85"/>
+                                    </Border.RenderTransform>
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Badge}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding Badge}" FontSize="8.5" Foreground="White"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="80"/>
+                                </Border>
+                                </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -516,7 +595,13 @@
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding ActivePushIcon}" FontFamily="Segoe MDL2 Assets" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"
-                                           Foreground="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"/>
+                                           Foreground="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"
+                                           Visibility="{Binding ActivePushHasImage, Converter={StaticResource BoolToVisInvert}}"/>
+                                <Border Width="40" Height="40" CornerRadius="10" Margin="0,0,10,0" ClipToBounds="True"
+                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"
+                                        Visibility="{Binding ActivePushHasImage, Converter={StaticResource BoolToVis}}">
+                                    <Image Source="{Binding ActivePushImageSource}" Stretch="UniformToFill"/>
+                                </Border>
                                 <TextBlock Text="{Binding ActivePushTitle}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"
                                            Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
                                            TextTrimming="CharacterEllipsis"/>
@@ -554,6 +639,44 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </StackPanel>
+                    </Border>
+
+                    <!-- 媒体大卡片模板（Hero）：大封面背景 + 渐变遮罩 + 歌名/歌手/专辑叠加 -->
+                    <Border x:Name="HeroCard" CornerRadius="18" Height="190" Margin="0,0,0,10" ClipToBounds="True"
+                            Visibility="{Binding ExpandedHeroCard, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}">
+                        <Border.Background>
+                            <ImageBrush ImageSource="{Binding Artwork}" Stretch="UniformToFill"
+                                        AlignmentX="Center" AlignmentY="Center">
+                                <ImageBrush.RelativeTransform>
+                                    <ScaleTransform ScaleX="1.06" ScaleY="1.06" CenterX="0.5" CenterY="0.5"/>
+                                </ImageBrush.RelativeTransform>
+                            </ImageBrush>
+                        </Border.Background>
+                        <Grid>
+                            <!-- 无封面时的底色 / 有封面时轻微压暗，保证白色文字可读 -->
+                            <Border Background="#B3101018"/>
+                            <!-- 顶部轻微压暗 -->
+                            <Border Background="#22000000"/>
+                            <!-- 底部渐变遮罩 -->
+                            <Border VerticalAlignment="Bottom" Height="128">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#00000000" Offset="0"/>
+                                        <GradientStop Color="#B3000000" Offset="0.55"/>
+                                        <GradientStop Color="#E6000000" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <!-- 信息叠加 -->
+                            <StackPanel VerticalAlignment="Bottom" Margin="16,0,16,14">
+                                <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="SemiBold"
+                                           Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Artist}" FontSize="12.5" Margin="0,2,0,0"
+                                           Foreground="White" Opacity="0.88" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Album}" FontSize="11" Margin="0,2,0,0"
+                                           Foreground="White" Opacity="0.66" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
                     <!-- 大封面 + 标题/歌手/专辑 -->

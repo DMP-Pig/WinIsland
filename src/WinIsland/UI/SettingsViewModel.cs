@@ -39,6 +39,7 @@ public sealed class ComponentRow : ObservableObject
     private readonly Action<ComponentFlags, bool> _idleSet;
     private readonly Func<ComponentFlags, bool> _playGet;
     private readonly Action<ComponentFlags, bool> _playSet;
+    private readonly Func<AppSettings> _settingsGet;
     private readonly Action<ComponentRow> _onChanged;
 
     public string Key { get; }
@@ -46,12 +47,20 @@ public sealed class ComponentRow : ObservableObject
     public ComponentRow(string key, string nameKey, ComponentFlags c,
         Func<ComponentFlags, bool> idleGet, Action<ComponentFlags, bool> idleSet,
         Func<ComponentFlags, bool> playGet, Action<ComponentFlags, bool> playSet,
-        Action<ComponentRow>? onChanged = null)
+        Func<AppSettings> settingsGet, Action<ComponentRow>? onChanged = null)
     {
         Key = key; _nameKey = nameKey; _c = c;
         _idleGet = idleGet; _idleSet = idleSet;
         _playGet = playGet; _playSet = playSet;
+        _settingsGet = settingsGet;
         _onChanged = onChanged ?? (_ => { });
+    }
+
+    /// <summary>组件角标文本（如 "3" / "!"；空串不显示），写入 Working.ComponentBadges 即时生效。</summary>
+    public string Badge
+    {
+        get => _settingsGet().ComponentBadges.TryGetValue(Key, out var b) ? b ?? string.Empty : string.Empty;
+        set { _settingsGet().ComponentBadges[Key] = value ?? string.Empty; OnPropertyChanged(); }
     }
 
     public string Name => Localization.Get(_nameKey);
@@ -145,6 +154,18 @@ public sealed class SettingsViewModel : ObservableObject
             new EnumOption<string>("Neon", Localization.Get("Appearance_PresetNeon")),
             new EnumOption<string>("Mono", Localization.Get("Appearance_PresetMono")),
             new EnumOption<string>("Grape", Localization.Get("Appearance_PresetGrape")),
+            new EnumOption<string>("Sky", Localization.Get("Appearance_PresetSky")),
+            new EnumOption<string>("Rose", Localization.Get("Appearance_PresetRose")),
+            new EnumOption<string>("Amber", Localization.Get("Appearance_PresetAmber")),
+            new EnumOption<string>("Lime", Localization.Get("Appearance_PresetLime")),
+            new EnumOption<string>("Teal", Localization.Get("Appearance_PresetTeal")),
+            new EnumOption<string>("Lavender", Localization.Get("Appearance_PresetLavender")),
+            new EnumOption<string>("Crimson", Localization.Get("Appearance_PresetCrimson")),
+            new EnumOption<string>("Midnight", Localization.Get("Appearance_PresetMidnight")),
+            new EnumOption<string>("Coffee", Localization.Get("Appearance_PresetCoffee")),
+            new EnumOption<string>("Sakura", Localization.Get("Appearance_PresetSakura")),
+            new EnumOption<string>("Aurora", Localization.Get("Appearance_PresetAurora")),
+            new EnumOption<string>("Custom", Localization.Get("Appearance_PresetCustom")),
         };
         AnimationStyleOptions = new[]
         {
@@ -230,22 +251,30 @@ public sealed class SettingsViewModel : ObservableObject
     private List<ComponentRow> _components = new();
     private List<OrderItem> _orderItems = new();
 
-    private List<ComponentRow> BuildComponents(ComponentFlags c) => new()
+    private List<ComponentRow> BuildComponents(ComponentFlags c)
     {
-        new("Time", "Comp_Time", c, x => x.TimeWhenIdle, (x, v) => x.TimeWhenIdle = v, x => x.TimeWhenPlaying, (x, v) => x.TimeWhenPlaying = v, _ => RebuildOrderItems()),
-        new("Weather", "Comp_Weather", c, x => x.WeatherWhenIdle, (x, v) => x.WeatherWhenIdle = v, x => x.WeatherWhenPlaying, (x, v) => x.WeatherWhenPlaying = v, _ => RebuildOrderItems()),
-        new("Date", "Comp_Date", c, x => x.DateWhenIdle, (x, v) => x.DateWhenIdle = v, x => x.DateWhenPlaying, (x, v) => x.DateWhenPlaying = v, _ => RebuildOrderItems()),
-        new("Cpu", "Comp_Cpu", c, x => x.CpuWhenIdle, (x, v) => x.CpuWhenIdle = v, x => x.CpuWhenPlaying, (x, v) => x.CpuWhenPlaying = v, _ => RebuildOrderItems()),
-        new("Ram", "Comp_Ram", c, x => x.RamWhenIdle, (x, v) => x.RamWhenIdle = v, x => x.RamWhenPlaying, (x, v) => x.RamWhenPlaying = v, _ => RebuildOrderItems()),
-        new("Net", "Comp_Net", c, x => x.NetWhenIdle, (x, v) => x.NetWhenIdle = v, x => x.NetWhenPlaying, (x, v) => x.NetWhenPlaying = v, _ => RebuildOrderItems()),
-        new("Battery", "Comp_Battery", c, x => x.BatteryWhenIdle, (x, v) => x.BatteryWhenIdle = v, x => x.BatteryWhenPlaying, (x, v) => x.BatteryWhenPlaying = v, _ => RebuildOrderItems()),
-        new("CapsLock", "Comp_CapsLock", c, x => x.CapsLockWhenIdle, (x, v) => x.CapsLockWhenIdle = v, x => x.CapsLockWhenPlaying, (x, v) => x.CapsLockWhenPlaying = v, _ => RebuildOrderItems()),
-        new("Clipboard", "Comp_Clipboard", c, x => x.ClipboardWhenIdle, (x, v) => x.ClipboardWhenIdle = v, x => x.ClipboardWhenPlaying, (x, v) => x.ClipboardWhenPlaying = v, _ => RebuildOrderItems()),
-        new("Todo", "Comp_Todo", c, x => x.TodoWhenIdle, (x, v) => x.TodoWhenIdle = v, x => x.TodoWhenPlaying, (x, v) => x.TodoWhenPlaying = v, _ => RebuildOrderItems()),
-        new("Timer", "Comp_Timer", c, x => x.TimerWhenIdle, (x, v) => x.TimerWhenIdle = v, x => x.TimerWhenPlaying, (x, v) => x.TimerWhenPlaying = v, _ => RebuildOrderItems()),
-        new("Schedule", "Comp_Schedule", c, x => x.ScheduleWhenIdle, (x, v) => x.ScheduleWhenIdle = v, x => x.ScheduleWhenPlaying, (x, v) => x.ScheduleWhenPlaying = v, _ => RebuildOrderItems()),
-        new("Holiday", "Comp_Holiday", c, x => x.HolidayWhenIdle, (x, v) => x.HolidayWhenIdle = v, x => x.HolidayWhenPlaying, (x, v) => x.HolidayWhenPlaying = v, _ => RebuildOrderItems()),
-    };
+        Func<AppSettings> sget = () => Working;
+        return new()
+        {
+        new("Time", "Comp_Time", c, x => x.TimeWhenIdle, (x, v) => x.TimeWhenIdle = v, x => x.TimeWhenPlaying, (x, v) => x.TimeWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Weather", "Comp_Weather", c, x => x.WeatherWhenIdle, (x, v) => x.WeatherWhenIdle = v, x => x.WeatherWhenPlaying, (x, v) => x.WeatherWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Date", "Comp_Date", c, x => x.DateWhenIdle, (x, v) => x.DateWhenIdle = v, x => x.DateWhenPlaying, (x, v) => x.DateWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Cpu", "Comp_Cpu", c, x => x.CpuWhenIdle, (x, v) => x.CpuWhenIdle = v, x => x.CpuWhenPlaying, (x, v) => x.CpuWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Ram", "Comp_Ram", c, x => x.RamWhenIdle, (x, v) => x.RamWhenIdle = v, x => x.RamWhenPlaying, (x, v) => x.RamWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Gpu", "Comp_Gpu", c, x => x.GpuWhenIdle, (x, v) => x.GpuWhenIdle = v, x => x.GpuWhenPlaying, (x, v) => x.GpuWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Mic", "Comp_Mic", c, x => x.MicWhenIdle, (x, v) => x.MicWhenIdle = v, x => x.MicWhenPlaying, (x, v) => x.MicWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Cam", "Comp_Cam", c, x => x.CamWhenIdle, (x, v) => x.CamWhenIdle = v, x => x.CamWhenPlaying, (x, v) => x.CamWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Net", "Comp_Net", c, x => x.NetWhenIdle, (x, v) => x.NetWhenIdle = v, x => x.NetWhenPlaying, (x, v) => x.NetWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Battery", "Comp_Battery", c, x => x.BatteryWhenIdle, (x, v) => x.BatteryWhenIdle = v, x => x.BatteryWhenPlaying, (x, v) => x.BatteryWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("CapsLock", "Comp_CapsLock", c, x => x.CapsLockWhenIdle, (x, v) => x.CapsLockWhenIdle = v, x => x.CapsLockWhenPlaying, (x, v) => x.CapsLockWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Clipboard", "Comp_Clipboard", c, x => x.ClipboardWhenIdle, (x, v) => x.ClipboardWhenIdle = v, x => x.ClipboardWhenPlaying, (x, v) => x.ClipboardWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Todo", "Comp_Todo", c, x => x.TodoWhenIdle, (x, v) => x.TodoWhenIdle = v, x => x.TodoWhenPlaying, (x, v) => x.TodoWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Timer", "Comp_Timer", c, x => x.TimerWhenIdle, (x, v) => x.TimerWhenIdle = v, x => x.TimerWhenPlaying, (x, v) => x.TimerWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Schedule", "Comp_Schedule", c, x => x.ScheduleWhenIdle, (x, v) => x.ScheduleWhenIdle = v, x => x.ScheduleWhenPlaying, (x, v) => x.ScheduleWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Holiday", "Comp_Holiday", c, x => x.HolidayWhenIdle, (x, v) => x.HolidayWhenIdle = v, x => x.HolidayWhenPlaying, (x, v) => x.HolidayWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        new("Meeting", "Comp_Meeting", c, x => x.MeetingWhenIdle, (x, v) => x.MeetingWhenIdle = v, x => x.MeetingWhenPlaying, (x, v) => x.MeetingWhenPlaying = v, sget, _ => RebuildOrderItems()),
+        };
+    }
 
     private static readonly (string Key, string NameKey)[] OrderDefs =
     {
@@ -254,6 +283,9 @@ public sealed class SettingsViewModel : ObservableObject
         ("Date", "Comp_Date"),
         ("Cpu", "Comp_Cpu"),
         ("Ram", "Comp_Ram"),
+        ("Gpu", "Comp_Gpu"),
+        ("Mic", "Comp_Mic"),
+        ("Cam", "Comp_Cam"),
         ("Net", "Comp_Net"),
         ("Battery", "Comp_Battery"),
         ("CapsLock", "Comp_CapsLock"),
@@ -262,6 +294,7 @@ public sealed class SettingsViewModel : ObservableObject
         ("Timer", "Comp_Timer"),
         ("Schedule", "Comp_Schedule"),
         ("Holiday", "Comp_Holiday"),
+        ("Meeting", "Comp_Meeting"),
         ("Song", "Comp_Song"),
     };
 

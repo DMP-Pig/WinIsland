@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,7 +30,9 @@ public sealed class IslandApiServer : IDisposable
     private Task? _loop;
     private readonly ConcurrentDictionary<string, IslandPush> _active = new();
     private readonly ConcurrentDictionary<string, long> _order = new();   // id -> 入队序号（同 id 更新保持原位）
+    private readonly ConcurrentDictionary<WebSocket, byte> _wsClients = new();   // WebSocket 订阅端
     private long _seq;   // 入队序号计数器
+    private System.Threading.Timer? _heartbeatTimer;   // 心跳保活检查
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
     public IslandApiServer(SettingsService settings)
@@ -62,6 +66,8 @@ public sealed class IslandApiServer : IDisposable
             IsRunning = true;
             _cts = new CancellationTokenSource();
             _loop = Task.Run(() => AcceptLoopAsync(_cts.Token));
+            // 心跳保活：每 5 秒检查一次，超过 2 倍心跳间隔未续期的推送自动移除
+            _heartbeatTimer = new System.Threading.Timer(_ => CheckHeartbeats(), null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(5));
             AppLogger.Info($"Island API listening on {prefix}");
         }
         catch (Exception ex)
@@ -77,6 +83,10 @@ public sealed class IslandApiServer : IDisposable
         try
         {
             _cts.Cancel();
+            foreach (var ws in _wsClients.Keys) { try { ws.Abort(); } catch { /* ignore */ } }
+            _wsClients.Clear();
+            _heartbeatTimer?.Dispose();
+            _heartbeatTimer = null;
             _listener.Stop();
             _listener.Close();
             IsRunning = false;
@@ -129,13 +139,20 @@ public sealed class IslandApiServer : IDisposable
                 return;
             }
 
-            if (method == "GET" && path == "/v1/island/active")
+            if (method == "GET" && (path == "/v1/island/active" || path == "/v3/island/active"))
             {
                 await WriteJsonAsync(ctx, 200, ActivePushes, ct);
                 return;
             }
 
-            if (method == "POST" && path == "/v1/island/push")
+            // WebSocket 推送通道（v3）：客户端连接后可通过 JSON 消息 push/update/remove
+            if (method == "GET" && path == "/v3/ws" && ctx.Request.IsWebSocketRequest)
+            {
+                await HandleWebSocketAsync(ctx, ct);
+                return;
+            }
+
+            if (method == "POST" && (path == "/v1/island/push" || path == "/v3/island/push"))
             {
                 using var reader = new StreamReader(ctx.Request.InputStream, Encoding.UTF8);
                 var body = await reader.ReadToEndAsync();
@@ -150,12 +167,30 @@ public sealed class IslandApiServer : IDisposable
                 return;
             }
 
+            if (method == "PATCH" && path.StartsWith("/v3/island/push/"))
+            {
+                // v3 部分更新：只覆盖请求体里出现的字段，其余保留（含过期时间/队列位置）
+                var id = Uri.UnescapeDataString(path.Substring("/v3/island/push/".Length));
+                using var reader = new StreamReader(ctx.Request.InputStream, Encoding.UTF8);
+                var body = await reader.ReadToEndAsync();
+                var merged = MergePatch(id, body);
+                if (merged is null)
+                {
+                    await WriteJsonAsync(ctx, 404, new { error = "not found" }, ct);
+                    return;
+                }
+                var updated = AddOrUpdate(merged);
+                await WriteJsonAsync(ctx, 200, new { id = updated.Id, position = PositionOf(updated.Id), expires_at = updated.ExpiresAt }, ct);
+                return;
+            }
+
             if (method == "DELETE" && path.StartsWith("/v1/island/push/"))
             {
                 var id = Uri.UnescapeDataString(path.Substring("/v1/island/push/".Length));
                 _active.TryRemove(id, out _);
                 _order.TryRemove(id, out _);
                 _ = Task.Run(() => PushRemoved?.Invoke(id));
+                BroadcastEvent("push_removed", id);
                 await WriteJsonAsync(ctx, 200, new { ok = true }, ct);
                 return;
             }
@@ -174,6 +209,18 @@ public sealed class IslandApiServer : IDisposable
     public IslandPush AddOrUpdate(IslandPush push)
     {
         if (string.IsNullOrWhiteSpace(push.Id)) push.Id = Guid.NewGuid().ToString("N");
+        push.LastSeenUtc = DateTime.UtcNow;   // 心跳续期
+
+        // v3 动态进度：每次完整更新重置锚点，进度条从 progress_from 自动推进到 progress_to
+        if (push.ProgressDurationSeconds is int dur && dur > 0)
+        {
+            push.ProgressAnchorUtc = DateTime.UtcNow;
+            push.Progress ??= Math.Clamp(push.ProgressFrom ?? 0, 0, 1);
+        }
+        else
+        {
+            push.ProgressAnchorUtc = null;
+        }
 
         if (_active.ContainsKey(push.Id))
         {
@@ -191,6 +238,7 @@ public sealed class IslandApiServer : IDisposable
 
         _active[push.Id] = push;
         _ = Task.Run(() => PushReceived?.Invoke(push));
+        BroadcastEvent("push_updated", push);
         return push;
     }
 
@@ -201,7 +249,148 @@ public sealed class IslandApiServer : IDisposable
         {
             _order.TryRemove(id, out _);
             PushRemoved?.Invoke(id);
+            BroadcastEvent("push_removed", id);
         }
+    }
+
+    /// <summary>心跳保活检查：配置了 heartbeat_seconds 且超过 2 倍间隔未续期的推送自动移除。</summary>
+    private void CheckHeartbeats()
+    {
+        var now = DateTime.UtcNow;
+        foreach (var kv in _active.ToArray())
+        {
+            var p = kv.Value;
+            if (p.HeartbeatSeconds is int hb && hb > 0 &&
+                (now - p.LastSeenUtc).TotalSeconds > hb * 2.0)
+            {
+                Remove(kv.Key);
+            }
+        }
+    }
+
+    /// <summary>v3 PATCH 部分更新：把请求体字段合并到现有推送，返回合并结果（不存在返回 null）。</summary>
+    private IslandPush? MergePatch(string id, string body)
+    {
+        if (!_active.TryGetValue(id, out var existing)) return null;
+        var merged = JsonNode.Parse(JsonSerializer.Serialize(existing));
+        if (merged is not JsonObject obj) return null;
+        using var doc = JsonDocument.Parse(body);
+        foreach (var prop in doc.RootElement.EnumerateObject())
+            obj[prop.Name] = JsonNode.Parse(prop.Value.GetRawText());
+        return obj.Deserialize<IslandPush>(JsonOpts);
+    }
+
+    /// <summary>WebSocket 端点：双向通道，客户端发 JSON 消息（push/update/remove/ping），服务端回 ok/error 并广播事件。</summary>
+    private async Task HandleWebSocketAsync(HttpListenerContext ctx, CancellationToken ct)
+    {
+        WebSocket ws;
+        try
+        {
+            var wsCtx = await ctx.AcceptWebSocketAsync(null);
+            ws = wsCtx.WebSocket;
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"Island API WS accept: {ex.Message}");
+            return;
+        }
+        _wsClients[ws] = 0;
+        try
+        {
+            var buffer = new byte[128 * 1024];
+            while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
+            {
+                var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None); } catch { /* ignore */ }
+                    break;
+                }
+                if (result.MessageType != WebSocketMessageType.Text) continue;
+                var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                _ = Task.Run(() => HandleWsMessageAsync(ws, text));
+            }
+        }
+        catch (OperationCanceledException) { /* stop */ }
+        catch (Exception ex) { AppLogger.Warn($"Island API WS: {ex.Message}"); }
+        finally
+        {
+            _wsClients.TryRemove(ws, out _);
+            try { ws.Dispose(); } catch { /* ignore */ }
+        }
+    }
+
+    private async Task HandleWsMessageAsync(WebSocket ws, string text)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(text);
+            var root = doc.RootElement;
+            var action = root.TryGetProperty("action", out var a) ? a.GetString() ?? "" : "push";
+            if (action == "ping")
+            {
+                await SendWsAsync(ws, new { type = "ok", action = "ping" });
+                return;
+            }
+            if (action == "remove")
+            {
+                var id = root.TryGetProperty("id", out var rp) ? rp.GetString() ?? "" : "";
+                if (_active.ContainsKey(id))
+                {
+                    Remove(id);
+                    await SendWsAsync(ws, new { type = "ok", action = "remove", id });
+                }
+                else
+                {
+                    await SendWsAsync(ws, new { type = "error", action = "remove", message = "not found" });
+                }
+                return;
+            }
+            // push / update：与 POST /v1/island/push 相同的 JSON 结构，放在 push 字段里
+            var push = root.TryGetProperty("push", out var pr) ? pr.Deserialize<IslandPush>(JsonOpts) : null;
+            if (push is null || string.IsNullOrWhiteSpace(push.Title))
+            {
+                await SendWsAsync(ws, new { type = "error", action = action, message = "title is required" });
+                return;
+            }
+            AddOrUpdate(push);
+            await SendWsAsync(ws, new { type = "ok", action = "push", id = push.Id, position = PositionOf(push.Id), expires_at = push.ExpiresAt });
+        }
+        catch (Exception ex)
+        {
+            try { await SendWsAsync(ws, new { type = "error", message = ex.Message }); } catch { /* ignore */ }
+        }
+    }
+
+    private static async Task SendWsAsync(WebSocket ws, object payload)
+        => await SendWsAsync(ws, JsonSerializer.Serialize(payload));
+
+    private static async Task SendWsAsync(WebSocket ws, string json)
+    {
+        var bytes = Encoding.UTF8.GetBytes(json);
+        try { await ws.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None); }
+        catch { /* 已断开 */ }
+    }
+
+    /// <summary>向所有 WebSocket 订阅端广播推送变更事件。</summary>
+    private void BroadcastEvent(string evt, IslandPush push)
+    {
+        if (_wsClients.IsEmpty) return;
+        var json = JsonSerializer.Serialize(new { type = "event", @event = evt, push });
+        BroadcastJson(json);
+    }
+
+    private void BroadcastEvent(string evt, string id)
+    {
+        if (_wsClients.IsEmpty) return;
+        var json = JsonSerializer.Serialize(new { type = "event", @event = evt, id });
+        BroadcastJson(json);
+    }
+
+    private void BroadcastJson(string json)
+    {
+        foreach (var ws in _wsClients.Keys)
+            _ = Task.Run(() => SendWsAsync(ws, json));
     }
 
     /// <summary>推送在显示队列中的位置（从 1 开始；不在队列中返回 0），用于 POST push 响应。</summary>
@@ -228,5 +417,6 @@ public sealed class IslandApiServer : IDisposable
     {
         Stop();
         _cts.Dispose();
+        _heartbeatTimer?.Dispose();
     }
 }

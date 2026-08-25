@@ -10,7 +10,10 @@ public static class DoNotDisturb
 
     public static bool IsActive(AppSettings s, string? source)
     {
-        if (s.DoNotDisturbManual && !IsAllowlisted(s, source)) return true;
+        if (IsAllowlisted(s, source)) return false;
+        if (s.DoNotDisturbManual) return true;
+        // 开会静音助手：检测到会议时自动勿扰（仅本机前台窗口检测，不联网）
+        if (s.MeetingAssistantEnabled && s.MeetingAutoDnd && MeetingMonitor.IsInMeeting) return true;
         if (!s.DoNotDisturbEnabled) return false;
         var start = Math.Clamp(s.DoNotDisturbStartHour, 0, 23);
         var end = Math.Clamp(s.DoNotDisturbEndHour, 0, 23);

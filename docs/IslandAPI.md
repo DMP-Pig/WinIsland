@@ -15,9 +15,12 @@
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/v1/island/push` | 推送 / 更新一张卡片 |
+| POST | `/v1/island/push` | 推送 / 更新一张卡片（v1 基础字段） |
+| POST | `/v3/island/push` | 推送 / 更新（v1 超集，额外支持图片 / 动态进度 / 心跳） |
+| PATCH | `/v3/island/push/{id}` | 部分更新：只覆盖请求体里出现的字段，其余保留（含过期时间 / 队列位置） |
 | DELETE | `/v1/island/push/{id}` | 移除一张卡片 |
-| GET | `/v1/island/active` | 查询当前活跃卡片 |
+| GET | `/v1/island/active`（或 `/v3/island/active`） | 查询当前活跃卡片 |
+| GET | `/v3/ws` | WebSocket 双向通道：客户端发 JSON 消息，服务端广播事件 |
 | GET | `/v1/health` | 健康检查 |
 
 基址：`http://127.0.0.1:9840`（端口按设置）。
@@ -39,6 +42,10 @@
 | `accent` | 否 | string | 自定义强调色 `#RRGGBB` 或 `#AARRGGBB`，覆盖类型默认色 |
 | `click` | 否 | object | 整卡点击回跳（结构同 `buttons[]` 项）：点击卡片执行该动作 |
 | `expires_at` | 否 | string | 服务端计算（返回用）；请求时忽略 |
+| `image` | 否 | string | 图片：data URI（`data:image/png;base64,...`）或 http(s) 链接（v3，展开态显示） |
+| `progress_from` / `progress_to` | 否 | number | 动态进度段 0~1（v3，配合 `progress_duration_seconds` 自动推进；默认 from=0 / to=1） |
+| `progress_duration_seconds` | 否 | number | 动态进度持续时间（秒）（v3）：设置后进度条从 `progress_from` 自动推进到 `progress_to`，推送方无需反复更新 |
+| `heartbeat_seconds` | 否 | number | 心跳间隔（秒）（v3）：推送方需周期性以同 id 更新续期；超过 2 倍间隔未续期的推送自动移除 |
 
 `buttons[]` 每项：
 
@@ -61,7 +68,37 @@
 | `position` | 该卡片在显示队列中的位置（从 1 开始）；同 ID 重复更新时位置保持不变 |
 | `expires_at` | 过期时间（UTC）。同 ID 更新保留原过期时间，不会续期 |
 
-## 三、各语言示例
+## 三、WebSocket 双向通道（v3）
+
+`GET /v3/ws`（WebSocket，需带 `X-WinIsland-Token` 头（若设置了 Token））。
+
+### 客户端 → 服务端消息（JSON 文本帧）
+
+| `action` | 说明 |
+|---|---|
+| `push` | 推送 / 更新卡片；卡片字段放在 `push` 字段内（结构同 POST /v3/island/push） |
+| `remove` | 移除卡片；带 `id` 字段 |
+| `ping` | 心跳探测，服务端回 `ok` |
+
+```json
+{ "action": "push", "push": { "id": "download-1", "title": "正在下载", "progress_from": 0, "progress_to": 1, "progress_duration_seconds": 60 } }
+{ "action": "update", "push": { "id": "download-1", "title": "下载完成 60%", "progress": 0.6 } }
+{ "action": "remove", "id": "download-1" }
+{ "action": "ping" }
+```
+
+### 服务端 → 客户端事件（广播给所有连接）
+
+| 事件 | 说明 |
+|---|---|
+| `push_updated` | 推送被新增 / 更新（`type: "event"`, `event: "push_updated"`, `push: {...}`） |
+| `push_removed` | 推送被移除 / 过期（`type: "event"`, `event: "push_removed"`, `id: "..."`） |
+
+```json
+{ "type": "event", "event": "push_updated", "push": { "id": "download-1", "title": "正在下载", "progress_from": 0, "progress_to": 1, "progress_duration_seconds": 60, "expires_at": "2026-08-25T10:00:00Z" } }
+```
+
+## 四、各语言示例
 
 仓库内提供可直接运行的示例脚本（见 `docs/sdk-examples/`）：
 `push.bat` / `pull.bat`（curl）、`push.ps1`（PowerShell）、`push.py` / `pull.py`（Python 标准库）。
@@ -147,7 +184,7 @@ fetch("http://127.0.0.1:9840/v1/island/push", {
 });
 ```
 
-## 四、移除 / 查询
+## 五、移除 / 查询
 
 ```powershell
 # 移除
@@ -157,19 +194,24 @@ Invoke-RestMethod -Uri "http://127.0.0.1:9840/v1/island/push/<id>" -Method Delet
 Invoke-RestMethod -Uri "http://127.0.0.1:9840/v1/island/active" -Method Get
 ```
 
-## 五、常见场景
+## 六、常见场景
 
 1. **下载 / 任务进度**：推送带 `progress` 的卡片，同一 `id` 持续更新，完成后 `duration_seconds=5` 短暂停留或直接 DELETE。
 2. **倒计时 / 专注提醒**：推送 `duration_seconds` 为剩余时长，结束自动消失。
 3. **实时状态（如网速、电量、Git 分支）**：设置较长时长或高频率更新同一 `id`。
 4. **操作入口**：用 `buttons` 提供「打开链接」「启动程序」等快捷动作。
+5. **动态进度（v3）**：下载 / 安装 / 渲染等任务只需推一次，设置 `progress_from=0,progress_to=1,progress_duration_seconds=120`，进度条自动推进；中途可 PATCH 覆盖。
+6. **图片卡片（v3）**：二维码、验证码图片、截图等用 `image` 传 data URI 或 http 链接，展开态显示在卡片右侧。
+7. **长驻状态 + 心跳（v3）**：长时间显示的状态（如勿扰中、VPN、监控）设置 `heartbeat_seconds` 并周期以同 id 重新 push/更新续期；停止续期超过 2 倍间隔自动消失，避免残留。
 
-## 六、注意事项
+## 七、注意事项
 
 - 服务仅监听 `127.0.0.1`（本机回环），外部网络无法访问。
 - 若设置了 Token，请求需带请求头 `X-WinIsland-Token: <你的Token>`。
 - `title` 为空会返回 `400`。
 - 同一条推送可反复 `POST`（相同 `id`）更新内容并续期；也可以 `DELETE` 立即移除。
+- v3 支持 `PATCH /v3/island/push/{id}` 部分更新：只覆盖请求体里出现的字段（如只更新 `progress`），未出现的字段（含过期时间、队列位置、图片）保持不变。
+- 心跳：设置了 `heartbeat_seconds` 的推送，`POST` / `PATCH` / WebSocket `push` 都会刷新 `LastSeen`；超过 2 倍间隔未续期会被自动移除。
 - 灵动岛点击展开后显示完整卡片（正文/进度/按钮）；按钮点击后自动关闭该推送。
 
 - **不影响灵动岛宽度**：上岛推送**不会**导致灵动岛宽度变化。灵动岛宽度始终由 WinIsland 的「紧凑长度」设置（自动 / 手动）决定；推送卡片会在固定宽度内自适应显示（标题自动截断、正文换行）。第三方软件无法通过推送改变灵动岛宽度。

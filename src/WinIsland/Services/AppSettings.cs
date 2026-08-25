@@ -39,6 +39,12 @@ public sealed class ComponentFlags
     public bool CpuWhenPlaying { get; set; } = false;
     public bool RamWhenIdle { get; set; } = false;
     public bool RamWhenPlaying { get; set; } = false;
+    public bool GpuWhenIdle { get; set; } = false;
+    public bool GpuWhenPlaying { get; set; } = false;
+    public bool MicWhenIdle { get; set; } = false;
+    public bool MicWhenPlaying { get; set; } = false;
+    public bool CamWhenIdle { get; set; } = false;
+    public bool CamWhenPlaying { get; set; } = false;
     public bool NetWhenIdle { get; set; } = false;
     public bool NetWhenPlaying { get; set; } = false;
     public bool BatteryWhenIdle { get; set; } = false;
@@ -57,6 +63,8 @@ public sealed class ComponentFlags
     public bool ScheduleWhenPlaying { get; set; } = false;
     public bool HolidayWhenIdle { get; set; } = true;   // 节假日倒计时：空闲时显示
     public bool HolidayWhenPlaying { get; set; } = false;
+    public bool MeetingWhenIdle { get; set; } = false;      // 会议中状态（开会静音助手）
+    public bool MeetingWhenPlaying { get; set; } = false;
 }
 /// <summary>Persisted user configuration. JSON at %APPDATA%\WinIsland\settings.json.</summary>
 public sealed class AppSettings
@@ -81,6 +89,7 @@ public sealed class AppSettings
     public bool ShowMediaInfo { get; set; } = true;              // 是否显示媒体播放信息（歌名/封面/歌词等）
     public bool ReduceMotion { get; set; } = false;             // 减少动态效果（无障碍/省电）
     public bool GlobalHotkeysEnabled { get; set; } = true;         // 全局快捷键
+    public string DoubleClickAction { get; set; } = "PlayPause";   // 双击灵动岛快捷动作：PlayPause | OpenSettings | None
     // -- 动效与性能（33 动效皮肤 / 37 低功耗模式）--
     public string AnimationStyle { get; set; } = "Spring";   // Spring | Soft | Elastic | Fade（动效皮肤）
     public bool LowPowerMode { get; set; } = false;          // 低功耗模式：空闲降帧渲染波纹、简化动画
@@ -91,6 +100,10 @@ public sealed class AppSettings
     public string HotkeyNext { get; set; } = "Ctrl+Alt+Right";
     public string HotkeyPrev { get; set; } = "Ctrl+Alt+Left";
     public string HotkeyExpand { get; set; } = "Ctrl+Alt+Space";
+    public string HotkeyLauncher { get; set; } = "Ctrl+Space";          // 快速启动器（注意：Ctrl+Space 与中文输入法切换键冲突时可改其它组合）
+    public bool QuickLauncherEnabled { get; set; } = true;              // 快速启动器开关
+    public string HotkeyClipboardPanel { get; set; } = "Ctrl+Alt+V";   // 剪贴板历史面板快捷键
+    public bool ClipboardPanelEnabled { get; set; } = true;             // 剪贴板历史面板开关
     public int LowBatteryThreshold { get; set; } = 20;             // 低电量提醒阈值（%）
     public bool ShowWhenPaused { get; set; } = true;
     public bool StartWithWindows { get; set; } = false;
@@ -107,6 +120,8 @@ public sealed class AppSettings
     public bool ExpandedShowProgress { get; set; } = true;   // 进度条 + 时间
     public bool ExpandedShowControls { get; set; } = true;   // 控制按钮 + 音量
     public bool ExpandedShowLyrics { get; set; } = true;     // 歌词滚动区
+    public string ExpandedCardStyle { get; set; } = "Classic"; // 展开卡片模板：Classic（经典小封面）| Hero（媒体大卡片）
+
 
     // ── Cider ──────────────────────────────────────────────────
     public bool CiderEnabled { get; set; } = true;
@@ -171,7 +186,9 @@ public sealed class AppSettings
     public List<AppRule> Rules { get; set; } = new();   // 条件满足时自动隐藏/收起/强制显示
 
     // ── 外观增强（主题预设 / 字体 / 字号 / 圆角 / 封面取色）──
-    public string ThemePreset { get; set; } = "Default";   // Default | Ocean | Forest | Sunset | Neon | Mono | Grape
+    public string ThemePreset { get; set; } = "Default";   // 皮肤预设：Default | Ocean | Forest | Sunset | Neon | Mono | Grape | Sky | Rose | Amber | Lime | Teal | Lavender | Crimson | Midnight | Coffee | Sakura | Aurora | Custom
+    public string ThemeTint { get; set; } = "";
+    public Dictionary<string, string> ComponentBadges { get; set; } = new();   // 组件角标：组件键 -> 角标文本（如 "3" / "!"），空串不显示              // 「Custom」自定义皮肤的背景色（#RRGGBB，留空跟随明暗默认底色）
     public string FontFamily { get; set; } = "Segoe UI";   // 界面字体
     public double FontScale { get; set; } = 1.0;           // 字号缩放 0.8 ~ 1.4
     public double CornerRadius { get; set; } = 28;         // 胶囊圆角 16 ~ 40
@@ -182,6 +199,7 @@ public sealed class AppSettings
     public bool WaveSyncEnabled { get; set; } = true;      // 跟随音乐节奏：采集系统输出声音驱动波纹
     public double WaveSensitivity { get; set; } = 1.0;     // 波纹灵敏度 0.2 ~ 3.0
     public double WaveHeight { get; set; } = 1.0;          // 波纹高度 0.4 ~ 1.6
+    public bool NetCurveEnabled { get; set; } = true;      // 网络组件显示迷你曲线图（最近 32 秒）
 
     // ── 勿扰模式 ──
     public bool DoNotDisturbEnabled { get; set; } = false;   // 按时间段自动勿扰
@@ -189,6 +207,33 @@ public sealed class AppSettings
     public int DoNotDisturbStartHour { get; set; } = 22;
     public int DoNotDisturbEndHour { get; set; } = 8;
     public List<string> DnDAllowlist { get; set; } = new();   // 勿扰白名单：来源 exe/AppName（大小写不敏感），白名单内的来源仍弹横幅
+
+    // ── 开会静音助手（会议检测 + 自动勿扰；纯本机启发式，不联网）──
+    public bool MeetingAssistantEnabled { get; set; } = false;   // 总开关：检测会议（默认关，避免误报）
+    public bool MeetingAutoDnd { get; set; } = true;             // 会议中自动开启勿扰（不弹通知横幅）
+    public string MeetingKeywords { get; set; } = "";          // 自定义会议关键词（逗号分隔；留空用内置列表）
+
+    // ── 屏幕录制 / 截图提示（默认关，避免打扰；PrintScreen 钩子 + 录制进程轮询）──
+    public bool ScreenCaptureNotifyEnabled { get; set; } = false;  // 总开关
+    public bool ScreenshotNotifyEnabled { get; set; } = true;      // 按 PrintScreen 截图时提示
+    public bool RecordingNotifyEnabled { get; set; } = true;       // 检测到录制软件时提示
+    // ── 日历事件提醒（.ics 本地解析，默认关）──
+    public bool CalendarEnabled { get; set; } = false;    // 总开关
+    public string CalendarIcsPath { get; set; } = "";     // .ics 日历文件路径
+    public int CalendarAdvanceMinutes { get; set; } = 10; // 提前提醒分钟
+    // ── RSS 订阅 / 邮件提醒（默认关；仅用户开启后联网，不上报数据）──
+    public bool RssNotifyEnabled { get; set; } = false;   // RSS 订阅总开关
+    public string RssUrls { get; set; } = "";             // 逗号分隔的订阅地址（RSS 2.0 / Atom）
+    public int RssIntervalMinutes { get; set; } = 15;     // 轮询间隔（分钟）
+    public bool MailNotifyEnabled { get; set; } = false;  // 邮件提醒总开关（POP3）
+    public string MailPop3Server { get; set; } = "";      // POP3 服务器
+    public int MailPop3Port { get; set; } = 995;          // 端口（995 TLS / 110 明文）
+    public bool MailUseSsl { get; set; } = true;          // 使用 SSL/TLS
+    public string MailUser { get; set; } = "";            // 邮箱账号
+    public string MailPassword { get; set; } = "";        // 密码/授权码（仅存本机配置）
+    public int MailCheckMinutes { get; set; } = 5;        // 检查间隔（分钟）
+
+
 
     // ── 效率工具 ──
     public bool ClipboardHistoryEnabled { get; set; } = false;  // 剪贴板历史（默认关，随需开启）
@@ -210,6 +255,7 @@ public sealed class AppSettings
         var c = (AppSettings)MemberwiseClone();
         c.DnDAllowlist = new List<string>(DnDAllowlist);
         c.MediaApps = new List<MediaAppEntry>(MediaApps);
+        c.ComponentBadges = new Dictionary<string, string>(ComponentBadges);
         c.Rules = Rules.Where(r => r is not null).Select(r => new AppRule
         {
             Enabled = r.Enabled, Name = r.Name, Condition = r.Condition,
@@ -253,6 +299,7 @@ public sealed class SettingsService
                 {
                     // 兼容旧配置：补齐新增字段
                     loaded.Components ??= new ComponentFlags();
+                    loaded.ComponentBadges ??= new Dictionary<string, string>();
                     return loaded;
                 }
             }

@@ -44,12 +44,13 @@
 
 ### P1（已实现）
 - **组件系统（自定义灵动岛内容）**：设置 → 组件，可分别勾选「无歌曲播放时 / 有歌曲播放时」显示哪些组件，并拖拽调整摆放顺序：
-  - 时间、天气（Open-Meteo，需填写城市并联网）、日期、CPU 占用、内存占用、网络速度、电量、音量、键盘指示灯（CapsLock）、剪贴板、待办、番茄钟、日程；
+  - 时间、天气（Open-Meteo，需填写城市并联网）、日期、CPU 占用、GPU 占用、内存占用、网络速度（可显示最近 32 秒迷你曲线）、电量、音量、键盘指示灯（CapsLock）、剪贴板、待办、番茄钟、日程、节假日倒计时、会议中、麦克风、摄像头；
   - 歌曲信息（封面/歌名/歌手/歌词/进度条，仅播放时显示，顺序条中始终保留）。
   - 顺序条只显示已勾选的组件；列表与顺序条支持鼠标滚轮和滚动条。
+  - **组件角标**：设置 → 组件 → `角标` 列可为每个组件填一个短文本（如未读数、❗、日期），显示在组件右上角（红色小角标），留空则不显示。
   - **单行模式**（设置 → 外观，默认开启）：紧凑态所有组件一行显示，未展开时同样显示歌曲信息与当前歌词（逐字卡拉OK高亮），歌词过长自动截断；进度条与完整歌词列表在展开卡片中显示。
 - **展开卡片内容自定义**：封面+标题、进度条、控制按钮与音量、歌词区可分别开关。
-- **外观个性化（现代液态玻璃设置页）**：7 种主题预设（默认 / 海洋 / 森林 / 日落 / 霓虹 / 单色 / 葡萄紫）、自定义字体、字号缩放（0.8–1.4）、圆角半径（16–40）；展开背景可随专辑封面取色；未读通知角标。设置改动即时生效，无需保存。
+- **外观个性化（macOS System Settings 风格设置页）**：左侧导航 + 右侧内容、圆角液态玻璃；**18 种主题皮肤预设**（默认 / 海洋 / 森林 / 日落 / 霓虹 / 单色 / 葡萄紫 / 天空 / 玫瑰 / 琥珀 / 青柠 / 青碧 / 薰衣草 / 绯红 / 午夜 / 咖啡 / 樱花 / 极光 / 自定义）、自定义强调色与背景色（#RRGGBB）、自定义字体、字号缩放（0.8–1.4）、圆角半径（16–40）、**4 种动效皮肤**（iOS 弹簧 / 柔和弹簧 / 弹性回弹 / 简洁渐隐）；展开背景可随专辑封面取色；未读通知角标。**改动即时生效，无“确定 / 完成”按钮**。
 - **声音波纹**：播放媒体时，控制按钮左侧显示随系统音量实时抖动的波纹（设置 → 外观可开关，默认开启）。
 - **效率工具（设置 → 效率工具）**：剪贴板历史（可选开启，最多保留 N 条）、番茄钟计时（工作/休息时长可调）、待办列表、日程提醒；对应组件可放入灵动岛展示。
 - **通知系统（右上角玻璃横幅，带 macOS 风格滑入/滑出动画）**：
@@ -58,7 +59,7 @@
   - 正在播放通知（切歌时弹出）；
   - 低电量提醒（阈值可调，每充电周期提醒一次）；
   - 通知历史：最近 50 条记录，设置中可查看/清空。
-- **全局快捷键**：`Ctrl+Alt+P` 播放/暂停 · `Ctrl+Alt+←/→` 上一首/下一首 · `Ctrl+Alt+I` 显示/隐藏（可关闭）。
+- **全局快捷键**（均可关闭 / 自定义）：`Ctrl+Alt+P` 播放/暂停 · `Ctrl+Alt+←/→` 上一首/下一首 · `Ctrl+Alt+I` 显示/隐藏 · `Ctrl+Alt+Space` 展开/收起 · `Ctrl+Space` 快速启动器 · `Ctrl+Alt+V` 剪贴板历史面板。
 - **减少动态效果**（无障碍 / 省电）：一键关闭弹簧动画，瞬时切换。
 - **灵动岛尺寸调节**：设置 → 外观，可调紧凑长度/宽度、展开长度。
 - **灵动岛常驻**：即使无媒体播放也始终显示（显示配置的组件）。
@@ -68,6 +69,16 @@
 - **无媒体播放时自动隐藏灵动岛**（可关闭）。
 - **勿扰模式**：手动一键开启或按时间段自动静默通知（托盘菜单一键切换，设置中可配置时段）。
 - **检查更新**：托盘菜单 / 设置中手动检查 GitHub 新版本；可选自动检查（默认关闭，需联网）。
+- **双击灵动岛快捷动作**（设置 → 通用）：可设为「播放 / 暂停」（默认）、「打开设置」或「无动作」。
+- **开会静音助手（会议检测）**：识别 Teams / Zoom / 腾讯会议 / 钉钉 / 飞书 / Webex / Slack / Discord / Google Meet 等会议窗口，会议中自动开启勿扰并显示「会议中」组件（纯本地启发式，不联网）。
+- **屏幕录制 / 截图提示**：按 `PrintScreen` / `Alt+PrintScreen` 截图时弹出提示；检测到 OBS、Bandicam、Fraps、Camtasia、XSplit、Streamlabs、Xbox Game Bar 等录制软件时弹出「屏幕录制中」（纯本机进程检测，不联网）。
+- **日历事件提醒（.ics）**：解析本地 iCalendar 文件（Outlook / Google 日历 / 手机导出），事件到点（可提前 N 分钟）弹横幅；纯本地解析，不联网。
+- **RSS 订阅提醒**：轮询 RSS 2.0 / Atom 订阅（间隔可调），出现新条目弹横幅；仅在填写的订阅地址联网。
+- **邮件提醒（POP3）**：定期拉取邮件头，新邮件弹横幅（只读邮件头、不下载正文、不上传数据；建议使用授权码）。
+- **快速启动器（Spotlight 风格）**：`Ctrl+Space` 呼出，搜索已安装应用 / 开始菜单程序，或直接输入网址打开；快捷键可自定义。
+- **剪贴板历史面板**：`Ctrl+Alt+V` 呼出独立剪贴板历史窗口，点击条目复制回剪贴板、可清空；快捷键可自定义。
+- **规则（自动化）**：设置 → 规则，组合条件（始终 / 未播放媒体 / 播放中 / 时间段 / 指定媒体程序）与动作（隐藏 / 强制收起 / 强制显示）自动控制灵动岛；隐藏优先、折叠其次、强制显示最后。
+- **低功耗模式**：空闲时降低波纹帧率、简化动画，更省电（设置 → 通用）。
 
 ### P2（已实现）
 - 简体中文 + English 界面切换。
@@ -125,6 +136,13 @@ src/WinIsland/
 │   ├── TodoService.cs         # 待办列表
 │   ├── PomodoroService.cs     # 番茄钟计时
 │   ├── ScheduleService.cs     # 日程提醒
+│   ├── IcsCalendar.cs       # .ics 日历解析（事件 / VALARM）
+│   ├── MeetingMonitor.cs    # 会议窗口检测（开会静音助手）
+│   ├── PrivacyDeviceMonitor.cs # 麦克风/摄像头使用状态（隐私注册表轮询）
+│   ├── RssMailService.cs    # RSS 订阅 + 邮件（POP3）提醒
+│   ├── ScreenCaptureMonitor.cs # 截图 / 录屏检测提示
+│   ├── IslandApiServer.cs   # 上岛 API（v1 + v3 HTTP / WebSocket）
+│   ├── IslandPushModels.cs  # 上岛卡片模型（图片/动态进度/心跳）
 │   ├── DoNotDisturb.cs        # 勿扰模式（手动/时段）
 │   ├── UpdaterService.cs      # GitHub 更新检查
 │   ├── ProfileService.cs      # 配置档案（多套设置切换）
@@ -141,6 +159,8 @@ src/WinIsland/
 │   ├── WindowEffects.cs       # 亚克力 / 暗色模式 / 圆角区域
 │   ├── ScreenHelper.cs        # 多显示器 + PerMonitorV2 DPI 换算
 │   ├── TrayIcon.cs            # 托盘图标与菜单
+│   ├── ClipboardPanelWindow.xaml(.cs) # 剪贴板历史面板
+│   ├── QuickLauncherWindow.xaml(.cs)  # 快速启动器（Ctrl+Space）
 │   └── Localization.cs        # 中/英文案表
 └── Diagnostics/DiagnosticsCommand.cs  # --diagnose 诊断信息
 tests/WinIsland.Tests/         # xunit 单元测试（LRC/配置/Cider 解析/窗口标题解析）
@@ -156,7 +176,7 @@ build/
 
 ## 快速开始
 
-> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.5/win-x64/WinIsland-1.0.5-win-x64.exe`，约 70MB，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x64 / win-arm64 便携版及通用安装包）。
+> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.0.9beta1/win-x64/WinIsland-1.0.9beta1-win-x64.exe`，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x64 / win-arm64 便携版及通用安装包）。
 
 ### 环境要求
 - Windows 10 1809+ / Windows 11
@@ -200,7 +220,7 @@ iscc.exe build\release-1.0.5.iss
    - 其它播放器 → 兜底窗口标题识别（仅展示）。
 3. **点击**灵动岛展开完整卡片（悬停不展开）：进度拖拽 seek、播放控制、音量、同步歌词；再点一下收回（移出卡片后 700ms 自动收回）。
 4. 托盘菜单：显示/隐藏、独立歌词窗口、开机自启、**勿扰模式**（勾选即静默通知）、**检查更新**、**查看日志**、设置、退出。**关闭主窗口不会退出进程**（仅托盘化）。
-5. 全局快捷键：`Ctrl+Alt+P` 播放/暂停 · `Ctrl+Alt+←/→` 上一首/下一首 · `Ctrl+Alt+I` 显示/隐藏灵动岛（可在设置中关闭）。
+5. 全局快捷键：`Ctrl+Alt+P` 播放/暂停 · `Ctrl+Alt+←/→` 上一首/下一首 · `Ctrl+Alt+I` 显示/隐藏 · `Ctrl+Alt+Space` 展开/收起 · `Ctrl+Space` 快速启动器（搜索应用 / 直接输入网址回车）· `Ctrl+Alt+V` 剪贴板历史面板（均可关闭 / 自定义）。
 6. 通知与提示（蓝牙 / Windows 通知 / 正在播放 / 低电量）默认在屏幕右上角弹出玻璃横幅，可在设置 → 通知中开关；**勿扰模式**开启时不弹横幅（角标仍计数）。
 7. 常用命令行参数：
    ```powershell
@@ -218,7 +238,7 @@ iscc.exe build\release-1.0.5.iss
 | 键 | 默认 | 说明 |
 | --- | --- | --- |
 | `Language` | `zh-CN` | `zh-CN` / `en-US` |
-| `ThemePreset` | `Default` | 主题预设：`Default/Ocean/Forest/Sunset/Neon/Mono/Grape`（覆盖 AccentColor） |
+| `ThemePreset` | `Default` | 主题皮肤：`Default/Ocean/Forest/Sunset/Neon/Mono/Grape/Sky/Rose/Amber/Lime/Teal/Lavender/Crimson/Midnight/Coffee/Sakura/Aurora/Custom`（覆盖 AccentColor） |
 | `FontFamily` | `Segoe UI` | 界面字体 |
 | `FontScale` | `1.0` | 字号缩放 0.8–1.4 |
 | `CornerRadius` | `28` | 胶囊圆角 16–40 |
@@ -252,7 +272,7 @@ iscc.exe build\release-1.0.5.iss
 | `GlobalHotkeysEnabled` | `true` | 全局快捷键开关 |
 | `LowBatteryThreshold` | `20` | 低电量提醒阈值（%），0 关闭 |
 | `ExpandedShowArtTitle/Progress/Controls/Lyrics` | `true` | 展开卡片各区块（封面+标题/进度条/控制与音量/歌词）开关 |
-| `Components` | 对象 | 组件勾选：`Time/Weather/Date/Cpu/Ram/Net/Battery/Volume/CapsLock/Clipboard/Todo/Timer/Schedule` 各有 `WhenIdle`/`WhenPlaying` 两列；`Cover/Title/Artist/Lyrics/Progress` 播放时显示 |
+| `Components` | 对象 | 组件勾选：`Time/Weather/Date/Cpu/Gpu/Ram/Net/Battery/Volume/CapsLock/Clipboard/Todo/Timer/Schedule/Holiday/Meeting/Mic/Cam` 各有 `WhenIdle`/`WhenPlaying` 两列；`Cover/Title/Artist/Lyrics/Progress` 播放时显示；`ComponentBadges` 字典为各组件填角标文本 |
 | `WidgetOrder` | `Time,Weather,...` | 组件摆放顺序（逗号分隔键名，含 `Song`） |
 | `MediaApps` | `[]` | 媒体程序启用/禁用与优先级（空=全部启用） |
 | `CompactWidth` / `CompactHeight` | `360` / `72` | 紧凑长度 / 紧凑宽度（手动拖拽调整会自动关闭自动调整） |
@@ -265,10 +285,28 @@ iscc.exe build\release-1.0.5.iss
 | `NotificationPosition` | `TopRight` | 通知弹出位置（右上角） |
 | `DoNotDisturbEnabled` / `DoNotDisturbManual` | `false` | 勿扰：按时段自动 / 手动开关 |
 | `DoNotDisturbStartHour` / `DoNotDisturbEndHour` | `22` / `8` | 勿扰时段（小时） |
+| `DnDAllowlist` | `[]` | 勿扰白名单（`QQ.exe,WeChat.exe`，白名单内仍弹通知） |
+| `Rules` | `[]` | 自动化规则列表（条件 + 动作） |
 | `ClipboardHistoryEnabled` / `ClipboardHistoryMax` | `false` / `15` | 剪贴板历史开关与条数上限 |
 | `PomodoroEnabled` / `PomodoroWorkMinutes` / `PomodoroBreakMinutes` | `false` / `25` / `5` | 番茄钟开关与工作/休息时长（分钟） |
 | `KeyIndicatorSeconds` | `3` | 键盘指示灯（CapsLock）出现时长（秒） |
 | `AutoUpdateCheck` | `false` | 自动检查 GitHub 新版本（默认关，需联网） |
+| `DoubleClickAction` | `PlayPause` | 双击灵动岛动作：`PlayPause` / `OpenSettings` / `None` |
+| `AnimationStyle` | `Spring` | 动效皮肤：`Spring` / `Soft` / `Elastic` / `Fade` |
+| `ThemeTint` | `""` | 自定义背景色 #RRGGBB（预设为 Custom 时生效） |
+| `ExpandedCardStyle` | `Classic` | 展开卡片模板：`Classic` / `Hero` |
+| `NetCurveEnabled` | `true` | 网络组件显示最近 32 秒迷你曲线 |
+| `LowPowerMode` | `false` | 低功耗模式（空闲降低波纹帧率、简化动画） |
+| `MeetingAssistantEnabled` | `false` | 开会静音助手：检测会议窗口 + 自动勿扰 |
+| `MeetingAutoDnd` / `MeetingKeywords` | `true` / `""` | 会议中自动勿扰 / 自定义会议关键词 |
+| `ScreenCaptureNotifyEnabled` / `ScreenshotNotifyEnabled` / `RecordingNotifyEnabled` | `false` / `true` / `true` | 截图/录屏提示总开关与分项 |
+| `CalendarEnabled` / `CalendarIcsPath` / `CalendarAdvanceMinutes` | `false` / `""` / `10` | .ics 日历提醒开关 / 文件路径 / 提前提醒分钟 |
+| `RssNotifyEnabled` / `RssUrls` / `RssIntervalMinutes` | `false` / `""` / `15` | RSS 订阅提醒 / 订阅地址 / 轮询间隔（分钟） |
+| `MailNotifyEnabled` / `MailPop3Server` / `MailPop3Port` / `MailUseSsl` / `MailUser` / `MailPassword` / `MailCheckMinutes` | `false` / `""` / `995` / `true` / `""` / `""` / `5` | 邮件提醒（POP3）开关、服务器、端口、SSL、账号、授权码、检查间隔 |
+| `QuickLauncherEnabled` / `HotkeyLauncher` | `true` / `Ctrl+Space` | 快速启动器开关与快捷键 |
+| `ClipboardPanelEnabled` / `HotkeyClipboardPanel` | `true` / `Ctrl+Alt+V` | 剪贴板历史面板开关与快捷键 |
+| `HotkeyExpand` | `Ctrl+Alt+Space` | 展开/收起快捷键 |
+| `NotifyFoldEnabled` | `true` | 折叠同类通知（同来源同标题只显示一条） |
 | `ActiveProfile` | `Default` | 配置档案名（多套设置切换） |
 
 ---
@@ -329,14 +367,17 @@ WinIsland 内置本地 HTTP 服务，其他软件可将信息实时推送到灵�
 
 | 接口 | 说明 |
 |---|---|
-| `POST /v1/island/push` | 推送 / 更新一张灵动岛卡片（标题/正文/图标/进度/按钮/时长） |
+| `POST /v1/island/push` | 推送 / 更新一张灵动岛卡片（v3 起支持图片 / 动态进度 / 心跳） |
+| `PATCH /v3/island/push/{id}` | 部分更新：只覆盖请求体里出现的字段（保留过期时间 / 队列位置） |
 | `DELETE /v1/island/push/{id}` | 移除一张卡片 |
-| `GET /v1/island/active` | 查询当前活跃卡片 |
+| `GET /v1/island/active`（或 `/v3/island/active`） | 查询当前活跃卡片 |
+| `GET /v3/ws` | WebSocket 双向通道：客户端发 `push/update/remove/ping`，服务端广播 `push_updated/push_removed` 事件 |
 | `GET /v1/health` | 健康检查 |
 
 - 设置 → 上岛 API：启用开关、端口（默认 9840）、可选 Token、全局默认显示时长
 - 上岛推送**不会改变灵动岛长宽**，卡片在紧凑态单行展示、不遮挡其它组件
 - 按钮支持「打开链接 / 启动程序」，推送方可按条自定义显示时长（覆盖全局默认）
+- v3 新增：`image`（data URI 或 http 图片）、`progress_from/progress_to/progress_duration_seconds`（进度自动推进）、`heartbeat_seconds`（心跳续期，超过 2 倍间隔未续期自动移除）；完整开发文档见 [docs/IslandAPI.md](docs/IslandAPI.md)
 
 ---
 ## 播放状态恢复

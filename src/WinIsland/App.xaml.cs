@@ -30,8 +30,13 @@ public partial class App : Application
     private NotificationService? _notifications;
     private NotificationHistoryService? _notificationHistory;
     private GlobalHotkeyService? _hotkeys;
+    private QuickLauncherWindow? _launcher;
+    private ClipboardPanelWindow? _clipboardPanel;
     private IslandApiServer? _islandApi;
     private MediaAppRegistry? _mediaApps;
+    private ScreenCaptureMonitor? _screenCapture;
+    private CalendarService? _calendar;
+    private RssMailService? _rssMail;
 
     // ── 效率工具 / 波纹 / 更新服务（共享实例：设置页与灵动岛组件共用同一份数据）──
     private AudioWaveService? _wave;
@@ -149,6 +154,61 @@ public partial class App : Application
         _islandApi.PushRemoved += id => Dispatcher.BeginInvoke(() => _vm?.RemoveIslandPush(id));
         if (_settings.Current.IslandApiEnabled) _islandApi.Start();
 
+        // ── 屏幕录制 / 截图提示（PrintScreen 钩子 + 录制进程轮询；默认关）──
+        _screenCapture = new ScreenCaptureMonitor();
+        _screenCapture.ScreenshotTaken += () =>
+        {
+            if (_settings!.Current.ScreenCaptureNotifyEnabled && _settings.Current.ScreenshotNotifyEnabled)
+                _notifications?.Show(Localization.Get("ScreenCap_ScreenshotTitle"),
+                    Localization.Get("ScreenCap_ScreenshotBody"), "\uE7B3", "WinIsland");
+        };
+        _screenCapture.RecordingChanged += (recording, app) =>
+        {
+            if (!_settings!.Current.ScreenCaptureNotifyEnabled || !_settings.Current.RecordingNotifyEnabled) return;
+            if (recording)
+                _notifications?.Show(Localization.Get("ScreenCap_RecordingTitle"),
+                    string.Format(Localization.Get("ScreenCap_RecordingBody"), app), "\uE786", "WinIsland");
+        };
+        if (_settings.Current.ScreenCaptureNotifyEnabled)
+        {
+            _screenCapture.ScreenshotEnabled = _settings.Current.ScreenshotNotifyEnabled;
+            _screenCapture.RecordingEnabled = _settings.Current.RecordingNotifyEnabled;
+            _screenCapture.Start();
+        }
+
+        // ── 日历事件提醒（.ics 本地解析；事件到点弹右上角横幅，默认关）──
+        _calendar = new CalendarService();
+        _calendar.Reminder += ev => Dispatcher.BeginInvoke(() =>
+        {
+            if (!_settings!.Current.CalendarEnabled) return;
+            var start = ev.Start.LocalDateTime;
+            var isAllDay = start.Date == start && ev.End - ev.Start >= TimeSpan.FromDays(1);
+            var body = isAllDay
+                ? $"{start:yyyy-MM-dd}  {ev.Title}"
+                : $"{start:HH:mm} ~ {ev.End.LocalDateTime:HH:mm}  {ev.Title}";
+            _notifications?.Show(Localization.Get("Calendar_ReminderTitle"), body, "\uE787", "Calendar");
+        });
+        _calendar.Refresh(_settings.Current.CalendarIcsPath);
+
+        // ── RSS 订阅 / 邮件提醒（后台轮询；默认关，仅开启后联网）──
+        _rssMail = new RssMailService();
+        _rssMail.RssItemReceived += (title, summary, link) => Dispatcher.BeginInvoke(() =>
+        {
+            if (!_settings!.Current.RssNotifyEnabled) return;
+            _notifications?.Show(Localization.Get("Rss_NotifyTitle"),
+                string.IsNullOrEmpty(summary) ? title : summary, "\uE8A5", "RSS");
+        });
+        _rssMail.MailReceived += (subject, from, date) => Dispatcher.BeginInvoke(() =>
+        {
+            if (!_settings!.Current.MailNotifyEnabled) return;
+            var body = string.IsNullOrEmpty(from)
+                ? date
+                : (string.IsNullOrEmpty(date) ? from : $"{from} · {date}");
+            _notifications?.Show(Localization.Get("Mail_NotifyTitle"),
+                string.IsNullOrEmpty(subject) ? body : $"{subject}\n{body}", "\uE715", "Mail");
+        });
+        ApplyRssMail(_settings.Current);
+
         // ── Island windows (one per selected monitor) ──
         RecreateWindows();
 
@@ -206,6 +266,12 @@ public partial class App : Application
         {
             if (_vm is not null) _vm.IsExpanded = !_vm.IsExpanded; // 展开/收起
         };
+        // 快速启动器：Ctrl+Space 弹出/收起（快捷键本身由 GlobalHotkeyService 注册）
+        _launcher = new QuickLauncherWindow(_theme);
+        _hotkeys.LauncherPressed += () => Dispatcher.BeginInvoke(() => _launcher?.Toggle());
+        // 剪贴板历史面板（Ctrl+Alt+V）
+        _clipboardPanel = new ClipboardPanelWindow(_theme, _clipboard);
+        _hotkeys.ClipboardPanelPressed += () => Dispatcher.BeginInvoke(() => _clipboardPanel?.Toggle());
         _hotkeys.SetEnabled(_settings.Current.GlobalHotkeysEnabled);
 
         // ── Settings changed → re-apply live ──
@@ -235,6 +301,22 @@ public partial class App : Application
             // 通知监控开关
             if (s.BluetoothNotifyEnabled) _bluetooth?.Start(); else _bluetooth?.Stop();
             if (s.NotificationTakeoverEnabled) _systemNotifications?.Start(); else _systemNotifications?.Stop();
+
+            // 屏幕录制/截图提示：开关或细分项变化时实时生效
+            if (_screenCapture is not null)
+            {
+                _screenCapture.ScreenshotEnabled = s.ScreenshotNotifyEnabled;
+                _screenCapture.RecordingEnabled = s.RecordingNotifyEnabled;
+                var capRunning = _screenCapture.IsRunning;
+                if (s.ScreenCaptureNotifyEnabled && !capRunning) _screenCapture.Start();
+                else if (!s.ScreenCaptureNotifyEnabled && capRunning) _screenCapture.Stop();
+            }
+
+            // 日历提醒：路径/开关变化立即重新解析（服务内部有文件未变短路）
+            _calendar?.Refresh(s.CalendarIcsPath);
+
+            // RSS / 邮件提醒：开关、地址、间隔变化立即生效
+            ApplyRssMail(s);
 
             // 全局快捷键：组合键 / 开关变化实时重新注册
             _hotkeys?.Apply(s);
@@ -368,6 +450,15 @@ public partial class App : Application
         var win = new SettingsWindow(vm, _settings, _cider, _notificationHistory,
             _todo, _schedule, _clipboard, _pomodoro, _updater);
         win.ShowDialog();
+    }
+
+    /// <summary>把 RSS/邮件设置应用到后台轮询服务（开关/地址/间隔等变化时即时生效）。</summary>
+    private void ApplyRssMail(AppSettings s)
+    {
+        _rssMail?.Configure(
+            s.RssNotifyEnabled, s.RssUrls, s.RssIntervalMinutes,
+            s.MailNotifyEnabled, s.MailPop3Server, s.MailPop3Port, s.MailUseSsl,
+            s.MailUser, s.MailPassword, s.MailCheckMinutes);
     }
 
     private void ToggleLyricsWindow()
@@ -515,6 +606,9 @@ public partial class App : Application
             _systemNotifications?.Dispose();
             _hotkeys?.Dispose();
             _islandApi?.Dispose();
+            _screenCapture?.Dispose();
+            _calendar?.Dispose();
+            _rssMail?.Dispose();
             _tray?.Dispose();
             _singleInstance?.Dispose();
             _miniPlayer?.Close();

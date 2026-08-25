@@ -87,4 +87,52 @@ public sealed class IslandPush
     /// <summary>服务端计算的过期时间（UTC），客户端推送时忽略。</summary>
     [JsonPropertyName("expires_at")]
     public DateTime? ExpiresAt { get; set; }
+
+    // ── v3 扩展：图片 / 动态进度 / 心跳 ─────────────────────────
+
+    /// <summary>图片：data URI（data:image/png;base64,...）或 http(s) 链接（可选，展开态右侧显示）。</summary>
+    [JsonPropertyName("image")]
+    public string Image { get; set; } = "";
+
+    /// <summary>动态进度起始值 0..1（配合 progress_duration_seconds 自动推进；默认 0）。</summary>
+    [JsonPropertyName("progress_from")]
+    public double? ProgressFrom { get; set; }
+
+    /// <summary>动态进度结束值 0..1（默认 1）。</summary>
+    [JsonPropertyName("progress_to")]
+    public double? ProgressTo { get; set; }
+
+    /// <summary>动态进度持续时间（秒）：设置后进度条从 progress_from 自动推进到 progress_to，推送方无需反复更新。</summary>
+    [JsonPropertyName("progress_duration_seconds")]
+    public int? ProgressDurationSeconds { get; set; }
+
+    /// <summary>心跳间隔（秒）：推送方需周期性以同 id 更新续期；超过 2 倍间隔未续期自动移除。</summary>
+    [JsonPropertyName("heartbeat_seconds")]
+    public int? HeartbeatSeconds { get; set; }
+
+    /// <summary>动态进度锚点（服务端在每次完整更新时重置，不入 JSON）。</summary>
+    [JsonIgnore]
+    internal DateTime? ProgressAnchorUtc { get; set; }
+
+    /// <summary>最近一次收到推送/心跳的时间（UTC，服务端维护，不入 JSON）。</summary>
+    [JsonIgnore]
+    internal DateTime LastSeenUtc { get; set; } = DateTime.UtcNow;
+
+    /// <summary>有效进度：普通 progress 原样返回；配置了动态进度段时按经过时间线性插值（0..1）。</summary>
+    [JsonIgnore]
+    public double? EffectiveProgress
+    {
+        get
+        {
+            if (ProgressDurationSeconds is int dur && dur > 0 && ProgressAnchorUtc is DateTime anchor)
+            {
+                var t = (DateTime.UtcNow - anchor).TotalSeconds / dur;
+                var from = Math.Clamp(ProgressFrom ?? 0, 0, 1);
+                var to = Math.Clamp(ProgressTo ?? 1, 0, 1);
+                var v = t <= 0 ? from : (t >= 1 ? to : from + (to - from) * t);
+                return Math.Clamp(v, 0, 1);
+            }
+            return Progress;
+        }
+    }
 }

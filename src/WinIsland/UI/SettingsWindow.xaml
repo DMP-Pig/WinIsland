@@ -500,6 +500,12 @@
                             <CheckBox x:Name="ChkHideWhenNoMedia" Content="无媒体播放时自动隐藏" IsChecked="{Binding Working.HideWhenNoMedia}"/>
                             <CheckBox x:Name="ChkShowWhenPaused" Content="暂停时仍然显示" IsChecked="{Binding Working.ShowWhenPaused}"/>
                             <CheckBox x:Name="ChkAlwaysVisible" IsChecked="{Binding Working.IslandAlwaysVisible}"/>
+                            <TextBlock x:Name="LblDoubleClick" Style="{StaticResource Label}"/>
+                            <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding Working.DoubleClickAction}">
+                                <ComboBoxItem x:Name="CbiDcPlayPause" Tag="PlayPause" Content="播放 / 暂停"/>
+                                <ComboBoxItem x:Name="CbiDcOpenSettings" Tag="OpenSettings" Content="打开设置"/>
+                                <ComboBoxItem x:Name="CbiDcNone" Tag="None" Content="无动作"/>
+                            </ComboBox>
                             <CheckBox x:Name="ChkReduceMotion" IsChecked="{Binding Working.ReduceMotion}"/>
                             <CheckBox x:Name="ChkLowPower" IsChecked="{Binding Working.LowPowerMode}"/>
                             <CheckBox x:Name="ChkGlobalHotkeys" IsChecked="{Binding Working.GlobalHotkeysEnabled}"/>
@@ -515,6 +521,12 @@
                             <TextBox Width="220" HorizontalAlignment="Left" Text="{Binding Working.HotkeyPrev, UpdateSourceTrigger=PropertyChanged}"/>
                             <TextBlock x:Name="LblHotkeyExpand" Style="{StaticResource Label}"/>
                             <TextBox Width="220" HorizontalAlignment="Left" Text="{Binding Working.HotkeyExpand, UpdateSourceTrigger=PropertyChanged}"/>
+                            <CheckBox x:Name="ChkQuickLauncher" IsChecked="{Binding Working.QuickLauncherEnabled}"/>
+                            <TextBlock x:Name="LblHotkeyLauncher" Style="{StaticResource Label}"/>
+                            <TextBox Width="220" HorizontalAlignment="Left" Text="{Binding Working.HotkeyLauncher, UpdateSourceTrigger=PropertyChanged}"/>
+                            <CheckBox x:Name="ChkClipboardPanel" IsChecked="{Binding Working.ClipboardPanelEnabled}"/>
+                            <TextBlock x:Name="LblHotkeyClipboard" Style="{StaticResource Label}"/>
+                            <TextBox Width="220" HorizontalAlignment="Left" Text="{Binding Working.HotkeyClipboardPanel, UpdateSourceTrigger=PropertyChanged}"/>
                             <TextBlock x:Name="LblLowBattery" Style="{StaticResource Label}"/>
                             <Slider Minimum="0" Maximum="50" Value="{Binding Working.LowBatteryThreshold}" Width="300" HorizontalAlignment="Left"
                                     IsSnapToTickEnabled="True" TickFrequency="5"/>
@@ -536,6 +548,12 @@
                                       DisplayMemberPath="Display" SelectedValue="{Binding Working.ThemePreset}"/>
                             <ComboBox ItemsSource="{Binding ThemeOptions}" SelectedValuePath="Value"
                                       DisplayMemberPath="Display" SelectedValue="{Binding Working.Theme}"/>
+                            <TextBlock x:Name="LblThemeTint" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="TxtThemeTint" Width="130" HorizontalAlignment="Left"
+                                     Text="{Binding Working.ThemeTint}"/>
+                            <TextBlock x:Name="TxtThemeTintNote" FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,2,0,0"/>
 
                             <TextBlock x:Name="LblAnimationStyle" Style="{StaticResource Label}"/>
                             <ComboBox ItemsSource="{Binding AnimationStyleOptions}" SelectedValuePath="Value"
@@ -626,6 +644,7 @@
 
                             <CheckBox x:Name="ChkCoverTint" IsChecked="{Binding Working.CoverTintBackground}"/>
                             <CheckBox x:Name="ChkWave" IsChecked="{Binding Working.WaveVisualizerEnabled}"/>
+                            <CheckBox x:Name="ChkNetCurve" IsChecked="{Binding Working.NetCurveEnabled}"/>
                             <CheckBox x:Name="ChkWaveSync" IsChecked="{Binding Working.WaveSyncEnabled}"/>
                             <TextBlock x:Name="LblWaveSensitivity" Style="{StaticResource Label}"/>
                             <Slider Minimum="0.2" Maximum="3" Value="{Binding Working.WaveSensitivity}" Width="300" HorizontalAlignment="Left"/>
@@ -683,12 +702,15 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="120"/>
                                             <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="110"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock x:Name="LblCompName" Text="组件" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <TextBlock x:Name="LblCompIdle" Grid.Column="1" Text="无歌曲播放时" HorizontalAlignment="Center" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <TextBlock x:Name="LblCompPlaying" Grid.Column="2" Text="有歌曲播放时" HorizontalAlignment="Center" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock x:Name="LblCompBadge" Grid.Column="3" Text="角标" HorizontalAlignment="Center" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     </Grid>
                                     <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
@@ -700,10 +722,14 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="120"/>
                                                     <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="110"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="{Binding Name}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                                 <CheckBox Grid.Column="1" IsChecked="{Binding Idle, Mode=TwoWay}" HorizontalAlignment="Center"/>
                                                 <CheckBox Grid.Column="2" IsChecked="{Binding Playing, Mode=TwoWay}" HorizontalAlignment="Center"/>
+                                                <TextBox Grid.Column="3" Width="92" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                         Text="{Binding Badge, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         ToolTip="{Binding BadgeHint}" Margin="0,2"/>
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
@@ -770,6 +796,9 @@
                             <CheckBox x:Name="ChkExpandedProgress" IsChecked="{Binding Working.ExpandedShowProgress}"/>
                             <CheckBox x:Name="ChkExpandedControls" IsChecked="{Binding Working.ExpandedShowControls}"/>
                             <CheckBox x:Name="ChkExpandedLyrics" IsChecked="{Binding Working.ExpandedShowLyrics}"/>
+                            <TextBlock x:Name="LblCardStyle" Style="{StaticResource Label}" Margin="0,12,0,0"/>
+                            <ComboBox x:Name="CboCardStyle" Width="320" HorizontalAlignment="Left" Padding="6,4"
+                                      SelectionChanged="CardStyle_SelectionChanged"/>
                             <TextBlock x:Name="TxtMediaInfoNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                        TextWrapping="Wrap" Margin="0,8,0,0"/>
 
@@ -968,6 +997,71 @@
                         <TextBox x:Name="TxtDndAllowlist" Text="{Binding Working.DnDAllowlistText, UpdateSourceTrigger=PropertyChanged}"
                                  Width="430" Height="54" HorizontalAlignment="Left" AcceptsReturn="True" TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto" Padding="8,5" FontSize="11.5"/>
+
+                        <TextBlock x:Name="LblMeetingTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                        <CheckBox x:Name="ChkMeetingEnabled" IsChecked="{Binding Working.MeetingAssistantEnabled}"/>
+                        <CheckBox x:Name="ChkMeetingAutoDnd" IsChecked="{Binding Working.MeetingAutoDnd}"/>
+                        <TextBlock x:Name="LblMeetingKeywords" Style="{StaticResource Label}"/>
+                        <TextBox x:Name="TxtMeetingKeywords" Text="{Binding Working.MeetingKeywords, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="430" HorizontalAlignment="Left" Padding="8,5" FontSize="11.5"/>
+                        <TextBlock x:Name="TxtMeetingNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,6,0,0" MaxWidth="520"/>
+
+                        <TextBlock x:Name="LblScreenCapTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                        <CheckBox x:Name="ChkScreenCapEnabled" IsChecked="{Binding Working.ScreenCaptureNotifyEnabled}"/>
+                        <CheckBox x:Name="ChkScreenshotNotify" IsChecked="{Binding Working.ScreenshotNotifyEnabled}"/>
+                        <CheckBox x:Name="ChkRecordingNotify" IsChecked="{Binding Working.RecordingNotifyEnabled}"/>
+                        <TextBlock x:Name="TxtScreenCapNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,6,0,0" MaxWidth="520"/>
+
+                        <TextBlock x:Name="LblCalendarTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                        <CheckBox x:Name="ChkCalendarEnabled" IsChecked="{Binding Working.CalendarEnabled}"/>
+                        <TextBlock x:Name="LblCalendarPath" Style="{StaticResource Label}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="TxtCalendarPath" Text="{Binding Working.CalendarIcsPath, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="430" HorizontalAlignment="Left" Padding="8,5" FontSize="11.5"/>
+                            <Button x:Name="BtnCalendarPick" Padding="10,4" Margin="8,0,0,0" Click="CalendarPick_Click"/>
+                        </StackPanel>
+                        <TextBlock x:Name="LblCalendarAdvance" Style="{StaticResource Label}"/>
+                        <Slider Minimum="0" Maximum="120" Value="{Binding Working.CalendarAdvanceMinutes}" Width="300" HorizontalAlignment="Left"
+                                IsSnapToTickEnabled="True" TickFrequency="5"/>
+                        <TextBlock x:Name="TxtCalendarNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,6,0,0" MaxWidth="520"/>
+
+                        <TextBlock x:Name="LblRssTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                        <CheckBox x:Name="ChkRssEnabled" IsChecked="{Binding Working.RssNotifyEnabled}"/>
+                        <TextBlock x:Name="LblRssUrls" Style="{StaticResource Label}"/>
+                        <TextBox x:Name="TxtRssUrls" Text="{Binding Working.RssUrls, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="430" HorizontalAlignment="Left" Padding="8,5" FontSize="11.5"
+                                 AcceptsReturn="True" TextWrapping="Wrap" Height="52" VerticalScrollBarVisibility="Auto"/>
+                        <TextBlock x:Name="LblRssInterval" Style="{StaticResource Label}"/>
+                        <Slider Minimum="5" Maximum="120" Value="{Binding Working.RssIntervalMinutes}" Width="300" HorizontalAlignment="Left"
+                                IsSnapToTickEnabled="True" TickFrequency="5"/>
+                        <TextBlock x:Name="TxtRssNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,6,0,0" MaxWidth="520"/>
+
+                        <TextBlock x:Name="LblMailTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
+                        <CheckBox x:Name="ChkMailEnabled" IsChecked="{Binding Working.MailNotifyEnabled}"/>
+                        <TextBlock x:Name="LblMailServer" Style="{StaticResource Label}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="TxtMailServer" Text="{Binding Working.MailPop3Server, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="330" HorizontalAlignment="Left" Padding="8,5" FontSize="11.5"/>
+                            <TextBox x:Name="TxtMailPort" Text="{Binding Working.MailPop3Port, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="84" Margin="8,0,0,0" HorizontalAlignment="Left" Padding="8,5" FontSize="11.5"/>
+                        </StackPanel>
+                        <CheckBox x:Name="ChkMailSsl" IsChecked="{Binding Working.MailUseSsl}"/>
+                        <TextBlock x:Name="LblMailUser" Style="{StaticResource Label}"/>
+                        <TextBox x:Name="TxtMailUser" Text="{Binding Working.MailUser, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="330" HorizontalAlignment="Left" Padding="8,5" FontSize="11.5"/>
+                        <TextBlock x:Name="LblMailPass" Style="{StaticResource Label}"/>
+                        <PasswordBox x:Name="TxtMailPass" Width="330" HorizontalAlignment="Left" Padding="8,5" FontSize="11.5"
+                                     PasswordChanged="MailPass_PasswordChanged"/>
+                        <TextBlock x:Name="LblMailInterval" Style="{StaticResource Label}"/>
+                        <Slider Minimum="1" Maximum="60" Value="{Binding Working.MailCheckMinutes}" Width="300" HorizontalAlignment="Left"
+                                IsSnapToTickEnabled="True" TickFrequency="1"/>
+                        <TextBlock x:Name="TxtMailNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,6,0,0" MaxWidth="520"/>
+
                         <TextBlock x:Name="TxtNotifyNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,10,0,0"/>
 

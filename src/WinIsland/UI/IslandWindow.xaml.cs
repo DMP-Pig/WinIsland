@@ -179,6 +179,16 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             if (_vm.IsExpanded) _collapseTimer.Start();
         };
 
+        // 双击检测：单击延迟 280ms 后切换展开/收起；窗口内第二次单击则执行快捷动作
+        _clickDebounce.Tick += (_, _) =>
+        {
+            _clickDebounce.Stop();
+            if (!_pendingClick) return;
+            _pendingClick = false;
+            _collapseTimer.Stop();
+            _vm.IsExpanded = !_vm.IsExpanded;
+        };
+
         // 点击展开/收起；解锁状态下支持鼠标拖动
         Card.PreviewMouseLeftButtonDown += OnCardMouseLeftButtonDown;
         Card.PreviewMouseMove += OnCardMouseMove;
@@ -217,7 +227,11 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     // ── 展开卡片分区块开关（来自设置，绑定到展开内容）──
     // 歌曲相关区域仅在“有媒体播放”时显示；只有上岛推送时展开态以上岛内容为主，避免空歌曲区
-    public bool ExpandedShowArtTitle => _vm.HasMedia && _settings.Current.ExpandedShowArtTitle;
+    public bool ExpandedShowArtTitle => _vm.HasMedia && _settings.Current.ExpandedShowArtTitle
+        && _settings.Current.ExpandedCardStyle != "Hero"; // Hero 大卡片模板下隐藏经典小封面区
+    /// <summary>媒体大卡片模板（Hero）：大封面背景 + 歌名/歌手/专辑叠加。</summary>
+    public bool ExpandedHeroCard => _vm.HasMedia && _settings.Current.ExpandedCardStyle == "Hero";
+
     public bool ExpandedShowProgress => _vm.HasMedia && _settings.Current.ExpandedShowProgress;
     public bool ExpandedShowControls => _vm.HasMedia && _settings.Current.ExpandedShowControls;
     public bool ExpandedShowLyrics => _vm.HasMedia && _settings.Current.ExpandedShowLyrics;
@@ -237,6 +251,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private Point _downPoint;
     private bool _mouseDownOnCard;
     private bool _draggedCard;
+    private readonly DispatcherTimer _clickDebounce = new() { Interval = TimeSpan.FromMilliseconds(280) };
+    private bool _pendingClick;
+    private Point _lastClickUp;
 
     private void OnCardMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
@@ -255,6 +272,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         {
             _mouseDownOnCard = false;
             _draggedCard = true;
+            CancelPendingClick();
             _collapseTimer.Stop();
             try { DragMove(); } catch { /* ignore */ }
             e.Handled = true;
@@ -263,7 +281,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     private void OnCardMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (_draggedCard) { _draggedCard = false; return; }
+        if (_draggedCard) { _draggedCard = false; CancelPendingClick(); return; }
         if (!_mouseDownOnCard) return;
         _mouseDownOnCard = false;
 
@@ -273,14 +291,52 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         // 上岛推送整卡点击回跳：点在推送卡片上且配置了 click 时，执行回跳而不展开
         if (_vm.ActivePushHasClick && IsWithinPushCard(e.OriginalSource))
         {
+            CancelPendingClick();
             _vm.ExecutePushClick();
             e.Handled = true;
             return;
         }
 
-        _collapseTimer.Stop();
-        _vm.IsExpanded = !_vm.IsExpanded;
+        var pos = e.GetPosition(this);
+        // 双击：与上一次单击距离相近且在窗口期内 → 执行快捷动作
+        if (_pendingClick && _clickDebounce.IsEnabled &&
+            Math.Abs(pos.X - _lastClickUp.X) < 24 && Math.Abs(pos.Y - _lastClickUp.Y) < 24)
+        {
+            CancelPendingClick();
+            ExecuteDoubleClickAction();
+            e.Handled = true;
+            return;
+        }
+
+        // 单击：挂起，等待双击窗口超时后再切换展开/收起
+        _pendingClick = true;
+        _lastClickUp = pos;
+        _clickDebounce.Stop();
+        _clickDebounce.Start();
         e.Handled = true;
+    }
+
+    private void CancelPendingClick()
+    {
+        _pendingClick = false;
+        _clickDebounce.Stop();
+    }
+
+    /// <summary>双击快捷动作：播放/暂停、打开设置或无动作（在设置-通用中配置）。</summary>
+    private void ExecuteDoubleClickAction()
+    {
+        switch (_settings.Current.DoubleClickAction)
+        {
+            case "OpenSettings":
+                _vm.OpenSettingsCommand.Execute(null);
+                break;
+            case "None":
+                break;
+            default: // PlayPause
+                if (_vm.CanPlayPause)
+                    _vm.PlayPauseCommand.Execute(null);
+                break;
+        }
     }
 
     /// <summary>判断点击源是否位于上岛推送卡片内部。</summary>
@@ -393,6 +449,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private void ApplyExpandedSectionVisibility()
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowArtTitle)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedHeroCard)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowProgress)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowControls)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedShowLyrics)));
