@@ -10,6 +10,11 @@
         PreviewMouseWheel="Root_PreviewMouseWheel"
         Foreground="{DynamicResource TextPrimaryBrush}">
     <Window.Resources>
+        <!-- 隐式文本默认前景色：确保深色模式下所有 TextBlock 为浅色文字、浅色模式为深色文字，
+             防止遗漏的控件（Popup/模板/DataTemplate 等继承断裂处）仍显示默认黑色。 -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
         <converters:BoolToVisibilityConverter x:Key="BoolToVis"/>
         <converters:BoolToVisibilityConverter x:Key="InvBoolToVis" Invert="True"/>
         <Style TargetType="TextBlock" x:Key="Label">
@@ -891,6 +896,7 @@
                                 <Button x:Name="BtnTodoAdd" Grid.Column="1" Content="+" Margin="6,0,0,0" Padding="12,5" Click="TodoAdd_Click"/>
                             </Grid>
                             <ListBox x:Name="TodoList" MaxHeight="180" Margin="0,8,0,0" BorderThickness="0" Background="Transparent"
+                            Foreground="{DynamicResource TextPrimaryBrush}"
                                      ScrollViewer.VerticalScrollBarVisibility="Auto">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
@@ -921,6 +927,7 @@
                                 <Button x:Name="BtnScheduleAdd" Grid.Column="2" Margin="6,0,0,0" Padding="12,5" Click="ScheduleAdd_Click"/>
                             </Grid>
                             <ListBox x:Name="ScheduleList" MaxHeight="160" Margin="0,8,0,0" BorderThickness="0" Background="Transparent"
+                            Foreground="{DynamicResource TextPrimaryBrush}"
                                      ScrollViewer.VerticalScrollBarVisibility="Auto">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
@@ -1066,6 +1073,7 @@
                                 BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Padding="6">
                             <StackPanel>
                                 <ListBox x:Name="HistoryList" MaxHeight="220" BorderThickness="0"
+                                Foreground="{DynamicResource TextPrimaryBrush}"
                                          Background="Transparent" ScrollViewer.VerticalScrollBarVisibility="Auto">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
