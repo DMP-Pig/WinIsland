@@ -43,6 +43,10 @@ public class KaraokeTextBlock : TextBlock
     private double _currentFraction;   // 当前已点亮比例（0..1，平滑推进）
     private double _targetFraction;    // 目标比例（0..1，来自 HighlightFraction）
     private string _lastText = string.Empty;
+    // 缓存 3 个 Run：同一句歌词内只更新 Foreground（仅重绘、不触发布局），换句时才重建文本
+    private Run? _litRun;      // 已完全点亮部分（高亮色）
+    private Run? _blendRun;    // 边界字符（基础色→高亮色混色）
+    private Run? _restRun;     // 未点亮部分（基础色）
 
     public KaraokeTextBlock()
     {
@@ -138,9 +142,18 @@ public class KaraokeTextBlock : TextBlock
 
     private void Render()
     {
-        Inlines.Clear();
         var text = KaraokeText ?? string.Empty;
-        if (text.Length == 0) return;
+
+        // 空文本：清空 Inlines（同时释放缓存的 Run）
+        if (text.Length == 0)
+        {
+            if (Inlines.Count > 0)
+            {
+                Inlines.Clear();
+                _litRun = _blendRun = _restRun = null;
+            }
+            return;
+        }
 
         var f = Math.Clamp(_currentFraction, 0, 1);
         var hl = ToColor(HighlightBrush) ?? System.Windows.Media.Colors.White;
@@ -153,22 +166,29 @@ public class KaraokeTextBlock : TextBlock
         var blend = f * len - litChars;                              // 边界字符混色比例 0..1
         if (litChars >= len) blend = 1;                              // 整句点亮
 
-        if (litChars > 0)
+        // 换句时才重建 Inlines（文本变化必然触发布局）；同一句只更新颜色（仅重绘，60fps 下不卡布局）
+        if (_litRun is null || !string.Equals(_lastText, text, StringComparison.Ordinal))
         {
-            Inlines.Add(new Run(text.Substring(0, litChars)) { Foreground = Frozen(new System.Windows.Media.SolidColorBrush(hl)) });
+            _lastText = text;
+            _litRun = new Run();
+            _blendRun = new Run();
+            _restRun = new Run();
+            Inlines.Clear();
+            Inlines.Add(_litRun);
+            Inlines.Add(_blendRun);
+            Inlines.Add(_restRun);
         }
 
-        if (litChars < len)
-        {
-            // 边界字符：从基础色平滑过渡到高亮色（这就是“流畅”的过渡动画）
-            var bc = Lerp(bs, hl, Math.Clamp(blend, 0, 1));
-            Inlines.Add(new Run(text[litChars].ToString()) { Foreground = Frozen(new System.Windows.Media.SolidColorBrush(bc)) });
-        }
+        _litRun.Text = litChars > 0 ? text.Substring(0, litChars) : string.Empty;
+        _litRun.Foreground = Frozen(new System.Windows.Media.SolidColorBrush(hl));
 
-        if (litChars + 1 < len)
-        {
-            Inlines.Add(new Run(text.Substring(litChars + 1)) { Foreground = Frozen(new System.Windows.Media.SolidColorBrush(bs)) });
-        }
+        _blendRun!.Text = litChars < len ? text[litChars].ToString() : string.Empty;
+        _blendRun.Foreground = litChars < len
+            ? Frozen(new System.Windows.Media.SolidColorBrush(Lerp(bs, hl, Math.Clamp(blend, 0, 1))))
+            : Frozen(new System.Windows.Media.SolidColorBrush(bs));
+
+        _restRun!.Text = litChars + 1 < len ? text.Substring(litChars + 1) : string.Empty;
+        _restRun.Foreground = Frozen(new System.Windows.Media.SolidColorBrush(bs));
     }
 
     private static System.Windows.Media.SolidColorBrush Frozen(System.Windows.Media.SolidColorBrush b) { b.Freeze(); return b; }

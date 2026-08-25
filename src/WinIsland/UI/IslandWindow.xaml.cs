@@ -501,7 +501,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     {
         try { System.Windows.Documents.TextElement.SetFontFamily(Card, new System.Windows.Media.FontFamily(_settings.Current.FontFamily)); } catch { /* 非法字体名忽略 */ }
         Card.CornerRadius = new CornerRadius(Math.Clamp(_settings.Current.CornerRadius, 16, 40));
-        Card.LayoutTransform = new ScaleTransform(FontScale, FontScale);
+        // 字体缩放 = 1 时清空 LayoutTransform（走普通布局路径，动画期间布局更轻、更快）；
+        // 只有用户设置缩放时才使用 ScaleTransform，避免无谓的变换开销。
+        Card.LayoutTransform = Math.Abs(FontScale - 1.0) < 0.001 ? null : new ScaleTransform(FontScale, FontScale);
         ApplySize();
     }
 
@@ -517,6 +519,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         var sb = new Storyboard();
         AddAnim(sb, Card, FrameworkElement.WidthProperty, CompactWidth, (int)dur, styleEase);
         AddAnim(sb, Card, FrameworkElement.HeightProperty, CompactHeight, (int)dur, styleEase);
+        Timeline.SetDesiredFrameRate(sb, 60); // 稳定 60fps（120Hz 显示器上也按 60fps 渲染，减少开销不掉帧）
         sb.Begin();
     }
 
@@ -534,6 +537,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         AddAnim(sb, CompactPushCard, UIElement.OpacityProperty, 1, (int)(320 * lm), smooth);
         AddAnim(sb, CompactPushScale, ScaleTransform.ScaleXProperty, 1, scaleDur, styleEase);
         AddAnim(sb, CompactPushScale, ScaleTransform.ScaleYProperty, 1, scaleDur, styleEase);
+        Timeline.SetDesiredFrameRate(sb, 60); // 稳定 60fps（120Hz 显示器上也按 60fps 渲染，减少开销不掉帧）
         sb.Begin();
     }
     /// <summary>右键菜单主题色（圆角液态玻璃）。</summary>
@@ -836,6 +840,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         Storyboard.SetTargetProperty(fade, new PropertyPath(OpacityProperty));
         sb.Children.Add(fade);
         sb.Completed += (_, _) => { if (!_vm.IsVisible) Hide(); };
+        Timeline.SetDesiredFrameRate(sb, 60); // 稳定 60fps（120Hz 显示器上也按 60fps 渲染，减少开销不掉帧）
         sb.Begin();
     }
 
@@ -849,6 +854,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         Storyboard.SetTarget(fade, this);
         Storyboard.SetTargetProperty(fade, new PropertyPath(OpacityProperty));
         sb.Children.Add(fade);
+        Timeline.SetDesiredFrameRate(sb, 60); // 稳定 60fps（120Hz 显示器上也按 60fps 渲染，减少开销不掉帧）
         sb.Begin();
     }
 
@@ -979,6 +985,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             onCompleted?.Invoke();
         };
         _currentStoryboard = sb;
+        Timeline.SetDesiredFrameRate(sb, 60); // 稳定 60fps（120Hz 显示器上也按 60fps 渲染，减少开销不掉帧）
         sb.Begin();
     }
 

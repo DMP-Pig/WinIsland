@@ -709,7 +709,6 @@
                                                    Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <TextBlock x:Name="LblCompPlaying" Grid.Column="2" Text="有歌曲播放时" HorizontalAlignment="Center" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     </Grid>
                                     <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
                                     <ItemsControl ItemsSource="{Binding Components}">

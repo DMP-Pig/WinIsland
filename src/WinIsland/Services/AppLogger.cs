@@ -13,6 +13,10 @@ public static class AppLogger
     private static readonly object Gate = new();
     private static string _currentDay = string.Empty;
     private static StreamWriter? _writer;
+    private static int _pendingLines;              // 未落盘行数（批量 flush，减少 UI 线程同步磁盘写）
+    private static DateTime _lastFlushUtc = DateTime.UtcNow;
+    private const int FlushThreshold = 20;         // 每 20 行强制落盘
+    private static readonly TimeSpan FlushInterval = TimeSpan.FromSeconds(2); // 或每 2 秒落盘
 
     public static void Info(string message) => Write("INFO", message);
     public static void Debug(string message) => Write("DEBUG", message);
@@ -34,10 +38,17 @@ public static class AppLogger
                     _currentDay = day;
                     var path = Path.Combine(AppPaths.LogsDir, $"app-{day}.log");
                     _writer = new StreamWriter(path, append: true, Encoding.UTF8);
-                    _writer.AutoFlush = true;
+                    _writer.AutoFlush = false; // 批量落盘：避免每次写日志同步刷磁盘卡顿（动画更流畅）
                 }
 
                 _writer.WriteLine($"[{now:yyyy-MM-dd HH:mm:ss.fff}] [{level}] {message}");
+                _pendingLines++;
+                if (_pendingLines >= FlushThreshold || DateTime.UtcNow - _lastFlushUtc >= FlushInterval)
+                {
+                    _writer.Flush();
+                    _pendingLines = 0;
+                    _lastFlushUtc = DateTime.UtcNow;
+                }
             }
         }
         catch
