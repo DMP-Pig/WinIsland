@@ -1,14 +1,14 @@
 # WinIsland — Windows 灵动岛
 
-> macOS Dynamic Island 风格的 Windows 桌面悬浮窗：媒体控制、同步歌词、自定义组件、通知中心、系统托盘常驻。
+> 把 iOS 灵动岛带到 Windows 的桌面悬浮窗：媒体控制、同步歌词、自定义组件、通知中心、系统托盘常驻。
 > 基于 **.NET 8 + WPF**，适配 Windows 11（兼容 Windows 10，1809+）。
 
 ---
 
 
-> **A modern, multi-functional Dynamic Island widget for Windows | 一款现代化、多功能的 Windows 灵动岛组件。**
+> **Bring the iOS Dynamic Island to Windows | 把 iOS 的灵动岛带到 Windows —— 一款现代化、多功能的灵动岛组件。**
 
-把 macOS 的灵动岛带到 Windows 11 / 10 —— 媒体播放控制、卡拉OK逐字歌词、可定制组件、通知中心、上岛 API，一个胶囊全搞定。基于 **.NET 8 + WPF**，免费开源（MIT），**无广告 · 无遥测**。
+把 iOS 的灵动岛带到 Windows 11 / 10 —— 媒体播放控制、卡拉OK逐字歌词、可定制组件、通知中心、上岛 API，一个胶囊全搞定。基于 **.NET 8 + WPF**，免费开源（MIT），**无广告 · 无遥测**。
 
 🌐 **官网：https://WinIsland.JudeKwong.com**
 
