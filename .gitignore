@@ -17,3 +17,6 @@ publish/
 
 # Local release artifacts
 releases/
+
+# Website (keep HTML out of the repo)
+website/
