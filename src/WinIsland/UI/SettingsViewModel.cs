@@ -187,6 +187,13 @@ public sealed class SettingsViewModel : ObservableObject
             new EnumOption<string>("Aurora", Localization.Get("Appearance_PresetAurora")),
             new EnumOption<string>("Custom", Localization.Get("Appearance_PresetCustom")),
         };
+        WaveStyleOptions = new[]
+        {
+            new EnumOption<string>("Bars", Localization.Get("Wave_StyleBars")),
+            new EnumOption<string>("Spectrum", Localization.Get("Wave_StyleSpectrum")),
+            new EnumOption<string>("Ring", Localization.Get("Wave_StyleRing")),
+            new EnumOption<string>("Particles", Localization.Get("Wave_StyleParticles")),
+        };
         AnimationStyleOptions = new[]
         {
             new EnumOption<string>("Spring", Localization.Get("Appearance_AnimSpring")),
@@ -241,6 +248,7 @@ public sealed class SettingsViewModel : ObservableObject
     public IReadOnlyList<EnumOption<MonitorSelection>> MonitorOptions { get; }
     public IReadOnlyList<EnumOption<string>> ThemePresetOptions { get; } = Array.Empty<EnumOption<string>>();
     public IReadOnlyList<EnumOption<string>> AnimationStyleOptions { get; } = Array.Empty<EnumOption<string>>();
+    public IReadOnlyList<EnumOption<string>> WaveStyleOptions { get; } = Array.Empty<EnumOption<string>>();
     public IReadOnlyList<string> PresetColors { get; }
     public IReadOnlyList<ComponentRow> Components => _components;
     public IReadOnlyList<OrderItem> OrderItems => _orderItems;

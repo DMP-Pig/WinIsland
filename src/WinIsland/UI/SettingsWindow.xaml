@@ -599,6 +599,7 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </WrapPanel>
+                            <CheckBox x:Name="ChkWallpaperTheme" IsChecked="{Binding Working.WallpaperThemeColorEnabled}"/>
                             <TextBlock x:Name="LblFontFamily" Style="{StaticResource Label}"/>
                             <TextBox Width="220" HorizontalAlignment="Left" Text="{Binding Working.FontFamily}"/>
                             <TextBlock x:Name="LblFontScale" Style="{StaticResource Label}"/>
@@ -667,6 +668,13 @@
                             <CheckBox x:Name="ChkWave" IsChecked="{Binding Working.WaveVisualizerEnabled}"/>
                             <CheckBox x:Name="ChkNetCurve" IsChecked="{Binding Working.NetCurveEnabled}"/>
                             <CheckBox x:Name="ChkWaveSync" IsChecked="{Binding Working.WaveSyncEnabled}"/>
+                            <TextBlock x:Name="LblWaveStyle" Style="{StaticResource Label}"/>
+                            <ComboBox SelectedValuePath="Value" DisplayMemberPath="Display" Width="220" HorizontalAlignment="Left"
+                                      SelectedValue="{Binding Working.WaveStyle}">
+                                <ComboBox.ItemsSource>
+                                    <Binding Path="WaveStyleOptions"/>
+                                </ComboBox.ItemsSource>
+                            </ComboBox>
                             <TextBlock x:Name="LblWaveSensitivity" Style="{StaticResource Label}"/>
                             <Slider Minimum="0.2" Maximum="3" Value="{Binding Working.WaveSensitivity}" Width="300" HorizontalAlignment="Left"/>
                             <TextBlock x:Name="LblWaveHeight" Style="{StaticResource Label}"/>

@@ -125,6 +125,13 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private readonly System.Diagnostics.Stopwatch _waveClock = System.Diagnostics.Stopwatch.StartNew();
     private readonly List<ScaleTransform> _waveBarsExpanded = new();
     private readonly List<ScaleTransform> _waveBarsCompact = new();
+    // 备选波纹样式（频谱/环形/粒子）
+    private readonly List<ScaleTransform> _waveSpectrumExpanded = new();
+    private readonly List<ScaleTransform> _waveSpectrumCompact = new();
+    private ScaleTransform? _waveRingScaleExpanded;
+    private ScaleTransform? _waveRingScaleCompact;
+    private readonly List<TranslateTransform> _waveParticleTransformsExpanded = new();
+    private readonly List<TranslateTransform> _waveParticleTransformsCompact = new();
     private Storyboard? _currentStoryboard;
     private HwndSource? _hwndSource;
 
@@ -173,6 +180,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             _waveBarsExpanded.AddRange(new[] { WaveBar1, WaveBar2, WaveBar3, WaveBar4, WaveBar5, WaveBar6, WaveBar7 });
             _waveBarsCompact.AddRange(new[] { WaveBarC1, WaveBarC2, WaveBarC3, WaveBarC4, WaveBarC5, WaveBarC6, WaveBarC7 });
         }
+        InitWaveVisualStyles();
 
         // 悬停不展开；移出时若已展开则延迟收起
         Card.MouseLeave += (_, _) =>
@@ -698,6 +706,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private void RefreshWave()
     {
         var on = HasWave;
+        ApplyWaveStyleVisibility();
         var lowPower = _settings.Current.LowPowerMode;
         // 三态：关闭 / 普通（CompositionTarget 60fps）/ 低功耗定时器（~30fps）
         var wantTimer = on && lowPower;
@@ -724,6 +733,12 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         {
             foreach (var sc in _waveBarsExpanded) sc.ScaleY = 0.16;
             foreach (var sc in _waveBarsCompact) sc.ScaleY = 0.16;
+            foreach (var sc in _waveSpectrumExpanded) sc.ScaleY = 0.05;
+            foreach (var sc in _waveSpectrumCompact) sc.ScaleY = 0.05;
+            if (_waveRingScaleExpanded is not null) { _waveRingScaleExpanded.ScaleX = _waveRingScaleExpanded.ScaleY = 1.0; }
+            if (_waveRingScaleCompact is not null) { _waveRingScaleCompact.ScaleX = _waveRingScaleCompact.ScaleY = 1.0; }
+            foreach (var tr in _waveParticleTransformsExpanded) tr.Y = 0;
+            foreach (var tr in _waveParticleTransformsCompact) tr.Y = 0;
         }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasWave)));
     }
@@ -755,8 +770,25 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             var level = Math.Clamp(_vm.WaveLevel, 0, 1);
             var height = Math.Clamp(_settings.Current.WaveHeight, 0.25, 2.0);
             var alpha = 1.0 - Math.Exp(-dt * 22.0); // 帧率无关的指数平滑
-            UpdateWaveSet(_waveBarsCompact, level, now, alpha, height);
-            UpdateWaveSet(_waveBarsExpanded, level, now, alpha, height);
+            switch (_settings.Current.WaveStyle)
+            {
+                case "Spectrum":
+                    UpdateWaveSet(_waveSpectrumCompact, level, now, alpha, height, bias: 1);
+                    UpdateWaveSet(_waveSpectrumExpanded, level, now, alpha, height, bias: 1);
+                    break;
+                case "Ring":
+                    UpdateRingVisual(_waveRingScaleCompact, level, now, alpha);
+                    UpdateRingVisual(_waveRingScaleExpanded, level, now, alpha);
+                    break;
+                case "Particles":
+                    UpdateParticlesVisual(_waveParticleTransformsCompact, level, now, alpha, 5.0);
+                    UpdateParticlesVisual(_waveParticleTransformsExpanded, level, now, alpha, 8.0);
+                    break;
+                default:
+                    UpdateWaveSet(_waveBarsCompact, level, now, alpha, height);
+                    UpdateWaveSet(_waveBarsExpanded, level, now, alpha, height);
+                    break;
+            }
         }
         catch
         {
@@ -764,7 +796,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void UpdateWaveSet(IReadOnlyList<ScaleTransform> bars, double level, double t, double alpha, double height)
+    private void UpdateWaveSet(IReadOnlyList<ScaleTransform> bars, double level, double t, double alpha, double height, double bias = 0)
     {
         var n = bars.Count;
         for (var i = 0; i < n; i++)
@@ -775,15 +807,153 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             {
                 var phase = t * 6.0 - i * 0.9;
                 var wave = 0.5 + 0.5 * Math.Sin(phase);
-                target = Math.Clamp((0.10 + (0.12 + 0.72 * level) * wave) * height, 0.08, 1.0);
+                if (bias > 0)
+                    target = Math.Clamp((0.05 + (0.14 + 0.66 * level) * wave * (0.55 + 0.45 * (double)i / n)) * height, 0.05, 1.0);
+                else
+                    target = Math.Clamp((0.10 + (0.12 + 0.72 * level) * wave) * height, 0.08, 1.0);
             }
             else
             {
-                target = 0.08;
+                target = bias > 0 ? 0.05 : 0.08;
             }
             sc.ScaleY += (target - sc.ScaleY) * alpha;
         }
     }
+    /// <summary>按当前波纹样式切换可见面板（柱状/频谱/环形/粒子）。</summary>
+    private void ApplyWaveStyleVisibility()
+    {
+        var style = _settings.Current.WaveStyle ?? "Bars";
+        var bars = style == "Bars" ? Visibility.Visible : Visibility.Collapsed;
+        var spec = style == "Spectrum" ? Visibility.Visible : Visibility.Collapsed;
+        var ring = style == "Ring" ? Visibility.Visible : Visibility.Collapsed;
+        var part = style == "Particles" ? Visibility.Visible : Visibility.Collapsed;
+        if (WaveBarsPanelCompact is not null) WaveBarsPanelCompact.Visibility = bars;
+        if (WaveBarsPanelExpanded is not null) WaveBarsPanelExpanded.Visibility = bars;
+        if (WaveSpectrumHostCompact is not null) WaveSpectrumHostCompact.Visibility = spec;
+        if (WaveSpectrumHostExpanded is not null) WaveSpectrumHostExpanded.Visibility = spec;
+        if (WaveRingHostCompact is not null) WaveRingHostCompact.Visibility = ring;
+        if (WaveRingHostExpanded is not null) WaveRingHostExpanded.Visibility = ring;
+        if (WaveParticlesHostCompact is not null) WaveParticlesHostCompact.Visibility = part;
+        if (WaveParticlesHostExpanded is not null) WaveParticlesHostExpanded.Visibility = part;
+    }
+
+    /// <summary>构建频谱/环形/粒子三种备选波纹（启动时一次性创建，颜色随主题绑定）。</summary>
+    private void InitWaveVisualStyles()
+    {
+        try
+        {
+            BuildSpectrumBars(WaveSpectrumHostCompact, _waveSpectrumCompact, 12, 1.8, 1.2);
+            BuildSpectrumBars(WaveSpectrumHostExpanded, _waveSpectrumExpanded, 16, 2.2, 1.2);
+            _waveRingScaleCompact = BuildRing(WaveRingHostCompact, 12);
+            _waveRingScaleExpanded = BuildRing(WaveRingHostExpanded, 16);
+            BuildParticles(WaveParticlesHostCompact, _waveParticleTransformsCompact, 8);
+            BuildParticles(WaveParticlesHostExpanded, _waveParticleTransformsExpanded, 10);
+            ApplyWaveStyleVisibility();
+        }
+        catch
+        {
+            // 备选样式构建失败时仅保留默认柱状，不影响主流程
+        }
+    }
+
+    /// <summary>频谱条：窄条下对齐，右高左低频段分布，随节奏起伏。</summary>
+    private void BuildSpectrumBars(Grid? host, List<ScaleTransform> list, int count, double barW, double gap)
+    {
+        if (host is null) return;
+        var left = (host.Width - (count * barW + (count - 1) * gap)) / 2.0;
+        for (var i = 0; i < count; i++)
+        {
+            var sc = new ScaleTransform(1, 0.05);
+            var bar = new Border
+            {
+                Width = barW,
+                Height = host.Height,
+                CornerRadius = new CornerRadius(Math.Max(0.3, barW / 2)),
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(left, 0, 0, 0),
+                RenderTransformOrigin = new Point(0.5, 1.0),
+                RenderTransform = sc,
+            };
+            BindingOperations.SetBinding(bar, Border.BackgroundProperty, new System.Windows.Data.Binding(nameof(TextPrimary)) { Source = this });
+            host.Children.Add(bar);
+            list.Add(sc);
+            left += barW + gap;
+        }
+    }
+
+    /// <summary>环形波纹：圆点中心，随节奏缩放。</summary>
+    private ScaleTransform? BuildRing(Grid? host, double diameter)
+    {
+        if (host is null) return null;
+        var sc = new ScaleTransform(1, 1);
+        var ring = new Border
+        {
+            Width = diameter,
+            Height = diameter,
+            CornerRadius = new CornerRadius(diameter / 2),
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            RenderTransformOrigin = new Point(0.5, 0.5),
+            RenderTransform = sc,
+        };
+        BindingOperations.SetBinding(ring, Border.BackgroundProperty, new System.Windows.Data.Binding(nameof(TextPrimary)) { Source = this });
+        host.Children.Add(ring);
+        return sc;
+    }
+
+    /// <summary>粒子波纹：散布小圆点，随节奏上下脉冲。</summary>
+    private void BuildParticles(Grid? host, List<TranslateTransform> list, int count)
+    {
+        if (host is null) return;
+        var spacing = host.Width / count;
+        for (var i = 0; i < count; i++)
+        {
+            var tr = new TranslateTransform(0, 0);
+            var p = new System.Windows.Shapes.Ellipse
+            {
+                Width = 2.5,
+                Height = 2.5,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(spacing * (i + 0.5) - 1.25, 0, 0, 0),
+                RenderTransform = tr,
+            };
+            BindingOperations.SetBinding(p, System.Windows.Shapes.Ellipse.FillProperty, new System.Windows.Data.Binding(nameof(TextPrimary)) { Source = this });
+            host.Children.Add(p);
+            list.Add(tr);
+        }
+    }
+
+    private void UpdateRingVisual(ScaleTransform? ring, double level, double t, double alpha)
+    {
+        if (ring is null) return;
+        double target = 1.0;
+        if (_vm.IsPlaying)
+        {
+            var wave = 0.5 + 0.5 * Math.Sin(t * 6.0);
+            target = 1.0 + 0.24 * level * wave;
+        }
+        ring.ScaleX += (target - ring.ScaleX) * alpha;
+        ring.ScaleY = ring.ScaleX;
+    }
+
+    private void UpdateParticlesVisual(IReadOnlyList<TranslateTransform> parts, double level, double t, double alpha, double maxY)
+    {
+        var n = parts.Count;
+        for (var i = 0; i < n; i++)
+        {
+            var tr = parts[i];
+            double target = 0;
+            if (_vm.IsPlaying)
+            {
+                var wave = 0.5 + 0.5 * Math.Sin(t * 6.0 - i * 1.3);
+                target = -wave * level * maxY;
+            }
+            tr.Y += (target - tr.Y) * alpha;
+        }
+    }
+
     /// <summary>展开背景随专辑封面取色：1x1 采样主色 + 主题底色线性渐变，失败则回退主题背景。</summary>
     private void ApplyCoverTint()
     {

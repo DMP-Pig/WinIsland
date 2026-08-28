@@ -688,6 +688,7 @@
                         <!-- 声音波纹：随音量起伏（紧凑行） -->
                                                 <StackPanel x:Name="WaveBoxCompact" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0"
                                     Visibility="{Binding HasWave, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                                        <StackPanel x:Name="WaveBarsPanelCompact" Orientation="Horizontal">
                             <Border Width="2.2" Height="12" CornerRadius="1.1" VerticalAlignment="Center" Margin="0,0,1.8,0"
                                 Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                 <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
@@ -723,6 +724,10 @@
                                 <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                 <Border.RenderTransform><ScaleTransform x:Name="WaveBarC7" ScaleY="0.16"/></Border.RenderTransform>
                             </Border>
+                        </StackPanel>
+                            <Grid x:Name="WaveSpectrumHostCompact" Width="46" Height="13" VerticalAlignment="Center" Visibility="Collapsed"/>
+                            <Grid x:Name="WaveRingHostCompact" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0" Visibility="Collapsed"/>
+                            <Grid x:Name="WaveParticlesHostCompact" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0" Visibility="Collapsed"/>
                         </StackPanel>
                         <Button Style="{StaticResource IconButton}" Command="{Binding PlayPauseCommand}">
                             <TextBlock Text="{Binding PlayPauseGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
@@ -894,6 +899,7 @@
                             <!-- 声音波纹：随音量起伏（展开控制行） -->
                                                         <StackPanel x:Name="WaveBox" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0"
                                         Visibility="{Binding HasWave, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                                <StackPanel x:Name="WaveBarsPanelExpanded" Orientation="Horizontal">
                                 <Border Width="2.6" Height="16" CornerRadius="1.3" VerticalAlignment="Center" Margin="0,0,2.2,0"
                                     Background="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}">
                                     <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
@@ -929,6 +935,10 @@
                                     <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
                                     <Border.RenderTransform><ScaleTransform x:Name="WaveBar7" ScaleY="0.16"/></Border.RenderTransform>
                                 </Border>
+                            </StackPanel>
+                            <Grid x:Name="WaveSpectrumHostExpanded" Width="58" Height="18" VerticalAlignment="Center" Visibility="Collapsed"/>
+                            <Grid x:Name="WaveRingHostExpanded" Width="24" Height="24" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="Collapsed"/>
+                            <Grid x:Name="WaveParticlesHostExpanded" Width="24" Height="24" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="Collapsed"/>
                             </StackPanel>
                             <Button Style="{StaticResource IconButton}" Command="{Binding PreviousCommand}" IsEnabled="{Binding CanPrevious}">
                                 <TextBlock Text="&#xE892;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>

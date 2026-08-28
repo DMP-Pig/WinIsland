@@ -1,5 +1,7 @@
-﻿using System.Windows;
+﻿using System.IO;
+using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Brush = System.Windows.Media.Brush;
 using Color = System.Windows.Media.Color;
 using Brushes = System.Windows.Media.Brushes;
@@ -75,6 +77,38 @@ public sealed class ThemeService
         return fallback;
     }
 
+    /// <summary>壁纸主色缓存：路径不变则不重复解码（壁纸文件常达数 MB，避免每次重读）。</summary>
+    private static (string Path, Color Color)? _wallpaperCache;
+
+    /// <summary>读取当前壁纸并缩放到 1x1 取平均主色；不可用（纯色/幻灯片/路径无效）时返回 null。</summary>
+    private static Color? GetWallpaperColor()
+    {
+        try
+        {
+            // WPF 不提供壁纸路径，从注册表读取（纯本地，不联网）
+            var path = Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Desktop", "WallPaper", "") as string;
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return null;
+            if (_wallpaperCache?.Path == path) return _wallpaperCache.Value.Color;
+            var bmp = new BitmapImage(new Uri(path));
+            bmp.Freeze();
+            var rt = new RenderTargetBitmap(1, 1, 96, 96, PixelFormats.Pbgra32);
+            var dv = new DrawingVisual();
+            using (var dc = dv.RenderOpen())
+                dc.DrawImage(bmp, new Rect(0, 0, 1, 1));
+            rt.Render(dv);
+            var px = new byte[4];
+            rt.CopyPixels(px, 4, 0);
+            var c = Color.FromRgb(px[2], px[1], px[0]); // Pbgra32 内存序：B G R A
+            _wallpaperCache = (path, c);
+            return c;
+        }
+        catch
+        {
+            // 任何读取/解码异常都回退原主题色，绝不影响主流程
+            return null;
+        }
+    }
+
     public void Apply(AppSettings settings)
     {
         _settings = settings;
@@ -105,6 +139,12 @@ public sealed class ThemeService
             tintResolved = !string.IsNullOrWhiteSpace(settings.ThemeTint);
         }
         // Default（或未知预设）：强调色保持用户自定义，背景色用下面的明暗默认值
+        // 壁纸取色（可选）：开启后壁纸主色覆盖强调色（含皮肤预设），失败则保持原色
+        if (settings.WallpaperThemeColorEnabled)
+        {
+            var wall = GetWallpaperColor();
+            if (wall is Color wc) AccentColor = wc;
+        }
 
         if (dark)
         {

@@ -527,9 +527,11 @@ public partial class SettingsWindow : Window
         LblCornerRadius.Text = Localization.Get("Appearance_CornerRadius");
         ChkCoverTint.Content = Localization.Get("Appearance_CoverTint");
         ChkMarquee.Content = Localization.Get("Appearance_Marquee");
+        ChkWallpaperTheme.Content = Localization.Get("Appearance_WallpaperTheme");
         ChkWave.Content = Localization.Get("Wave_Enabled");
         ChkWaveSync.Content = Localization.Get("Wave_Sync");
         ChkNetCurve.Content = Localization.Get("Appearance_NetCurve");
+        LblWaveStyle.Text = Localization.Get("Wave_Style");
         LblWaveSensitivity.Text = Localization.Get("Wave_Sensitivity");
         LblWaveHeight.Text = Localization.Get("Wave_Height");
         TxtWaveNote.Text = Localization.Get("Wave_Note");

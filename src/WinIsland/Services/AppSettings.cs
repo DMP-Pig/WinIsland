@@ -212,10 +212,12 @@ public sealed class AppSettings
     public double FontScale { get; set; } = 1.0;           // 字号缩放 0.8 ~ 1.4
     public double CornerRadius { get; set; } = 28;         // 胶囊圆角 16 ~ 40
     public bool CoverTintBackground { get; set; } = true;  // 展开背景随专辑封面取色
+    public bool WallpaperThemeColorEnabled { get; set; } = false; // 壁纸取色：从当前壁纸提取主色作为主题色（纯本地，不联网）
     public bool MarqueeTextEnabled { get; set; } = false; // 跑马灯：歌名/歌词超宽时自动横向滚动
 
     // ── 波纹可视化（媒体按钮左侧，随声音/播放波动）──
     public bool WaveVisualizerEnabled { get; set; } = true;
+    public string WaveStyle { get; set; } = "Bars";   // 波纹样式：Bars | Spectrum | Ring | Particles
     public bool WaveSyncEnabled { get; set; } = true;      // 跟随音乐节奏：采集系统输出声音驱动波纹
     public double WaveSensitivity { get; set; } = 1.0;     // 波纹灵敏度 0.2 ~ 3.0
     public double WaveHeight { get; set; } = 1.0;          // 波纹高度 0.4 ~ 1.6
