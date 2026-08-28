@@ -28,13 +28,13 @@
 
 ---
 
-## 📥 下载（最新稳定版 1.1.1）
+## 📥 下载（最新稳定版 1.1.2）
 
 | 平台 | 下载 | 说明 |
 | --- | --- | --- |
-| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.1/WinIsland-1.1.1-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
-| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.1/WinIsland-1.1.1-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备，单文件免安装 |
-| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.1/WinIsland-Setup-1.1.1.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
+| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.2/WinIsland-1.1.2-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
+| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.2/WinIsland-1.1.2-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备，单文件免安装 |
+| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.2/WinIsland-Setup-1.1.2.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
 
 所有历史版本与完整更新日志见 [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases)。
 
@@ -238,7 +238,7 @@ build/
 
 ## 快速开始
 
-> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.1.1/win-x64/WinIsland-1.1.1-win-x64.exe`，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x64 / win-arm64 便携版及通用安装包）。
+> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.1.2/win-x64/WinIsland-1.1.2-win-x64.exe`，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x64 / win-arm64 便携版及通用安装包）。
 
 ### 环境要求
 - Windows 10 1809+ / Windows 11
@@ -267,7 +267,7 @@ dotnet run --project src\WinIsland -c Debug
 ### 安装包（可选）
 安装 [Inno Setup 6](https://jrsoftware.org/isinfo.php) 后：
 ```powershell
-iscc.exe build\release-1.1.1.iss
+iscc.exe build\release-1.1.2.iss
 ```
 生成 `releases\<version>\WinIsland-Setup-<version>.exe`（通用安装包，同时支持 x64 与 ARM64，自动按架构安装）。稳定版发布时在 `build\` 下按版本复制一份 `release-<version>.iss` 并更新版本号。
 
