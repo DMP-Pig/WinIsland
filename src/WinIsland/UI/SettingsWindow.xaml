@@ -1061,6 +1061,7 @@
                         <CheckBox x:Name="ChkScreenCapEnabled" IsChecked="{Binding Working.ScreenCaptureNotifyEnabled}"/>
                         <CheckBox x:Name="ChkScreenshotNotify" IsChecked="{Binding Working.ScreenshotNotifyEnabled}"/>
                         <CheckBox x:Name="ChkRecordingNotify" IsChecked="{Binding Working.RecordingNotifyEnabled}"/>
+                        <CheckBox x:Name="ChkRecordingDnd" IsChecked="{Binding Working.RecordingDndEnabled}"/>
                         <TextBlock x:Name="TxtScreenCapNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,6,0,0" MaxWidth="520"/>
 

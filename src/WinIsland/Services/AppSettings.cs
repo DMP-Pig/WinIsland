@@ -233,6 +233,7 @@ public sealed class AppSettings
 
     // ── 屏幕录制 / 截图提示（默认关，避免打扰；PrintScreen 钩子 + 录制进程轮询）──
     public bool ScreenCaptureNotifyEnabled { get; set; } = false;  // 总开关
+    public bool RecordingDndEnabled { get; set; } = false;      // 录屏时自动勿扰（不弹通知横幅）
     public bool ScreenshotNotifyEnabled { get; set; } = true;      // 按 PrintScreen 截图时提示
     public bool RecordingNotifyEnabled { get; set; } = true;       // 检测到录制软件时提示
     // ── 日历事件提醒（.ics 本地解析，默认关）──

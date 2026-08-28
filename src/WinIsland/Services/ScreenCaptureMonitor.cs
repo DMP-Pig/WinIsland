@@ -64,6 +64,9 @@ public sealed class ScreenCaptureMonitor : IDisposable
     /// <summary>是否提示录制进程。</summary>
     public bool RecordingEnabled { get; set; } = true;
 
+    /// <summary>全局是否正在录制（静态镜像，供勿扰/规则引擎查询）。</summary>
+    public static bool GlobalIsRecording { get; private set; }
+
     /// <summary>当前是否检测到录制中。</summary>
     public bool IsRecording { get; private set; }
 
@@ -187,6 +190,7 @@ public sealed class ScreenCaptureMonitor : IDisposable
     {
         var changed = recording != IsRecording || app != RecordingApp;
         IsRecording = recording;
+        GlobalIsRecording = recording;
         RecordingApp = app;
         if (changed) RecordingChanged?.Invoke(recording, app);
     }

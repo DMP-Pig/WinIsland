@@ -547,6 +547,7 @@ public partial class SettingsWindow : Window
         ChkScreenCapEnabled.Content = Localization.Get("ScreenCap_Enabled");
         ChkScreenshotNotify.Content = Localization.Get("ScreenCap_Screenshot");
         ChkRecordingNotify.Content = Localization.Get("ScreenCap_Recording");
+        ChkRecordingDnd.Content = Localization.Get("ScreenCap_RecordingDnd");
         TxtScreenCapNote.Text = Localization.Get("ScreenCap_Note");
         LblVolTempTitle.Text = Localization.Get("VolumeTemp_Title");
         ChkVolTemp.Content = Localization.Get("VolumeTemp_Enabled");

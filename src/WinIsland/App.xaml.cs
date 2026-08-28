@@ -190,10 +190,11 @@ public partial class App : Application
                 _notifications?.Show(Localization.Get("ScreenCap_RecordingTitle"),
                     string.Format(Localization.Get("ScreenCap_RecordingBody"), app), "\uE786", "WinIsland");
         };
-        if (_settings.Current.ScreenCaptureNotifyEnabled)
+        // 录屏智能勿扰（录屏时自动勿扰）也需要轮询录制状态，与提示开关共用监控实例
+        if (_settings.Current.ScreenCaptureNotifyEnabled || _settings.Current.RecordingDndEnabled)
         {
             _screenCapture.ScreenshotEnabled = _settings.Current.ScreenshotNotifyEnabled;
-            _screenCapture.RecordingEnabled = _settings.Current.RecordingNotifyEnabled;
+            _screenCapture.RecordingEnabled = _settings.Current.RecordingNotifyEnabled || _settings.Current.RecordingDndEnabled;
             _screenCapture.Start();
         }
 
@@ -329,8 +330,10 @@ public partial class App : Application
                 _screenCapture.ScreenshotEnabled = s.ScreenshotNotifyEnabled;
                 _screenCapture.RecordingEnabled = s.RecordingNotifyEnabled;
                 var capRunning = _screenCapture.IsRunning;
-                if (s.ScreenCaptureNotifyEnabled && !capRunning) _screenCapture.Start();
-                else if (!s.ScreenCaptureNotifyEnabled && capRunning) _screenCapture.Stop();
+                var capWanted = s.ScreenCaptureNotifyEnabled || s.RecordingDndEnabled;
+                _screenCapture.RecordingEnabled = s.RecordingNotifyEnabled || s.RecordingDndEnabled;
+                if (capWanted && !capRunning) _screenCapture.Start();
+                else if (!capWanted && capRunning) _screenCapture.Stop();
             }
 
             // 日历提醒：路径/开关变化立即重新解析（服务内部有文件未变短路）
