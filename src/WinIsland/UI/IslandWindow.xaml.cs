@@ -322,13 +322,29 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         _clickDebounce.Stop();
     }
 
-    /// <summary>双击快捷动作：播放/暂停、打开设置或无动作（在设置-通用中配置）。</summary>
+    /// <summary>双击快捷动作（在设置-通用中配置）：播放/暂停、展开/收起、显示桌面、隐藏/显示、切歌、打开设置或无动作。</summary>
     private void ExecuteDoubleClickAction()
     {
         switch (_settings.Current.DoubleClickAction)
         {
             case "OpenSettings":
                 _vm.OpenSettingsCommand.Execute(null);
+                break;
+            case "ToggleExpand":
+                _collapseTimer.Stop();
+                _vm.IsExpanded = !_vm.IsExpanded;
+                break;
+            case "ShowDesktop":
+                Services.SystemShell.ShowDesktop();
+                break;
+            case "ToggleVisible":
+                _vm.ToggleUserVisible();
+                break;
+            case "NextTrack":
+                if (_vm.CanNext) _vm.NextCommand.Execute(null);
+                break;
+            case "PrevTrack":
+                if (_vm.CanPrevious) _vm.PreviousCommand.Execute(null);
                 break;
             case "None":
                 break;

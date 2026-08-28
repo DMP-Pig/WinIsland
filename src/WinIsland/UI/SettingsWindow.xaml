@@ -508,6 +508,11 @@
                             <TextBlock x:Name="LblDoubleClick" Style="{StaticResource Label}"/>
                             <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding Working.DoubleClickAction}">
                                 <ComboBoxItem x:Name="CbiDcPlayPause" Tag="PlayPause" Content="播放 / 暂停"/>
+                                <ComboBoxItem x:Name="CbiDcToggleExpand" Tag="ToggleExpand" Content="展开 / 收起"/>
+                                <ComboBoxItem x:Name="CbiDcShowDesktop" Tag="ShowDesktop" Content="显示桌面"/>
+                                <ComboBoxItem x:Name="CbiDcToggleVisible" Tag="ToggleVisible" Content="隐藏 / 显示灵动岛"/>
+                                <ComboBoxItem x:Name="CbiDcNext" Tag="NextTrack" Content="下一首"/>
+                                <ComboBoxItem x:Name="CbiDcPrev" Tag="PrevTrack" Content="上一首"/>
                                 <ComboBoxItem x:Name="CbiDcOpenSettings" Tag="OpenSettings" Content="打开设置"/>
                                 <ComboBoxItem x:Name="CbiDcNone" Tag="None" Content="无动作"/>
                             </ComboBox>
