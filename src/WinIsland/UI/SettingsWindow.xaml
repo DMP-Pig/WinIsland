@@ -663,6 +663,7 @@
                             </StackPanel>
 
                             <CheckBox x:Name="ChkCoverTint" IsChecked="{Binding Working.CoverTintBackground}"/>
+                            <CheckBox x:Name="ChkMarquee" IsChecked="{Binding Working.MarqueeTextEnabled}"/>
                             <CheckBox x:Name="ChkWave" IsChecked="{Binding Working.WaveVisualizerEnabled}"/>
                             <CheckBox x:Name="ChkNetCurve" IsChecked="{Binding Working.NetCurveEnabled}"/>
                             <CheckBox x:Name="ChkWaveSync" IsChecked="{Binding Working.WaveSyncEnabled}"/>

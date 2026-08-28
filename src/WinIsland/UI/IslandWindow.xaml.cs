@@ -207,6 +207,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             ApplyAppearance();
             RefreshWave();
             ApplyCoverTint();
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(MarqueeEnabled)));
         };
 
         Loaded += OnLoaded;
@@ -239,6 +240,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     // ── 单行模式：紧凑态所有组件一行显示 ──
     public bool SingleLineMode => _settings.Current.SingleLineMode;
+    /// <summary>跑马灯开关（歌名/歌词超宽时横向滚动）。</summary>
+    public bool MarqueeEnabled => _settings.Current.MarqueeTextEnabled;
     // 声音波纹：播放中 + 开启波纹设置 + 岛可见才显示（空闲时停止计时器）
     public bool HasWave => _vm.IsVisible && _vm.HasMedia && _vm.IsPlaying && _settings.Current.WaveVisualizerEnabled;
 

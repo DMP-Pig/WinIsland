@@ -510,9 +510,12 @@
                                     <!-- 多行模式（默认）：歌名 / 歌手 / 歌词 / 进度条 -->
                                     <StackPanel x:Name="MultiLineInfo" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Grid MaxWidth="220" ClipToBounds="True">
                                             <TextBlock Text="{Binding DataContext.Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="13" FontWeight="SemiBold"
                                                        Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                                       TextTrimming="CharacterEllipsis" MaxWidth="220" VerticalAlignment="Center"/>
+                                                       karaoke:Marquee.IsEnabled="{Binding MarqueeEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
                                             <!-- 播放来源徽标（如 Spotify / 网易云音乐），无来源名时隐藏 -->
                                             <Border CornerRadius="6" Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center"
                                                     Visibility="{Binding DataContext.HasSourceDetail, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
@@ -523,12 +526,15 @@
                                         <TextBlock Text="{Binding DataContext.Artist, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="11" Margin="0,1,0,0"
                                                    Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                                    TextTrimming="CharacterEllipsis"/>
-                                        <karaoke:KaraokeTextBlock
-                                            KaraokeText="{Binding DataContext.CurrentLyricText, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            HighlightFraction="{Binding DataContext.CompactHighlightFraction, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            HighlightBrush="White" BaseBrush="#80FFFFFF"
-                                            FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"/>
+                                        <Grid ClipToBounds="True">
+                                            <karaoke:KaraokeTextBlock
+                                                KaraokeText="{Binding DataContext.CurrentLyricText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                HighlightFraction="{Binding DataContext.CompactHighlightFraction, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                HighlightBrush="White" BaseBrush="#80FFFFFF"
+                                                karaoke:Marquee.IsEnabled="{Binding MarqueeEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"/>
+                                        </Grid>
                                         <ProgressBar Height="3" Maximum="1"
                                                      Value="{Binding DataContext.Progress, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" Margin="0,4,0,0">
                                             <ProgressBar.Template>
@@ -544,23 +550,29 @@
                                     </StackPanel>
                                     <!-- 单行模式：封面 + 歌名 - 歌手（一行） -->
                                     <StackPanel x:Name="SingleLineInfo" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                                        <Grid MaxWidth="140" ClipToBounds="True">
                                         <TextBlock Text="{Binding DataContext.Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="13" FontWeight="SemiBold"
                                                    Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                                   TextTrimming="CharacterEllipsis" MaxWidth="140" VerticalAlignment="Center"/>
+                                                   karaoke:Marquee.IsEnabled="{Binding MarqueeEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
                                         <TextBlock Text="{Binding DataContext.Artist, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="11" Margin="6,0,0,0"
                                                    Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                                    TextTrimming="CharacterEllipsis" MaxWidth="100" VerticalAlignment="Center"/>
                                         <TextBlock Text="&#x00B7;" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center"
                                                    Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                                    Visibility="{Binding DataContext.HasLyrics, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+                                        <Grid MaxWidth="300" ClipToBounds="True"
+                                        Visibility="{Binding DataContext.HasLyrics, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
                                         <karaoke:KaraokeTextBlock
                                             KaraokeText="{Binding DataContext.CurrentLyricText, RelativeSource={RelativeSource AncestorType=Window}}"
                                             HighlightFraction="{Binding DataContext.CompactHighlightFraction, RelativeSource={RelativeSource AncestorType=Window}}"
                                             IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}}"
                                             HighlightBrush="White" BaseBrush="#A0FFFFFF" FontSize="12" Margin="8,0,0,0"
-                                            TextAlignment="Left" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="300"
-                                            VerticalAlignment="Center"
-                                            Visibility="{Binding DataContext.HasLyrics, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+                                            TextAlignment="Left" FontWeight="SemiBold"
+                                            karaoke:Marquee.IsEnabled="{Binding MarqueeEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            VerticalAlignment="Center"/>
+                                    </Grid>
                                     </StackPanel>
                                 </StackPanel>
                                 <DataTemplate.Triggers>

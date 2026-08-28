@@ -212,6 +212,7 @@ public sealed class AppSettings
     public double FontScale { get; set; } = 1.0;           // 字号缩放 0.8 ~ 1.4
     public double CornerRadius { get; set; } = 28;         // 胶囊圆角 16 ~ 40
     public bool CoverTintBackground { get; set; } = true;  // 展开背景随专辑封面取色
+    public bool MarqueeTextEnabled { get; set; } = false; // 跑马灯：歌名/歌词超宽时自动横向滚动
 
     // ── 波纹可视化（媒体按钮左侧，随声音/播放波动）──
     public bool WaveVisualizerEnabled { get; set; } = true;

@@ -526,6 +526,7 @@ public partial class SettingsWindow : Window
         LblFontScale.Text = Localization.Get("Appearance_FontScale");
         LblCornerRadius.Text = Localization.Get("Appearance_CornerRadius");
         ChkCoverTint.Content = Localization.Get("Appearance_CoverTint");
+        ChkMarquee.Content = Localization.Get("Appearance_Marquee");
         ChkWave.Content = Localization.Get("Wave_Enabled");
         ChkWaveSync.Content = Localization.Get("Wave_Sync");
         ChkNetCurve.Content = Localization.Get("Appearance_NetCurve");
