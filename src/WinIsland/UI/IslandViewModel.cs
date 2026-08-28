@@ -1506,6 +1506,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>全屏（视频/游戏/演示）时由 FullScreenMonitor 置位，灵动岛自动隐藏，退出全屏恢复。</summary>
+    public bool FullScreenHidden { get; set; }
+
     public bool IsVisible
     {
         get => _visible;
@@ -1851,7 +1854,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         // 截图/录屏/音量/复制/下载等临时指示激活时也强制显示（到期自动消失后恢复隐藏）
         var anyTempStatus = (ScreenshotStatusText.Length > 0 || RecordingText.Length > 0 || VolumeTempText.Length > 0
             || FileCopyText.Length > 0 || DownloadText.Length > 0);
-        var show = !_userHidden && (hasMedia || showWidgets || HasActivePush || !_settings.Current.HideWhenNoMedia || anyTempStatus);
+        var show = !_userHidden && !FullScreenHidden && (hasMedia || showWidgets || HasActivePush || !_settings.Current.HideWhenNoMedia || anyTempStatus);
         // 常驻时不因暂停而隐藏
         if (!alwaysVisible && hasMedia && Status == PlaybackStatus.Paused && !_settings.Current.ShowWhenPaused)
             show = false;

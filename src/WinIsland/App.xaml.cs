@@ -36,6 +36,7 @@ public partial class App : Application
     private IslandApiServer? _islandApi;
     private MediaAppRegistry? _mediaApps;
     private ScreenCaptureMonitor? _screenCapture;
+    private FullScreenMonitor? _fullScreenMonitor;
     private CalendarService? _calendar;
     private RssMailService? _rssMail;
 
@@ -172,6 +173,18 @@ public partial class App : Application
         _islandApi.PushReceived += push => Dispatcher.BeginInvoke(() => _vm?.PushIsland(push));
         _islandApi.PushRemoved += id => Dispatcher.BeginInvoke(() => _vm?.RemoveIslandPush(id));
         if (_settings.Current.IslandApiEnabled) _islandApi.Start();
+
+        // ── 全屏自动隐藏（视频/游戏/演示等全屏时隐藏灵动岛，退出恢复）──
+        _fullScreenMonitor = new FullScreenMonitor();
+        _fullScreenMonitor.FullScreenChanged += full => Dispatcher.BeginInvoke(() =>
+        {
+            if (_settings!.Current.FullScreenAutoHideEnabled)
+            {
+                if (_vm is not null) _vm.FullScreenHidden = full;
+                _vm?.UpdateVisibility();
+            }
+        });
+        if (_settings.Current.FullScreenAutoHideEnabled) _fullScreenMonitor.Start();
 
         // ── 屏幕录制 / 截图提示（PrintScreen 钩子 + 录制进程轮询；默认关）──
         _screenCapture = new ScreenCaptureMonitor();
@@ -351,6 +364,18 @@ public partial class App : Application
                 var running = _islandApi.IsRunning;
                 if (s.IslandApiEnabled && !running) _islandApi.Start();
                 else if (!s.IslandApiEnabled && running) _islandApi.Stop();
+            }
+
+            // 全屏自动隐藏：开关变化即时生效（关闭时立即恢复显示）
+            if (_fullScreenMonitor is not null)
+            {
+                if (s.FullScreenAutoHideEnabled && !_fullScreenMonitor.IsRunning) _fullScreenMonitor.Start();
+                else if (!s.FullScreenAutoHideEnabled && _fullScreenMonitor.IsRunning)
+                {
+                    _fullScreenMonitor.Stop();
+                    if (_vm is not null) _vm.FullScreenHidden = false;
+                    _vm?.UpdateVisibility();
+                }
             }
 
             // 波纹可视化开关
@@ -633,6 +658,7 @@ public partial class App : Application
             _hotkeys?.Dispose();
             _islandApi?.Dispose();
             _screenCapture?.Dispose();
+            _fullScreenMonitor?.Dispose();
             _calendar?.Dispose();
             _rssMail?.Dispose();
             _tray?.Dispose();

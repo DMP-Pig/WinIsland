@@ -449,6 +449,7 @@ public partial class SettingsWindow : Window
         ChkStartWithWindows.Content = Localization.Get("General_StartWithWindows");
         ChkStartHidden.Content = Localization.Get("General_StartHidden");
         ChkHideWhenNoMedia.Content = Localization.Get("General_HideWhenNoMedia");
+        ChkFullScreenHide.Content = Localization.Get("General_FullScreenHide");
         ChkShowWhenPaused.Content = Localization.Get("General_ShowWhenPaused");
         ChkAlwaysVisible.Content = Localization.Get("General_AlwaysVisible");
         LblDoubleClick.Text = Localization.Get("General_DoubleClick");

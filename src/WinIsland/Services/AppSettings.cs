@@ -88,6 +88,7 @@ public sealed class AppSettings
     public double OffsetY { get; set; } = 8;
     public double Opacity { get; set; } = 0.92;
     public bool EdgeSnapEnabled { get; set; } = true;        // 拖动松手自动吸附屏幕边缘/居中
+    public bool FullScreenAutoHideEnabled { get; set; } = true;   // 全屏（视频/游戏/演示）时自动隐藏灵动岛
     public double? IslandManualLeft { get; set; }            // 手动拖动后的窗口 Left（DIP）；null=跟随默认定位
     public double? IslandManualTop { get; set; }             // 手动拖动后的窗口 Top（DIP）；null=跟随默认定位
 
