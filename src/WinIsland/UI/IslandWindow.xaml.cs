@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -1115,6 +1116,147 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         Top = pos.Y;
         ApplyCardAlignment();
     }
+
+    // ── 拖文件上岛 ──────────────────────────────────────────
+    private bool _dragHintOn;
+
+    private void Card_DragOver(object sender, System.Windows.DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
+        {
+            e.Effects = System.Windows.DragDropEffects.Copy;
+            ShowDragHint(true);
+        }
+        else
+        {
+            e.Effects = System.Windows.DragDropEffects.None;
+        }
+        e.Handled = true;
+    }
+
+    private void Card_DragLeave(object sender, System.Windows.DragEventArgs e)
+    {
+        ShowDragHint(false);
+    }
+
+    private void Card_Drop(object sender, System.Windows.DragEventArgs e)
+    {
+        ShowDragHint(false);
+        if (!e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop)) return;
+        if (e.Data.GetData(System.Windows.DataFormats.FileDrop) is not string[] { Length: > 0 } files) return;
+        ShowFileDropMenu(files);
+        e.Handled = true;
+    }
+
+    /// <summary>拖入文件时用强调色高亮卡片边框（轻微淡入淡出）。</summary>
+    private void ShowDragHint(bool on)
+    {
+        if (_dragHintOn == on) return;
+        _dragHintOn = on;
+        try
+        {
+            // 主题画笔已 Freeze，无法直接 BeginAnimation；这里新建未冻结画笔做颜色渐变
+            var accent = (_theme.AccentBorderBrush as SolidColorBrush)?.Color ?? System.Windows.Media.Color.FromArgb(160, 108, 92, 231);
+            var card = (_theme.CardBorder as SolidColorBrush)?.Color ?? System.Windows.Media.Color.FromArgb(60, 255, 255, 255);
+            var brush = new SolidColorBrush(on ? card : accent);
+            brush.BeginAnimation(SolidColorBrush.ColorProperty,
+                new ColorAnimation(on ? accent : card, TimeSpan.FromMilliseconds(160)));
+            Card.BorderBrush = brush;
+            if (!on)
+            {
+                // 还原主题绑定，保证换肤后边框颜色与主题一致
+                Card.SetBinding(Border.BorderBrushProperty, new System.Windows.Data.Binding(nameof(CardBorder))
+                {
+                    RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(Window), 1),
+                });
+            }
+        }
+        catch { /* 动画失败忽略 */ }
+    }
+
+    /// <summary>文件拖入后弹出快捷操作菜单（固定到岛 / 复制路径 / 打开所在文件夹）。</summary>
+    private void ShowFileDropMenu(string[] files)
+    {
+        var file = files[0];
+        var grap = (Brush?)Resources["MenuBgBrush"] ?? _theme.CardBackground;
+        var text = (Brush?)Resources["MenuTextBrush"] ?? System.Windows.Media.Brushes.White;
+        var border = (Brush?)Resources["MenuBorderBrush"] ?? _theme.CardBorder;
+
+        var menu = new ContextMenu
+        {
+            PlacementTarget = Card,
+            Placement = PlacementMode.MousePoint,
+            Background = grap,
+            Foreground = text,
+            BorderBrush = border,
+        };
+
+        var pin = new MenuItem { Header = $"固定到灵动岛：{Shorten(Path.GetFileName(file), 26)}" };
+        pin.Click += (_, _) => PinDroppedFile(file);
+        var copy = new MenuItem { Header = "复制文件路径" };
+        copy.Click += (_, _) => { try { System.Windows.Clipboard.SetText(file); } catch { /* 剪贴板占用等 */ } };
+        var folder = new MenuItem { Header = "打开所在文件夹" };
+        folder.Click += (_, _) => OpenContainingFolder(file);
+        menu.Items.Add(pin);
+        menu.Items.Add(copy);
+        menu.Items.Add(folder);
+
+        if (files.Length > 1)
+        {
+            menu.Items.Add(new Separator());
+            var openAll = new MenuItem { Header = $"打开这 {files.Length} 个文件" };
+            openAll.Click += (_, _) =>
+            {
+                foreach (var f in files) OpenFile(f);
+            };
+            menu.Items.Add(openAll);
+        }
+        menu.IsOpen = true;
+    }
+
+    /// <summary>把文件信息推送到灵动岛（短暂显示，可打开文件/所在文件夹）。</summary>
+    private void PinDroppedFile(string file)
+    {
+        var dir = Path.GetDirectoryName(file);
+        _vm.PushIsland(new IslandPush
+        {
+            Id = "file:" + file.ToLowerInvariant(),
+            Title = Path.GetFileName(file),
+            Body = dir is { Length: > 0 } ? dir : file,
+            Icon = "", // 文档
+            DurationSeconds = 12,
+            Buttons = new System.Collections.Generic.List<IslandPushButton>
+            {
+                new() { Label = "打开文件", Action = "url", Value = file },
+                new() { Label = "所在文件夹", Action = "url", Value = dir ?? file },
+            },
+            Click = new IslandPushButton { Action = "url", Value = file },
+        });
+    }
+
+    private static void OpenContainingFolder(string file)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", "/select, \"" + file + "\"")
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch { /* 忽略 */ }
+    }
+
+    private static void OpenFile(string file)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(file) { UseShellExecute = true });
+        }
+        catch { /* 忽略 */ }
+    }
+
+    private static string Shorten(string s, int max)
+        => s.Length <= max ? s : s[..(max - 1)] + "…";
 
     // ── 拖动定位：吸附 + 持久化 ─────────────────────────────
 

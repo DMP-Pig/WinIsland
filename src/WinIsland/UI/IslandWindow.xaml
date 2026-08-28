@@ -165,6 +165,8 @@
                 Background="{Binding CardBackground, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#101018}"
                 BorderBrush="{Binding CardBorder, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#33FFFFFF}"
                 BorderThickness="1"
+                AllowDrop="True"
+                DragOver="Card_DragOver" DragLeave="Card_DragLeave" Drop="Card_Drop"
                 ContextMenuOpening="Card_ContextMenuOpening">
             <Border.ContextMenu>
                 <ContextMenu x:Name="IslandMenu">
