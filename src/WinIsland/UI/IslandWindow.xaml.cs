@@ -281,7 +281,13 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     private void OnCardMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (_draggedCard) { _draggedCard = false; CancelPendingClick(); return; }
+        if (_draggedCard)
+        {
+            _draggedCard = false;
+            CancelPendingClick();
+            SnapAndPersistPosition();
+            return;
+        }
         if (!_mouseDownOnCard) return;
         _mouseDownOnCard = false;
 
@@ -453,11 +459,17 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     private void MenuCenterAlign_Click(object sender, RoutedEventArgs e)
     {
-        // 上下不变，左右居中
+        // 上下不变，左右居中；居中后的位置持久化（拖动过再居中对齐同样生效）
         var work = ScreenHelper.DpiWorkArea(_screen);
         var cardPos = Card.TransformToAncestor(this).Transform(new Point(0, 0));
         var cardCenterInWindow = cardPos.X + Card.ActualWidth / 2;
-        Left = work.Left + work.Width / 2 - cardCenterInWindow;
+        var left = work.Left + work.Width / 2 - cardCenterInWindow;
+        _settings.Update(s =>
+        {
+            s.IslandManualLeft = left;
+            s.IslandManualTop ??= Top;
+        });
+        AnimatePosition(left, Top);
     }
 
     private void MenuLock_Click(object sender, RoutedEventArgs e)
@@ -1084,11 +1096,85 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     {
         if (!IsLoaded) return;
         var s = _settings.Current;
+        if (s.IslandManualLeft is double ml && s.IslandManualTop is double mt)
+        {
+            // 手动定位：只在窗口比工作区小时做越界保护，避免贴边/居中后自动弹回
+            var work = ScreenHelper.DpiWorkArea(_screen);
+            var w = Math.Max(1.0, ActualWidth);
+            var h = Math.Max(1.0, ActualHeight);
+            if (w < work.Width) ml = Math.Clamp(ml, work.Left, work.Right - w);
+            if (h < work.Height) mt = Math.Clamp(mt, work.Top, work.Bottom - h);
+            Left = ml;
+            Top = mt;
+            ApplyCardAlignment();
+            return;
+        }
         var pos = ScreenHelper.ComputePosition(_screen, s.Position,
             ActualWidth, ActualHeight, s.OffsetX, s.OffsetY);
         Left = pos.X;
         Top = pos.Y;
         ApplyCardAlignment();
+    }
+
+    // ── 拖动定位：吸附 + 持久化 ─────────────────────────────
+
+    /// <summary>拖动松手后：自动吸附屏幕边缘/居中，并把位置写入设置（上锁/重启后保持）。</summary>
+    private void SnapAndPersistPosition()
+    {
+        if (!IsLoaded) return;
+        var s = _settings.Current;
+        var work = ScreenHelper.DpiWorkArea(_screen);
+        var w = Math.Max(1.0, ActualWidth);
+        var h = Math.Max(1.0, ActualHeight);
+
+        var left = Left;
+        var top = Top;
+
+        if (s.EdgeSnapEnabled)
+        {
+            const double snap = 56; // 吸附阈值（DIP）
+            left = SnapTo(left, new[] { work.Left, work.Left + (work.Width - w) / 2, work.Right - w }, snap);
+            top = SnapTo(top, new[] { work.Top, work.Bottom - h }, snap);
+        }
+
+        // 越界保护：窗口比工作区小时才夹紧，避免多显示器负坐标失效
+        if (w < work.Width) left = Math.Clamp(left, work.Left, work.Right - w);
+        if (h < work.Height) top = Math.Clamp(top, work.Top, work.Bottom - h);
+
+        _settings.Update(s2 =>
+        {
+            s2.IslandManualLeft = left;
+            s2.IslandManualTop = top;
+        });
+        AnimatePosition(left, top);
+    }
+
+    private static double SnapTo(double value, double[] targets, double threshold)
+    {
+        foreach (var t in targets)
+        {
+            if (Math.Abs(value - t) <= threshold) return t;
+        }
+        return value;
+    }
+
+    /// <summary>窗口移动用非线性缓动动画（不瞬移，丝滑过渡）。</summary>
+    private void AnimatePosition(double left, double top)
+    {
+        if (!IsLoaded) return;
+        if (Math.Abs(Left - left) < 0.5 && Math.Abs(Top - top) < 0.5) return;
+        if (_settings.Current.ReduceMotion)
+        {
+            Left = left;
+            Top = top;
+            return;
+        }
+        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var sb = new Storyboard();
+        AddAnim(sb, this, Window.LeftProperty, left, 320, easing);
+        AddAnim(sb, this, Window.TopProperty, top, 320, easing);
+        Timeline.SetDesiredFrameRate(sb, 60);
+        sb.Begin();
     }
     // ── 歌词自动滚动 ──────────────────────────────────────────
 

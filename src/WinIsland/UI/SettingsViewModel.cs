@@ -424,6 +424,17 @@ public sealed class SettingsViewModel : ObservableObject
 
     public void Save()
     {
+        // 位置/偏移/显示器变化时清除手动拖动位置，让默认定位规则重新生效
+        var prev = _service.Current;
+        if (prev.Position != Working.Position ||
+            Math.Abs(prev.OffsetX - Working.OffsetX) > 0.001 ||
+            Math.Abs(prev.OffsetY - Working.OffsetY) > 0.001 ||
+            prev.Monitor != Working.Monitor ||
+            prev.MonitorIndex != Working.MonitorIndex)
+        {
+            Working.IslandManualLeft = null;
+            Working.IslandManualTop = null;
+        }
         _service.Apply(Working);
         Localization.CurrentLanguage = Working.Language;
     }

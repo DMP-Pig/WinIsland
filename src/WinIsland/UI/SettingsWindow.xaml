@@ -611,6 +611,7 @@
                             <TextBlock x:Name="LblPosition" Style="{StaticResource Label}" Text="位置"/>
                             <ComboBox ItemsSource="{Binding PositionOptions}" SelectedValuePath="Value"
                                       DisplayMemberPath="Display" SelectedValue="{Binding Working.Position}"/>
+                            <CheckBox x:Name="ChkEdgeSnap" IsChecked="{Binding Working.EdgeSnapEnabled}" Content="拖动后自动吸附屏幕边缘 / 居中"/>
 
                             <TextBlock x:Name="LblMonitor" Style="{StaticResource Label}" Text="显示器"/>
                             <ComboBox ItemsSource="{Binding MonitorOptions}" SelectedValuePath="Value"

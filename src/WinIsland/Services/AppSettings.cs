@@ -87,6 +87,9 @@ public sealed class AppSettings
     public double OffsetX { get; set; } = 0;
     public double OffsetY { get; set; } = 8;
     public double Opacity { get; set; } = 0.92;
+    public bool EdgeSnapEnabled { get; set; } = true;        // 拖动松手自动吸附屏幕边缘/居中
+    public double? IslandManualLeft { get; set; }            // 手动拖动后的窗口 Left（DIP）；null=跟随默认定位
+    public double? IslandManualTop { get; set; }             // 手动拖动后的窗口 Top（DIP）；null=跟随默认定位
 
     // ── 组件图标定制（Key=组件 Kind，Value=图标字符；空字典表示全部用默认字形）──
     public Dictionary<string, string> ComponentIcons { get; set; } = new();
