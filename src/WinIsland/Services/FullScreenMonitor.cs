@@ -10,7 +10,7 @@ namespace WinIsland.Services;
 /// </summary>
 public sealed class FullScreenMonitor : IDisposable
 {
-    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(600) };
 
     /// <summary>当前是否检测到全屏窗口。</summary>
     public bool IsFullScreen { get; private set; }

@@ -137,6 +137,39 @@ public sealed class RuleRow : ObservableObject
     public RuleAction Action { get => _rule.Action; set { _rule.Action = value; OnPropertyChanged(); } }
 }
 
+/// <summary>快捷操作设置行：勾选显示 + ↑↓ 调整顺序（顺序即显示顺序）。</summary>
+public sealed class QuickActionRow : ObservableObject
+{
+    private readonly SettingsViewModel _owner;
+    public string Key { get; }
+    public string Label { get; }
+
+    public QuickActionRow(SettingsViewModel owner, string key)
+    {
+        _owner = owner;
+        Key = key;
+        Label = Localization.Get("QA_" + key);
+    }
+
+    /// <summary>是否勾选显示（同步到 Working.QuickActionsEnabled）。</summary>
+    public bool IsChecked
+    {
+        get => _owner.Working.QuickActionsShown?.Contains(Key) == true;
+        set
+        {
+            var list = _owner.Working.QuickActionsShown ??= new List<string>();
+            if (value && !list.Contains(Key)) list.Add(Key);
+            else if (!value) list.Remove(Key);
+            OnPropertyChanged();
+            _owner.NotifyQuickActionRowsChanged();
+        }
+    }
+
+    public void MoveUp() => _owner.MoveQuickAction(Key, -1);
+    public void MoveDown() => _owner.MoveQuickAction(Key, 1);
+    public void RefreshName() => OnPropertyChanged(nameof(Label));
+}
+
 /// <summary>View model for the settings window. Edits a working copy, saves on demand.</summary>
 public sealed class SettingsViewModel : ObservableObject
 {
@@ -206,7 +239,13 @@ public sealed class SettingsViewModel : ObservableObject
         RebuildOrderItems();
         _mediaAppRows = BuildMediaApps(Working.MediaApps, registry);
         _ruleRows = (Working.Rules ?? new List<AppRule>()).Select(r => new RuleRow(r)).ToList();
-        Localization.LanguageChanged += (_, _) => { foreach (var r in Components) r.RefreshName(); foreach (var o in OrderItems) o.RefreshName(); };
+        RebuildQuickActionRows();
+        Localization.LanguageChanged += (_, _) =>
+        {
+            foreach (var r in Components) r.RefreshName();
+            foreach (var o in OrderItems) o.RefreshName();
+            foreach (var q in _quickActionRows) q.RefreshName();
+        };
 
         PresetColors = new[]
         {
@@ -243,6 +282,22 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>来电提醒检测的应用（进程名，逗号分隔）。</summary>
+    public string CallNotifyAppsText
+    {
+        get => string.Join(", ", Working.CallNotifyApps ?? new List<string>());
+        set
+        {
+            Working.CallNotifyApps = (value ?? string.Empty)
+                .Split(new[] { ',', '，', ';', '；' }, System.StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => x.Length > 0)
+                .Distinct(System.StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            OnPropertyChanged();
+        }
+    }
+
     public IReadOnlyList<EnumOption<ThemeMode>> ThemeOptions { get; }
     public IReadOnlyList<EnumOption<IslandPosition>> PositionOptions { get; }
     public IReadOnlyList<EnumOption<MonitorSelection>> MonitorOptions { get; }
@@ -255,6 +310,41 @@ public sealed class SettingsViewModel : ObservableObject
     public IReadOnlyList<MediaAppRow> MediaAppRows => _mediaAppRows;
     private List<RuleRow> _ruleRows = new();
     public IReadOnlyList<RuleRow> RuleRows => _ruleRows;
+
+    private List<QuickActionRow> _quickActionRows = new();
+    /// <summary>快捷操作设置行（全部可用操作，顺序可调，勾选控制是否显示）。</summary>
+    public IReadOnlyList<QuickActionRow> QuickActionRows => _quickActionRows;
+
+    private static readonly string[] AllQuickActions =
+    {
+        "Lock", "Mute", "PlayPause", "Screenshot", "Settings",
+        "Desktop", "TaskManager", "Calculator", "Sleep", "VolumeUp", "VolumeDown",
+    };
+
+    private void RebuildQuickActionRows()
+    {
+        var order = Working.QuickActions ??= new List<string>();
+        foreach (var k in AllQuickActions) if (!order.Contains(k)) order.Add(k);
+        Working.QuickActions = order;
+        Working.QuickActionsShown ??= new List<string>();
+        _quickActionRows = order.Select(k => new QuickActionRow(this, k)).ToList();
+        OnPropertyChanged(nameof(QuickActionRows));
+    }
+
+    /// <summary>在设置列表中上移/下移一个操作（顺序即灵动岛显示顺序）。</summary>
+    public void MoveQuickAction(string key, int delta)
+    {
+        var list = Working.QuickActions ??= new List<string>();
+        var idx = list.IndexOf(key);
+        var target = idx + delta;
+        if (idx < 0 || target < 0 || target >= list.Count) return;
+        list.RemoveAt(idx);
+        list.Insert(target, key);
+        RebuildQuickActionRows();
+    }
+
+    /// <summary>快捷操作行勾选变化时通知列表刷新。</summary>
+    public void NotifyQuickActionRowsChanged() => OnPropertyChanged(nameof(QuickActionRows));
 
     /// <summary>添加一条默认规则。</summary>
     public void AddRule()

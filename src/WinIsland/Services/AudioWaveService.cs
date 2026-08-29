@@ -105,7 +105,8 @@ public sealed class AudioWaveService : IDisposable
                         LiveCapture = true;
                         AppLogger.Info("Audio wave: live WASAPI loopback capture active");
                         // 实时采集由 worker 线程持续运行；此处等待其结束（播放停止 / 关闭“跟随音乐节奏”）
-                        while (_running && _syncEnabled && !done.IsSet) Thread.Sleep(50);
+                        // 空闲（未播放）时降低唤醒频率：worker 内部已挂起采集，主线程仅需低频等待
+                        while (_running && _syncEnabled && !done.IsSet) Thread.Sleep(_playing ? 50 : 100);
                         LiveCapture = false;
                         continue;
                     }

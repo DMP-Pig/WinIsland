@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -178,12 +180,120 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             }
         };
         _widgetTimer.Start();
+        RebuildQuickActions();
     }
 
     public event EventHandler? OpenSettingsRequested;
     public event EventHandler? ToggleLyricsWindowRequested;
     /// <summary>#10 上岛按钮回调：推送方配置了 notify 动作的按钮被点击时触发（参数：按钮 + 推送 ID）。</summary>
     public event Action<IslandPushButton, string>? PushActionRequested;
+
+    // ── 快捷操作按钮（展开卡片底部一排）──────────────────────────
+    private IReadOnlyList<QuickActionItem> _quickActions = Array.Empty<QuickActionItem>();
+    public IReadOnlyList<QuickActionItem> QuickActions { get => _quickActions; private set => Set(ref _quickActions, value); }
+
+    /// <summary>是否有快捷操作可显示（总开关开启且有勾选的操作）。</summary>
+    public bool HasQuickActions => QuickActions.Count > 0;
+
+    /// <summary>按设置重建快捷操作列表（顺序即设置中的顺序）。</summary>
+    public void RebuildQuickActions()
+    {
+        var master = _settings.Current.QuickActionsEnabled;
+        var shown = _settings.Current.QuickActionsShown ?? new List<string>();
+        var items = new List<QuickActionItem>();
+        if (master)
+        {
+            foreach (var key in _settings.Current.QuickActions ?? new List<string>())
+            {
+                if (!shown.Contains(key, StringComparer.Ordinal)) continue; // 未勾选不显示
+                var (glyph, tipKey) = QuickActionMeta(key);
+                if (glyph is null) continue;
+                items.Add(new QuickActionItem(key, glyph, Localization.Get(tipKey)));
+            }
+        }
+        QuickActions = items;
+        OnPropertyChanged(nameof(HasQuickActions));
+    }
+
+    /// <summary>快捷操作键 → (图标字形, 提示本地化键)；未知键返回 null。</summary>
+    private static (string? Glyph, string TipKey) QuickActionMeta(string key) => key switch
+    {
+        "Lock" => ("\uE72E", "QA_Lock"),
+        "Mute" => ("\uE74F", "QA_Mute"),
+        "PlayPause" => ("\uE768", "QA_PlayPause"),
+        "Screenshot" => ("\uE916", "QA_Screenshot"),
+        "Settings" => ("\uE713", "QA_Settings"),
+        "Desktop" => ("\uE8B9", "QA_Desktop"),
+        "TaskManager" => ("\uE7C3", "QA_TaskManager"),
+        "Calculator" => ("\uE8EF", "QA_Calculator"),
+        "Sleep" => ("\uE7E0", "QA_Sleep"),
+        "VolumeUp" => ("\uE995", "QA_VolumeUp"),
+        "VolumeDown" => ("\uE994", "QA_VolumeDown"),
+        _ => (null, string.Empty),
+    };
+
+    /// <summary>执行快捷操作（按钮点击）。全部为系统能力，纯本机，不联网。</summary>
+    public void ExecuteQuickAction(string key)
+    {
+        try
+        {
+            switch (key)
+            {
+                case "Lock":
+                    NativeMethods.LockWorkStation();
+                    break;
+                case "Mute":
+                    SystemVolume.SetMute(!SystemVolume.IsMuted());
+                    break;
+                case "PlayPause":
+                    PlayPauseCommand.Execute(null);
+                    break;
+                case "Screenshot":
+                    // 发送 PrintScreen 键（触发系统截图 / 粘贴）
+                    NativeMethods.keybd_event(0x2C, 0, 0, UIntPtr.Zero);
+                    NativeMethods.keybd_event(0x2C, 0, 2, UIntPtr.Zero);
+                    break;
+                case "Settings":
+                    OpenSettingsRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+                case "Desktop":
+                    NativeMethods.keybd_event(0x5B, 0, 0, UIntPtr.Zero); // Win
+                    NativeMethods.keybd_event(0x44, 0, 0, UIntPtr.Zero); // D
+                    NativeMethods.keybd_event(0x44, 0, 2, UIntPtr.Zero);
+                    NativeMethods.keybd_event(0x5B, 0, 2, UIntPtr.Zero);
+                    break;
+                case "TaskManager":
+                    Process.Start(new ProcessStartInfo("taskmgr.exe") { UseShellExecute = true });
+                    break;
+                case "Calculator":
+                    Process.Start(new ProcessStartInfo("calc.exe") { UseShellExecute = true });
+                    break;
+                case "Sleep":
+                    NativeMethods.SetSuspendState(false, true, false);
+                    break;
+                case "VolumeUp":
+                    SystemVolume.SetVolume(Math.Clamp((SystemVolume.GetVolume() ?? 0.5) + 0.1, 0, 1));
+                    break;
+                case "VolumeDown":
+                    SystemVolume.SetVolume(Math.Clamp((SystemVolume.GetVolume() ?? 0.5) - 0.1, 0, 1));
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"Quick action '{key}' failed: {ex.Message}");
+        }
+    }
+
+    private static class NativeMethods
+    {
+        [DllImport("user32.dll")]
+        public static extern bool LockWorkStation();
+        [DllImport("user32.dll")]
+        public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+        [DllImport("powrprof.dll")]
+        public static extern bool SetSuspendState(bool hibernate, bool forceCritical, bool disableWakeEvent);
+    }
 
     // ── 多播放器选择器 ────────────────────────────────────────
     /// <summary>当前可用媒体会话（SMTC 全部 + Cider 伪会话），供迷你播放器/设置切换来源。</summary>
@@ -1034,6 +1144,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(ActivePushButtons));
             OnPropertyChanged(nameof(ActivePushHasClick));
             OnPropertyChanged(nameof(ActivePushAccent));
+            OnPropertyChanged(nameof(ActivePushTheme));
             UpdateVisibility(); // 上岛卡片显示/消失影响灵动岛可见性
         }
     }
@@ -1093,6 +1204,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool ActivePushHasClick => ActivePush?.Click is not null;
     /// <summary>强调色（#RRGGBB / #AARRGGBB），未配置时为空字符串，由 UI 用类型默认色。</summary>
     public string ActivePushAccent => ActivePush?.Accent ?? string.Empty;
+
+    /// <summary>推送卡片主题：dark / light / auto（auto 跟随应用明暗主题）。</summary>
+    public string ActivePushTheme => ActivePush?.Theme ?? string.Empty;
 
     /// <summary>估算文本宽度：中文/全角按 cjkPx，ASCII 按 asciiPx。</summary>
     private static double MeasureText(string s, double cjkPx, double asciiPx)
@@ -1510,6 +1624,19 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                 return;
             }
             if (string.IsNullOrWhiteSpace(button.Value)) return;
+
+            // #16 command 动作：执行本地命令（本地上岛 API 仅回环监听，可配 Token；请仅信任可信推送方）
+            if (string.Equals(button.Action, "command", StringComparison.OrdinalIgnoreCase))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe", "/c " + button.Value)
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                });
+                AppLogger.Info($"Island push command: {button.Value}");
+                return;
+            }
+
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(button.Value)
             {
                 UseShellExecute = true,

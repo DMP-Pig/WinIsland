@@ -103,6 +103,18 @@ public sealed class AppSettings
     public bool ReduceMotion { get; set; } = false;             // 减少动态效果（无障碍/省电）
     public bool GlobalHotkeysEnabled { get; set; } = true;         // 全局快捷键
     public string DoubleClickAction { get; set; } = "PlayPause";   // 双击灵动岛快捷动作：PlayPause | OpenSettings | None
+    // ── 快捷操作按钮（展开卡片底部一排）──
+    // QuickActions = 全部可用操作的顺序；QuickActionsShown = 勾选显示的子集。
+    public bool QuickActionsEnabled { get; set; } = true;
+    public List<string> QuickActions { get; set; } = new()
+    {
+        "Lock", "Mute", "PlayPause", "Screenshot", "Settings",
+        "Desktop", "TaskManager", "Calculator", "Sleep", "VolumeUp", "VolumeDown",
+    };
+    public List<string> QuickActionsShown { get; set; } = new() { "Lock", "Mute", "PlayPause", "Screenshot", "Settings" };
+    // ── 来电提醒（微信/QQ 语音视频通话窗口检测；仅本机前台窗口，不联网）──
+    public bool CallNotifyEnabled { get; set; } = true;
+    public List<string> CallNotifyApps { get; set; } = new() { "Weixin", "WeChat", "QQ" };
     // -- 动效与性能（33 动效皮肤 / 37 低功耗模式）--
     public string AnimationStyle { get; set; } = "Spring";   // Spring | Soft | Elastic | Fade（动效皮肤）
     public bool LowPowerMode { get; set; } = false;          // 低功耗模式：空闲降帧渲染波纹、简化动画
@@ -318,6 +330,9 @@ public sealed class AppSettings
         var c = (AppSettings)MemberwiseClone();
         c.DnDAllowlist = new List<string>(DnDAllowlist);
         c.UsageMergeItems = new List<string>(UsageMergeItems);
+        c.QuickActions = new List<string>(QuickActions);
+        c.QuickActionsShown = new List<string>(QuickActionsShown);
+        c.CallNotifyApps = new List<string>(CallNotifyApps);
         c.MediaApps = new List<MediaAppEntry>(MediaApps);
         c.Rules = Rules.Where(r => r is not null).Select(r => new AppRule
         {

@@ -313,7 +313,7 @@ public partial class SettingsWindow : Window
     /// <summary>左侧导航对应的本地化键（与 TabItem 顺序一致，用于页标题）。</summary>
     private static readonly string[] NavKeys =
     {
-        "Settings_General", "Settings_Appearance", "Settings_Components", "Settings_Media",
+        "Settings_General", "Settings_QuickActions", "Settings_Appearance", "Settings_Components", "Settings_Media",
         "Settings_MediaInfo", "Settings_Lyrics", "Settings_Cider", "Settings_Island",
         "Settings_Productivity", "Settings_Update", "Settings_About", "Settings_Notifications", "Settings_Rules",
     };
@@ -364,6 +364,9 @@ public partial class SettingsWindow : Window
     {
         Title = Localization.Get("Settings_Title");
         TabGeneral.Header = Localization.Get("Settings_General");
+        TabQuick.Header = Localization.Get("Settings_QuickActions");
+        ChkQuickActions.Content = Localization.Get("QuickActions_Enable");
+        TxtQuickHint.Text = Localization.Get("QuickActions_Hint");
         TabAppearance.Header = Localization.Get("Settings_Appearance");
         TabMedia.Header = Localization.Get("Settings_Media");
         TabMediaInfo.Header = Localization.Get("Settings_MediaInfo");
@@ -398,6 +401,7 @@ public partial class SettingsWindow : Window
         LblRulesIntro.Text = Localization.Get("Rules_Intro");
         BtnAddRule.Content = Localization.Get("Rules_Add");
         NavGeneral.Text = Localization.Get("Settings_General");
+        NavQuick.Text = Localization.Get("Settings_QuickActions");
         NavAppearance.Text = Localization.Get("Settings_Appearance");
         NavComponents.Text = Localization.Get("Settings_Components");
         NavMedia.Text = Localization.Get("Settings_Media");
@@ -491,6 +495,8 @@ public partial class SettingsWindow : Window
         ChkBilingual.Content = Localization.Get("MediaInfo_Bilingual");
         ChkCiderEnabled.Content = Localization.Get("Cider_Enabled");
         ChkBluetoothNotify.Content = Localization.Get("Notifications_Bluetooth");
+        ChkCallNotify.Content = Localization.Get("Call_Enabled");
+        LblCallApps.Text = Localization.Get("Call_AppsLabel");
         ChkNetworkNotify.Content = Localization.Get("Notifications_Network");
         ChkDiskAlert.Content = Localization.Get("Notifications_Disk");
         LblDiskThreshold.Text = Localization.Get("Disk_Threshold");
@@ -943,6 +949,14 @@ public partial class SettingsWindow : Window
     private void AddRule_Click(object sender, RoutedEventArgs e) => _vm.AddRule();
 
     /// <summary>删除指定规则行。</summary>
+    /// <summary>快捷操作设置行：上移/下移（Tag 为方向）。</summary>
+    private void QuickActionMove_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.Primitives.ButtonBase btn
+            && btn.Tag is string dir && btn.CommandParameter is string key)
+            _vm.MoveQuickAction(key, dir == "1" ? 1 : -1);
+    }
+
     private void RuleRemove_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is RuleRow row) _vm.RemoveRule(row);

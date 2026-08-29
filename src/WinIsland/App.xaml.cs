@@ -27,6 +27,7 @@ public partial class App : Application
     private AppSettings? _lastPositionSettings;
     private BluetoothMonitor? _bluetooth;
     private SystemNotificationMonitor? _systemNotifications;
+    private IncomingCallMonitor? _callMonitor;
     private NetworkStatusMonitor? _network;
     private NotificationService? _notifications;
     private NotificationHistoryService? _notificationHistory;
@@ -125,6 +126,17 @@ public partial class App : Application
         _bluetooth.DeviceDisconnected += (_, name) => _notifications.Show("蓝牙设备已断开", name, "\uE702", "Bluetooth");
         _systemNotifications = new SystemNotificationMonitor();
         _systemNotifications.NotificationCaptured += (_, n) => _notifications.Show(n.Title, n.Body, "\uE945", n.AppName);
+        // 来电提醒：微信/QQ 语音视频通话窗口检测（仅本机，不上传数据）
+        _callMonitor = new IncomingCallMonitor();
+        _callMonitor.CallStarted += (appName, title, kind) =>
+        {
+            if (!_settings!.Current.CallNotifyEnabled) return;
+            var isIncoming = kind == CallKind.Incoming;
+            _notifications?.Show(
+                Localization.Get(isIncoming ? "Call_NotifyTitle" : "Call_Title"),
+                isIncoming ? $"{appName} · {Localization.Get("Call_Body")}（{Localization.Get("Call_Coming")}）" : $"{appName} · {Localization.Get("Call_Body")}",
+                "\uE8F2", "Call");
+        };
         // 断网 / 网络恢复提醒（每次状态变化只提示一次；去抖在服务内部）
         _network = new NetworkStatusMonitor();
         _network.NetworkLost += (_, _) =>
@@ -154,6 +166,7 @@ public partial class App : Application
         // 复制提示（14 已复制 / 15 验证码 / 27 复制进度）：独立于剪贴板历史，任何一项开启即轮询
         _clipboard.EntryAdded += OnClipboardEntryAdded;
         UpdateClipboardPolling();
+        UpdateKeyboardPolling();
         _schedule.Reminder += item => _notifications?.Show("日程提醒", item.Title, "\uE8B7", "WinIsland");
 
         _vm = new IslandViewModel(_coordinator, _settings, _lyrics,
@@ -339,6 +352,7 @@ public partial class App : Application
         {
             _theme?.Apply(s);
             Localization.CurrentLanguage = s.Language;
+            _vm?.RebuildQuickActions(); // 快捷操作按钮：开关/勾选/顺序变化即时生效
 
             if (AutoStart.IsEnabled() != s.StartWithWindows)
                 AutoStart.SetEnabled(s.StartWithWindows);
@@ -363,6 +377,7 @@ public partial class App : Application
             // 通知监控开关
             if (s.BluetoothNotifyEnabled) _bluetooth?.Start(); else _bluetooth?.Stop();
             if (s.NotificationTakeoverEnabled) _systemNotifications?.Start(); else _systemNotifications?.Stop();
+            if (s.CallNotifyEnabled) _callMonitor?.Start(s.CallNotifyApps); else _callMonitor?.Stop();
 
             // 屏幕录制/截图提示：开关或细分项变化时实时生效
             if (_screenCapture is not null)
@@ -417,6 +432,7 @@ public partial class App : Application
                 _clipboard.MaxEntries = s.ClipboardHistoryMax;
             }
             UpdateClipboardPolling();
+            UpdateKeyboardPolling();
 
             // 尺寸设置变更 → 应用到灵动岛
             foreach (var w in _windows) w.ApplySize();
@@ -434,6 +450,7 @@ public partial class App : Application
 
         if (_settings.Current.BluetoothNotifyEnabled) _bluetooth?.Start();
         if (_settings.Current.NotificationTakeoverEnabled) _systemNotifications?.Start();
+        if (_settings.Current.CallNotifyEnabled) _callMonitor?.Start(_settings.Current.CallNotifyApps);
         _network?.Start(); // 网络监控很轻量，始终启动；是否弹横幅由 NetworkNotifyEnabled 开关控制
         _vm.UpdateVisibility();
 
@@ -636,6 +653,14 @@ public partial class App : Application
         }
     }
 
+    /// <summary>键盘指示灯轮询仅在 CapsLock 组件启用时运行（后台减负）。</summary>
+    private void UpdateKeyboardPolling()
+    {
+        if (_keyboard is null || _settings is null) return;
+        var comp = _settings.Current.Components ?? new ComponentFlags();
+        _keyboard.SetPolling(comp.CapsLockWhenIdle || comp.CapsLockWhenPlaying);
+    }
+
     /// <summary>根据设置决定剪贴板轮询：历史记录或任一复制提示开启时轮询。</summary>
     private void UpdateClipboardPolling()
     {
@@ -720,7 +745,8 @@ public partial class App : Application
             _hotkeys?.Dispose();
             _islandApi?.Dispose();
             _screenCapture?.Dispose();
-            _fullScreenMonitor?.Dispose();
+            _callMonitor?.Dispose();
+        _fullScreenMonitor?.Dispose();
             _calendar?.Dispose();
             _rssMail?.Dispose();
             _tray?.Dispose();

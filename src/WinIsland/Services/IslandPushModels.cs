@@ -6,9 +6,10 @@ namespace WinIsland.Services;
 
 /// <summary>
 /// 一个按钮动作：
-///   url    -> 用默认浏览器/系统打开 Value（URL 或文件）
-///   launch -> 启动 Value 指定的程序（可含参数）
-///   notify -> 通知推送方处理（推送方需自行注册回呼；暂未实现，留作扩展）
+///   url     -> 用默认浏览器/系统打开 Value（URL 或文件）
+///   launch  -> 启动 Value 指定的程序（可含参数）
+///   command -> 在本地执行 Value 作为命令行（cmd /c；仅本机回环 API，可配 Token，请仅信任可信推送方）
+///   notify  -> 通知推送方处理（推送方需自行注册回呼；暂未实现，留作扩展）
 /// </summary>
 public sealed class IslandPushButton
 {
@@ -70,6 +71,10 @@ public sealed class IslandPush
     /// <summary>自定义强调色（#RRGGBB / #AARRGGBB，可选），覆盖类型默认色。</summary>
     [JsonPropertyName("accent")]
     public string Accent { get; set; } = "";
+
+    /// <summary>卡片主题：dark / light / auto（默认 auto 跟随应用明暗主题）。</summary>
+    [JsonPropertyName("theme")]
+    public string Theme { get; set; } = "";
 
     /// <summary>整卡点击回跳（可选）：url 打开链接/文件，launch 启动程序。</summary>
     [JsonPropertyName("click")]

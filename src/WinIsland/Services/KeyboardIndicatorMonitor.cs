@@ -17,7 +17,23 @@ public sealed class KeyboardIndicatorMonitor : IDisposable
     {
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         _timer.Tick += (_, _) => Poll();
-        _timer.Start();
+    }
+
+    /// <summary>
+    /// 是否轮询键盘指示灯状态。仅在 CapsLock 组件启用时才轮询（默认关闭），
+    /// 避免后台始终每 400ms 唤醒 Dispatcher。
+    /// </summary>
+    public void SetPolling(bool polling)
+    {
+        if (polling && !_timer.IsEnabled)
+        {
+            Poll();
+            _timer.Start();
+        }
+        else if (!polling && _timer.IsEnabled)
+        {
+            _timer.Stop();
+        }
     }
 
     /// <summary>状态变化（参数：CapsLock / NumLock / ScrollLock）。</summary>

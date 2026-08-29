@@ -40,6 +40,7 @@
 | `type` | 否 | string | 内容类型：`info`（默认）/ `success` / `warning` / `error`，用于提示色 |
 | `priority` | 否 | string | 优先级：`high` / `normal`（默认）/ `low`；多条并存时高优先级排前 |
 | `accent` | 否 | string | 自定义强调色 `#RRGGBB` 或 `#AARRGGBB`，覆盖类型默认色 |
+| `theme` | 否 | string | 卡片主题：`dark` / `light` / `auto`（默认 auto 跟随 WinIsland 明暗主题） |
 | `click` | 否 | object | 整卡点击回跳（结构同 `buttons[]` 项）：点击卡片执行该动作 |
 | `expires_at` | 否 | string | 服务端计算（返回用）；请求时忽略 |
 | `image` | 否 | string | 图片：data URI（`data:image/png;base64,...`）或 http(s) 链接（v3，展开态显示） |
@@ -52,8 +53,9 @@
 | 字段 | 说明 |
 |---|---|
 | `label` | 按钮文字 |
-| `action` | `url`（默认，用系统默认方式打开 value）或 `launch`（启动 value 指定的程序） |
-| `value` | url 地址 / 程序路径（可带参数） |
+| `action` | `url`（默认，用系统默认方式打开 value）、`launch`（启动 value 指定的程序）或 `command`（在本地执行 value 命令行，`cmd /c`） |
+| `value` | url 地址 / 程序路径（可带参数）/ 命令字符串 |
+| ⚠️ `command` | 仅本机回环 API（127.0.0.1）且可配 Token；会执行任意命令，请只给可信推送方使用 |
 
 ### 响应
 

@@ -194,7 +194,10 @@
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- 上岛推送（第三方软件推送到灵动岛）：紧凑态即展示全部内容，尺寸自适应 -->
                     <Border x:Name="CompactPushCard" Visibility="{Binding HasActivePush, Converter={StaticResource BoolToVis}}"
-                            CornerRadius="14" Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
+                            CornerRadius="14"
+                            Background="{Binding PushCardBackground, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#221B1B26}"
+                            BorderBrush="{Binding PushCardBorder, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#59FFFFFF}"
+                            BorderThickness="1"
                             Padding="12,8" Margin="0,0,10,0" VerticalAlignment="Center">
                         <Border.RenderTransform>
                             <ScaleTransform x:Name="CompactPushScale" ScaleX="0.94" ScaleY="0.94"/>
@@ -212,15 +215,15 @@
                                     </Grid>
                                 </Border>
                                 <TextBlock Text="{Binding ActivePushTitle}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
-                                           Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                           Foreground="{Binding PushCardForeground, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
                                            TextTrimming="CharacterEllipsis" MaxWidth="150"/>
                                                             </StackPanel>
                             <TextBlock Text="{Binding ActivePushSubtitle}" FontSize="10.5" Margin="0,2,0,0"
-                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                       Foreground="{Binding PushCardSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                        TextTrimming="CharacterEllipsis" MaxWidth="150"
                                        Visibility="{Binding ActivePushHasSubtitle, Converter={StaticResource BoolToVis}}"/>
                             <TextBlock Text="{Binding ActivePushBody}" FontSize="11.5" Margin="0,5,0,0" TextWrapping="Wrap" MaxWidth="420"
-                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                       Foreground="{Binding PushCardSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                        Visibility="{Binding PushShowBody, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
                             <ProgressBar Height="3" Maximum="1" Value="{Binding ActivePushProgress, Mode=OneWay}" Margin="0,6,0,0"
                                          Visibility="{Binding PushShowProgress, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
@@ -751,7 +754,10 @@
                     <StackPanel>
                     <!-- 上岛推送详情（第三方软件推送，展开时优先级最高，置于顶部） -->
                     <Border x:Name="ExpandedPushCard" Visibility="{Binding HasActivePush, Converter={StaticResource BoolToVis}}"
-                            CornerRadius="14" Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1" Padding="12,10" Margin="0,0,0,10">
+                            CornerRadius="14"
+                            Background="{Binding PushCardBackground, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#221B1B26}"
+                            BorderBrush="{Binding PushCardBorder, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#59FFFFFF}"
+                            BorderThickness="1" Padding="12,10" Margin="0,0,0,10">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding ActivePushIcon}" FontFamily="Segoe MDL2 Assets" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"
@@ -763,15 +769,15 @@
                                     <Image Source="{Binding ActivePushImageSource}" Stretch="UniformToFill"/>
                                 </Border>
                                 <TextBlock Text="{Binding ActivePushTitle}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"
-                                           Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                           Foreground="{Binding PushCardForeground, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
                                            TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
                             <TextBlock Text="{Binding ActivePushSubtitle}" FontSize="11.5" Margin="0,2,0,0"
-                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                       Foreground="{Binding PushCardSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                        TextTrimming="CharacterEllipsis"
                                        Visibility="{Binding ActivePushHasSubtitle, Converter={StaticResource BoolToVis}}"/>
                             <TextBlock Text="{Binding ActivePushBody}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
-                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                       Foreground="{Binding PushCardSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                        Visibility="{Binding ActivePushHasBody, Converter={StaticResource BoolToVis}}"/>
                             <ProgressBar Height="4" Maximum="1" Value="{Binding ActivePushProgress, Mode=OneWay}" Margin="0,8,0,0"
                                          Visibility="{Binding ActivePushHasProgress, Converter={StaticResource BoolToVis}}">
@@ -1037,6 +1043,24 @@
                     <TextBlock Text="{Binding LyricsStatus}" FontSize="12" HorizontalAlignment="Center" Margin="0,48,0,0" Opacity="0.65"
                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                Visibility="{Binding HasLyrics, Converter={StaticResource BoolToVisInvert}}"/>
+
+                    <!-- 快捷操作按钮（展开卡片底部一排，可自定义） -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,2"
+                                Visibility="{Binding HasQuickActions, Converter={StaticResource BoolToVis}}">
+                        <ItemsControl ItemsSource="{Binding QuickActions}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource IconButton}" Width="34" Height="34" Margin="0,0,6,0"
+                                            ToolTip="{Binding ToolTip}" Tag="{Binding Key}" Click="QuickAction_Click">
+                                        <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
                 </Grid>

@@ -75,6 +75,19 @@ public class IslandPushTests : IDisposable
     }
 
     [Fact]
+    public void Theme_And_Command_Action_Serialize()
+    {
+        // #17 推送主题 + #16 command 动作的 JSON 往返
+        var push = System.Text.Json.JsonSerializer.Deserialize<IslandPush>(
+            """{"id":"t1","title":"T","theme":"dark","buttons":[{"label":"Run","action":"command","value":"notepad.exe"}]}""");
+        Assert.NotNull(push);
+        Assert.Equal("dark", push!.Theme);
+        Assert.Single(push.Buttons!);
+        Assert.Equal("command", push.Buttons[0].Action);
+        Assert.Equal("notepad.exe", push.Buttons[0].Value);
+    }
+
+    [Fact]
     public void Remove_Reorders_Remaining_Positions()
     {
         using var server = NewServer();

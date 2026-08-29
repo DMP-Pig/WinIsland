@@ -400,6 +400,12 @@
                     </ListBoxItem>
                     <ListBoxItem>
                         <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7E8;" FontFamily="Segoe MDL2 Assets" FontSize="13" Width="24" VerticalAlignment="Center" Opacity="0.9"/>
+                            <TextBlock x:Name="NavQuick" Text="快捷操作" FontSize="12.5" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE790;" FontFamily="Segoe MDL2 Assets" FontSize="13" Width="24" VerticalAlignment="Center" Opacity="0.9"/>
                             <TextBlock x:Name="NavAppearance" Text="外观" FontSize="12.5" Margin="6,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
@@ -554,6 +560,42 @@
                                     IsSnapToTickEnabled="True" TickFrequency="5"/>
                             <TextBlock x:Name="TxtChargedHint" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                        TextWrapping="Wrap" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem x:Name="TabQuick" Header="快捷操作">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10,6">
+                            <CheckBox x:Name="ChkQuickActions" IsChecked="{Binding Working.QuickActionsEnabled}" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtQuickHint" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,0,0,10" MaxWidth="520"/>
+                            <ItemsControl ItemsSource="{Binding QuickActionRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="10" Background="#14FFFFFF" BorderBrush="#22FFFFFF" BorderThickness="1"
+                                                Padding="10,6" Margin="0,3">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox IsChecked="{Binding IsChecked}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Label}" FontSize="12" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Content="&#xE70E;" FontFamily="Segoe MDL2 Assets" FontSize="10" Width="26" Height="24" Padding="0"
+                                                            Margin="0,0,4,0" Background="Transparent" BorderThickness="0" Opacity="0.75"
+                                                            Click="QuickActionMove_Click" CommandParameter="{Binding Key}" Tag="-1" ToolTip="上移"/>
+                                                    <Button Content="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="10" Width="26" Height="24" Padding="0"
+                                                            Background="Transparent" BorderThickness="0" Opacity="0.75"
+                                                            Click="QuickActionMove_Click" CommandParameter="{Binding Key}" Tag="1" ToolTip="下移"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
@@ -1035,6 +1077,10 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10,6">
                         <CheckBox x:Name="ChkBluetoothNotify" IsChecked="{Binding Working.BluetoothNotifyEnabled}"/>
+                        <CheckBox x:Name="ChkCallNotify" IsChecked="{Binding Working.CallNotifyEnabled}" Margin="0,8,0,0"/>
+                        <TextBlock x:Name="LblCallApps" Style="{StaticResource Label}" Text="检测的应用（进程名，逗号分隔）" Margin="0,4,0,0"/>
+                        <TextBox x:Name="TxtCallApps" Text="{Binding CallNotifyAppsText, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="430" HorizontalAlignment="Left" Margin="0,0,0,6"/>
                         <CheckBox x:Name="ChkNetworkNotify" IsChecked="{Binding Working.NetworkNotifyEnabled}"/>
                         <CheckBox x:Name="ChkDiskAlert" IsChecked="{Binding Working.DiskAlertEnabled}"/>
                         <TextBlock x:Name="LblDiskThreshold" Style="{StaticResource Label}"/>

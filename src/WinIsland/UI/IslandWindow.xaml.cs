@@ -250,6 +250,69 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     public Brush SliderTrackBrush => _theme.SliderTrackBrush;
     public Brush SliderThumbBrush => _theme.SliderThumbBrush;
 
+    // ── 上岛推送卡片主题（#17：第三方可指定 dark / light，auto 跟随应用明暗）──
+    /// <summary>推送卡片是否按深色渲染（auto 跟随应用主题）。</summary>
+    private bool PushDark() => _vm.ActivePushTheme?.Trim().ToLowerInvariant() switch
+    {
+        "dark" => true,
+        "light" => false,
+        _ => _theme.IsDark,
+    };
+
+    public Brush PushCardBackground
+    {
+        get
+        {
+            var b = PushDark()
+                ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xE6, 0x1B, 0x1B, 0x26))
+                : new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xE6, 0xFF, 0xFF, 0xFF));
+            b.Freeze();
+            return b;
+        }
+    }
+    public Brush PushCardBorder
+    {
+        get
+        {
+            var b = PushDark()
+                ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x59, 0xFF, 0xFF, 0xFF))
+                : new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x40, 0x00, 0x00, 0x00));
+            b.Freeze();
+            return b;
+        }
+    }
+    public Brush PushCardForeground
+    {
+        get
+        {
+            var b = PushDark()
+                ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF2, 0xF2, 0xF7))
+                : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x22, 0x22, 0x2A));
+            b.Freeze();
+            return b;
+        }
+    }
+    public Brush PushCardSecondary
+    {
+        get
+        {
+            var b = PushDark()
+                ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xCC, 0xC8, 0xC8, 0xD4))
+                : new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xCC, 0x55, 0x55, 0x60));
+            b.Freeze();
+            return b;
+        }
+    }
+
+    /// <summary>上岛推送主题变化时刷新推送卡片画刷。</summary>
+    private void RaisePushThemeProps()
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushCardBackground)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushCardBorder)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushCardForeground)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushCardSecondary)));
+    }
+
     // ── 展开卡片分区块开关（来自设置，绑定到展开内容）──
     // 歌曲相关区域仅在“有媒体播放”时显示；只有上岛推送时展开态以上岛内容为主，避免空歌曲区
     public bool ExpandedShowArtTitle => _vm.HasMedia && _settings.Current.ExpandedShowArtTitle
@@ -554,6 +617,12 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         e.Handled = true;
     }
 
+    /// <summary>快捷操作按钮点击：按 Tag（操作键）执行对应系统动作。</summary>
+    private void QuickAction_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is string key) _vm.ExecuteQuickAction(key);
+    }
+
     /// <summary>上岛推送按钮点击：执行动作（打开 URL / 启动程序）后关闭当前推送。</summary>
     private void PushButton_Click(object sender, RoutedEventArgs e)
     {
@@ -619,6 +688,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ButtonHoverBrush)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SliderTrackBrush)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SliderThumbBrush)));
+        RaisePushThemeProps();
         ApplyAppearance();
         RefreshWave();
         ApplyCoverTint();
@@ -695,7 +765,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         EnsureWindowSizeFits(); // 先扩宽窗口，避免卡片动画期间超出窗口被裁剪
         var (styleEase, styleMs) = GetSizeAnimationStyle(expand: false);
         var lm = _settings.Current.LowPowerMode ? 0.6 : 1.0;
-        var dur = (int)Math.Clamp(460 * (styleMs / 760.0), 300, 640) * lm;
+        var dur = (int)Math.Clamp(400 * (styleMs / 680.0), 260, 560) * lm;
         var sb = new Storyboard();
         AddAnim(sb, Card, FrameworkElement.WidthProperty, CompactWidth, (int)dur, styleEase);
         AddAnim(sb, Card, FrameworkElement.HeightProperty, CompactHeight, (int)dur, styleEase);
@@ -713,8 +783,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         var (styleEase, styleMs) = GetSizeAnimationStyle(expand: true);
         var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
         var lm = _settings.Current.LowPowerMode ? 0.6 : 1.0;
-        var scaleDur = (int)(Math.Min(440, styleMs) * lm);
-        AddAnim(sb, CompactPushCard, UIElement.OpacityProperty, 1, (int)(320 * lm), smooth);
+        var scaleDur = (int)(Math.Min(360, styleMs) * lm);
+        AddAnim(sb, CompactPushCard, UIElement.OpacityProperty, 1, (int)(260 * lm), smooth);
         AddAnim(sb, CompactPushScale, ScaleTransform.ScaleXProperty, 1, scaleDur, styleEase);
         AddAnim(sb, CompactPushScale, ScaleTransform.ScaleYProperty, 1, scaleDur, styleEase);
         Timeline.SetDesiredFrameRate(sb, 60); // 稳定 60fps（120Hz 显示器上也按 60fps 渲染，减少开销不掉帧）
@@ -791,6 +861,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
                 AnimateCompactSize();  // 尺寸变化：弹簧动画，丝滑
                 PlayPushCardAnimation(); // 上岛卡片：淡入 + 缩放动画
                 ApplyExpandedSectionVisibility();
+                RaisePushThemeProps();
                 break;
             case nameof(IslandViewModel.HasMedia):
                 ApplyExpandedSectionVisibility();
@@ -1334,16 +1405,16 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         AddAnim(sb, Card, FrameworkElement.HeightProperty, height, (int)(styleSizeMs * lm), styleEase);
 
         // 展开内容：错峰淡入 + 轻微缩放/位移（展开延迟 95ms，让尺寸先动、内容跟上）
-        var contentDelay = TimeSpan.FromMilliseconds((expand ? 95 : 0) * lm);
-        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, (int)((expand ? 480 : 300) * lm), smooth, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, (int)((expand ? 720 : 640) * lm), styleEase, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, (int)((expand ? 720 : 640) * lm), styleEase, contentDelay);
-        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, (int)((expand ? 720 : 640) * lm), smooth, contentDelay);
+        var contentDelay = TimeSpan.FromMilliseconds((expand ? 80 : 0) * lm);
+        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, (int)((expand ? 380 : 260) * lm), smooth, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, (int)((expand ? 560 : 520) * lm), styleEase, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, (int)((expand ? 560 : 520) * lm), styleEase, contentDelay);
+        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, (int)((expand ? 560 : 520) * lm), smooth, contentDelay);
 
         // 胶囊行：展开后淡出（由大图区接管）；收起时立即恢复完全不透明，
         // 避免缩回瞬间胶囊内容还在淡入而出现"空内容"
         if (expand)
-            AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, 320, smooth, TimeSpan.FromMilliseconds(70));
+            AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, 260, smooth, TimeSpan.FromMilliseconds(60));
         else
             PillRow.Opacity = 1;
 
@@ -1387,18 +1458,18 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         switch (_settings.Current.AnimationStyle)
         {
             case "Soft":
-                return (new SoftSpringEase(), expand ? 1050 : 920);
+                return (new SoftSpringEase(), expand ? 840 : 720);
             case "Elastic":
                 return (new ElasticEase
                 {
                     Oscillations = 1,
                     Springiness = 6,
                     EasingMode = EasingMode.EaseOut,
-                }, expand ? 960 : 830);
+                }, expand ? 760 : 640);
             case "Fade":
-                return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? 620 : 520);
+                return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? 500 : 420);
             default: // Spring
-                return (new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 }, expand ? 880 : 760);
+                return (new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 }, expand ? 680 : 560);
         }
     }
     private void AddAnim(Storyboard sb, DependencyObject target, DependencyProperty prop, double to, int ms, IEasingFunction easing, TimeSpan? beginTime = null)
