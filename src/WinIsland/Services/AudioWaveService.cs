@@ -31,7 +31,7 @@ public sealed class AudioWaveService : IDisposable
     private Thread? _thread;
     private readonly object _gate = new();
     private double _level;              // 0..1 平滑后的波纹强度
-    private bool _playing;
+    private volatile bool _playing;   // 跨线程读取（UI 写，采集/模拟线程读）
     private readonly Random _rng = new();
     private volatile bool _syncEnabled = true;   // 跟随音乐节奏：true=真实音频采集，false=节拍模拟
     private double _sensitivity = 1.0;       // 灵敏度倍率（0.2~3.0），用 Volatile 读写保证跨线程可见
@@ -161,7 +161,7 @@ public sealed class AudioWaveService : IDisposable
                     if (_level < 0.01) _level = 0;
                 }
             }
-            Thread.Sleep(16); // ~60Hz 平滑轨迹
+            Thread.Sleep(_playing ? 16 : 50); // 播放 60Hz 平滑轨迹；暂停时降低唤醒频率
         }
     }
 
@@ -211,6 +211,18 @@ public sealed class AudioWaveService : IDisposable
 
                 while (_running && _syncEnabled)
                 {
+                    // 无播放时不采集：挂起读取循环（保持 WASAPI 会话打开，恢复播放即刻续采），降低空闲 CPU
+                    if (!_playing)
+                    {
+                        lock (_gate)
+                        {
+                            _level *= 0.8;
+                            if (_level < 0.01) _level = 0;
+                        }
+                        Thread.Sleep(100);
+                        continue;
+                    }
+
                     uint packet = 0;
                     if (cap.GetNextPacketSize(out packet) < 0 || packet == 0)
                     {

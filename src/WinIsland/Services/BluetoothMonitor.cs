@@ -84,7 +84,7 @@ public sealed class BluetoothMonitor : IDisposable
             var bt = await BluetoothDevice.FromIdAsync(id);
             if (bt is null) return;
             var connected = bt.ConnectionStatus == BluetoothConnectionStatus.Connected;
-            AppLogger.Debug($"BT immediate: '{SafeName(id)}' -> {(connected ? "Connected" : "Disconnected")}");
+            // 连接/断开变化由 ApplyState 以 Info 记录，这里不再逐设备轮询刷 Debug 日志
             ApplyState(id, connected);
         }
         catch (Exception ex)

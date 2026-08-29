@@ -330,7 +330,9 @@ public sealed class SmtcMediaProvider : IDisposable
         }
         catch (Exception ex)
         {
-            AppLogger.Warn($"SMTC media properties failed: {ex.Message}");
+            // 部分会话（语音助手、系统组件等）不暴露媒体属性，空消息属正常路径，不刷警告
+            if (!string.IsNullOrWhiteSpace(ex.Message))
+                AppLogger.Warn($"SMTC media properties failed: {ex.Message}");
         }
 
         if (string.IsNullOrEmpty(title) && string.IsNullOrEmpty(artist)) return null;

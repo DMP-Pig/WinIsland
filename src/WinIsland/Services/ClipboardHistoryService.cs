@@ -60,14 +60,49 @@ public sealed class ClipboardHistoryService : IDisposable
     {
         _enabled = enabled;
         UpdatePolling();
-        if (enabled) Poll();
+        if (enabled)
+        {
+            BaselineClipboard();
+            Poll();
+        }
     }
 
     /// <summary>设置是否轮询剪贴板（与历史记录解耦：复制提示开启时也需轮询）。</summary>
     public void SetPolling(bool polling)
     {
         _polling = polling;
+        if (polling) BaselineClipboard();
         UpdatePolling();
+    }
+
+    /// <summary>
+    /// 启动基线：把剪贴板当前已有内容视为「已知」，避免应用启动/开启轮询时
+    /// 把启动前就已存在的剪贴板内容误判为新复制，弹出多余的「已复制」提示。
+    /// 仅当尚未建立基线（_last 为空）时读取一次；之后真正的复制仍会正常触发。
+    /// </summary>
+    private void BaselineClipboard()
+    {
+        try
+        {
+            var text = System.Windows.Clipboard.ContainsText() ? (System.Windows.Clipboard.GetText() ?? string.Empty) : string.Empty;
+            var baseline = ComputeBaseline(_last, text);
+            if (baseline is not null) _last = baseline;
+        }
+        catch
+        {
+            // 剪贴板被占用等：忽略，保持空基线（首次真实复制仍会正常触发）
+        }
+    }
+
+    /// <summary>
+    /// 基线判定（纯逻辑，可测试）：仅当尚未建立基线且剪贴板当前有合法文本时返回新基线，
+    /// 否则返回 null（保持原值）。防止启动时把已有内容误判为新复制。
+    /// </summary>
+    internal static string? ComputeBaseline(string currentLast, string clipboardText)
+    {
+        if (currentLast.Length > 0) return null;
+        if (string.IsNullOrWhiteSpace(clipboardText) || clipboardText.Length > 20000) return null;
+        return clipboardText;
     }
 
     private void UpdatePolling()
