@@ -387,6 +387,17 @@ public sealed class IslandApiServer : IDisposable
         BroadcastJson(json);
     }
 
+    /// <summary>
+    /// #10 上岛按钮回调：推送方配置了 notify 动作的按钮被点击时，
+    /// 向所有 WebSocket 订阅端广播 push_button 事件（推送方接收后自行处理）。
+    /// </summary>
+    public void BroadcastPushButton(string pushId, string button)
+    {
+        if (_wsClients.IsEmpty) return;
+        var json = JsonSerializer.Serialize(new { type = "event", @event = "push_button", push_id = pushId, button });
+        BroadcastJson(json);
+    }
+
     private void BroadcastJson(string json)
     {
         foreach (var ws in _wsClients.Keys)

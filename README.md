@@ -16,25 +16,25 @@
 
 ## ✨ 功能亮点
 
-- **▶ 媒体播放控制**：原生接入 Windows 全局媒体会话（SMTC），兼容网易云、QQ音乐、Spotify、Apple Music、Groove、电影和电视等；额外专门支持 Cider 本地 API；无法接入时窗口标题兜底。专辑封面、进度拖拽 seek、播放/暂停/切歌一应俱全。
-- **♪ 卡拉OK逐字歌词**：展开卡片同步滚动高亮，逐字卡拉OK点亮；本地 `.lrc` → 播放器歌词接口 → 可选在线歌词三级来源；双语歌词、翻译开关、一键复制当前行。
+- **▶ 媒体播放控制**：原生接入 Windows 全局媒体会话（SMTC），兼容网易云、QQ音乐、Spotify、Apple Music、Groove、电影和电视等；额外专门支持 Cider 本地 API；无法接入时窗口标题兜底。专辑封面、进度拖拽 seek、播放/暂停/切歌一应俱全；多播放器同时打开时可一键切换控制来源；点击封面可全屏沉浸预览。
+- **♪ 卡拉OK逐字歌词**：展开卡片同步滚动高亮，逐字卡拉OK点亮；本地 `.lrc` → 播放器歌词接口 → 可选在线歌词三级来源；双语歌词、翻译开关、一键复制当前行；歌词时间可每首歌微调对齐，独立歌词小窗可调透明度与锁定。
 - **▦ 可定制组件系统**：时间、天气、日期（含农历/节气）、CPU/GPU/内存/磁盘、网络速度、电量、输入法、快捷开关（WiFi/蓝牙/夜间/静音）等 30+ 组件；每组件可自定义图标，勾选与拖拽排序，单行/多行模式随时切换。
-- **⇪ 上岛 API**：本地 HTTP / WebSocket 接口，让任何第三方软件把信息实时推送到灵动岛（类似 iOS 第三方 App 的灵动岛集成）。v3 支持图片、动态进度、心跳续期；推送不影响灵动岛长宽，不遮挡其他组件。
-- **🔔 通知中心**：右上角玻璃横幅，macOS 风格滑入/滑出动画：蓝牙设备、系统通知接管、正在播放、低电量/充电完成、断网/恢复；通知历史、折叠、勿扰白名单、规则自动化。
-- **✦ 外观与动效**：18 种主题皮肤、自定义强调色与背景、液态玻璃毛玻璃、**壁纸取色**（自动从当前壁纸提取主题色）、**跑马灯**（长歌名/歌词自动横向滚动）、4 种动效皮肤（iOS 弹簧等）、**4 种音频波纹样式**（柱状 / 频谱 / 环形 / 粒子，随音乐节奏抖动）；展开/收起非线性缓动，60fps 丝滑；PerMonitorV2 高 DPI，120/150/200% 缩放不错位。
-- **🖱 交互与智能**：解锁拖动 + **边缘吸附**（松手吸顶/吸边/居中）、**全屏自动隐藏**（全屏视频/游戏/演示时自动收起）、双击动作自定义、**拖文件上岛**、**录屏智能勿扰**。
+- **⇪ 上岛 API**：本地 HTTP / WebSocket 接口，让任何第三方软件把信息实时推送到灵动岛（类似 iOS 第三方 App 的灵动岛集成）。v3 支持图片、动态进度、心跳续期；推送不影响灵动岛长宽，不遮挡其他组件；notify 按钮点击可通过 WebSocket 回调推送方。
+- **🔔 通知中心**：右上角玻璃横幅，macOS 风格滑入/滑出动画：蓝牙设备、系统通知接管、正在播放、低电量/充电完成、断网/恢复；通知历史、折叠、勿扰白名单、规则自动化；横幅可携带操作按钮（如蓝牙「断开」「设置」）。
+- **✦ 外观与动效**：18 种主题皮肤、自定义强调色与背景、液态玻璃毛玻璃、**壁纸取色**（自动从当前壁纸提取主题色）、**跑马灯**（长歌名/歌词自动横向滚动）、4 种动效皮肤（iOS 弹簧等）、**4 种音频波纹样式**（柱状 / 频谱 / 环形 / 粒子，随音乐节奏抖动）；展开/收起非线性缓动，60fps 丝滑；封面取色背景可缓慢「呼吸」起伏（动态主题）；PerMonitorV2 高 DPI，120/150/200% 缩放不错位。
+- **🖱 交互与智能**：解锁拖动 + **边缘吸附**（松手吸顶/吸边/居中）、**全屏自动隐藏**（全屏视频/游戏/演示时自动收起）、双击动作自定义、**拖文件上岛**、**录屏智能勿扰**；按下鼠标立即响应展开/收起（点击抢先）。
 - **⚡ 效率工具与自动化**：番茄钟、待办、剪贴板历史、快速启动器、日程提醒；会议静音助手、屏幕录制/截图提示、文件复制/下载进度上岛；全局快捷键与规则引擎（按条件自动显示/隐藏）。
 - **🛡 隐私安全**：无遥测、无广告、无数据上报。除用户手动开启的在线歌词/天气外完全离线；所有配置与数据仅存于本机 `%APPDATA%\WinIsland`。
 
 ---
 
-## 📥 下载（最新稳定版 1.1.2）
+## 📥 下载（最新稳定版 1.1.3）
 
 | 平台 | 下载 | 说明 |
 | --- | --- | --- |
-| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.2/WinIsland-1.1.2-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
-| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.2/WinIsland-1.1.2-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备，单文件免安装 |
-| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.2/WinIsland-Setup-1.1.2.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
+| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.3/WinIsland-1.1.3-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
+| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.3/WinIsland-1.1.3-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备，单文件免安装 |
+| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.3/WinIsland-Setup-1.1.3.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
 
 所有历史版本与完整更新日志见 [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases)。
 
@@ -238,7 +238,7 @@ build/
 
 ## 快速开始
 
-> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.1.2/win-x64/WinIsland-1.1.2-win-x64.exe`，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x64 / win-arm64 便携版及通用安装包）。
+> 💡 **预编译版**：`releases/` 目录按版本提供单文件自包含可执行文件（如 `releases/1.1.3/win-x64/WinIsland-1.1.3-win-x64.exe`，含 .NET 8 运行时，双击即可运行）。Beta 版本仅本地保留；稳定版本才发布到 GitHub（含 win-x64 / win-arm64 便携版及通用安装包）。
 
 ### 环境要求
 - Windows 10 1809+ / Windows 11
@@ -267,7 +267,7 @@ dotnet run --project src\WinIsland -c Debug
 ### 安装包（可选）
 安装 [Inno Setup 6](https://jrsoftware.org/isinfo.php) 后：
 ```powershell
-iscc.exe build\release-1.1.2.iss
+iscc.exe build\release-1.1.3.iss
 ```
 生成 `releases\<version>\WinIsland-Setup-<version>.exe`（通用安装包，同时支持 x64 与 ARM64，自动按架构安装）。稳定版发布时在 `build\` 下按版本复制一份 `release-<version>.iss` 并更新版本号。
 

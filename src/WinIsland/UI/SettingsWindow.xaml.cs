@@ -486,6 +486,8 @@ public partial class SettingsWindow : Window
         TxtAudioOutputNote.Text = Localization.Get("Media_AudioOutputNote");
         ChkOnlineLyrics.Content = Localization.Get("Lyrics_Online");
         ChkStandaloneLyrics.Content = Localization.Get("Lyrics_StandaloneWindow");
+        LblLyricsOpacity.Text = Localization.Get("Lyrics_Opacity");
+        ChkLyricsLocked.Content = Localization.Get("Lyrics_Locked");
         ChkBilingual.Content = Localization.Get("MediaInfo_Bilingual");
         ChkCiderEnabled.Content = Localization.Get("Cider_Enabled");
         ChkBluetoothNotify.Content = Localization.Get("Notifications_Bluetooth");

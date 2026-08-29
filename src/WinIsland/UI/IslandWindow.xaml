@@ -802,7 +802,7 @@
                     </Border>
 
                     <!-- 媒体大卡片模板（Hero）：大封面背景 + 渐变遮罩 + 歌名/歌手/专辑叠加 -->
-                    <Border x:Name="HeroCard" CornerRadius="18" Height="190" Margin="0,0,0,10" ClipToBounds="True"
+                    <Border x:Name="HeroCard" CornerRadius="18" Height="190" Margin="0,0,0,10" ClipToBounds="True" Cursor="Hand"
                             Visibility="{Binding ExpandedHeroCard, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}">
                         <Border.Background>
                             <ImageBrush ImageSource="{Binding Artwork}" Stretch="UniformToFill"
@@ -845,7 +845,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Border x:Name="BigArt" Width="72" Height="72" CornerRadius="18"
+                        <Border x:Name="BigArt" Width="72" Height="72" CornerRadius="18" Cursor="Hand"
                                 BorderBrush="{Binding AccentBorderBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#336C5CE7}"
                                 BorderThickness="1"
                                 Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
@@ -958,7 +958,21 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- 歌词快捷操作：翻译开关 + 复制当前句 -->
+                    <!-- 媒体来源选择（#3 多播放器切换：多个会话并存时显示，点击循环切换） -->
+                    <Button Style="{StaticResource IconButton}" HorizontalAlignment="Center" Padding="10,4" Margin="0,8,0,0"
+                            Click="MediaSessionCycle_Click"
+                            Visibility="{Binding MediaSessionPickerVisible, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets" FontSize="11.5" VerticalAlignment="Center"
+                                       Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"/>
+                            <TextBlock Text="{Binding SelectedMediaSessionName}" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"/>
+                            <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="9" Margin="8,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- 歌词快捷操作：翻译开关 + 复制当前句 + 时间微调(#4) -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0"
                                 Visibility="{Binding HasLyrics, Converter={StaticResource BoolToVis}}">
                         <Button Style="{StaticResource IconButton}" Padding="9,3" Margin="0,0,8,0" Click="LyricTranslate_Click"
@@ -969,6 +983,16 @@
                                 ToolTip="{Binding LyricCopyHint}">
                             <TextBlock Text="{Binding LyricCopyText}" FontSize="11"/>
                         </Button>
+                        <Button Style="{StaticResource IconButton}" Padding="8,3" Margin="6,0,2,0" Click="LyricOffsetDown_Click"
+                                ToolTip="{Binding LyricOffsetDownHint}">
+                            <TextBlock Text="-0.5s" FontSize="11"/>
+                        </Button>
+                        <Button Style="{StaticResource IconButton}" Padding="8,3" Margin="0,0,2,0" Click="LyricOffsetUp_Click"
+                                ToolTip="{Binding LyricOffsetUpHint}">
+                            <TextBlock Text="+0.5s" FontSize="11"/>
+                        </Button>
+                        <TextBlock Text="{Binding LyricOffsetText}" FontSize="10.5" VerticalAlignment="Center" Margin="2,0,0,0"
+                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}" Opacity="0.85"/>
                     </StackPanel>
 
                     <!-- 歌词（无边框，干净排版） -->

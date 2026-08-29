@@ -112,7 +112,16 @@ public partial class App : Application
         _notificationHistory = new NotificationHistoryService();
         _notifications = new NotificationService(Dispatcher, _settings, _notificationHistory);
         _bluetooth = new BluetoothMonitor();
-        _bluetooth.DeviceConnected += (_, name) => _notifications.Show("蓝牙设备已连接", name, "\uE702", "Bluetooth");
+        // #9 通知操作按钮：蓝牙连接提示备上「断开」「设置」按钮
+        _bluetooth.DeviceConnected += (_, name) =>
+        {
+            var actions = new List<(string Label, Action Callback)>
+            {
+                (Localization.Get("Notify_BtDisconnect"), () => DisconnectBluetooth(name)),
+                (Localization.Get("Notify_OpenBtSettings"), OpenBluetoothSettings),
+            };
+            _notifications.Show("蓝牙设备已连接", name, "\uE702", "Bluetooth", actions);
+        };
         _bluetooth.DeviceDisconnected += (_, name) => _notifications.Show("蓝牙设备已断开", name, "\uE702", "Bluetooth");
         _systemNotifications = new SystemNotificationMonitor();
         _systemNotifications.NotificationCaptured += (_, n) => _notifications.Show(n.Title, n.Body, "\uE945", n.AppName);
@@ -172,6 +181,22 @@ public partial class App : Application
         _islandApi = new IslandApiServer(_settings);
         _islandApi.PushReceived += push => Dispatcher.BeginInvoke(() => _vm?.PushIsland(push));
         _islandApi.PushRemoved += id => Dispatcher.BeginInvoke(() => _vm?.RemoveIslandPush(id));
+        // #10 上岛按钮回调：notify 动作点击→ 向 WebSocket 订阅端广播 push_button 事件
+        if (_vm is not null)
+        {
+            _vm.PushActionRequested += (button, pushId) =>
+            {
+                try
+                {
+                    if (string.IsNullOrEmpty(pushId) && _vm.ActivePush is not null) pushId = _vm.ActivePush.Id;
+                    _islandApi?.BroadcastPushButton(pushId ?? string.Empty, button.Label);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Warn($"push_button 广播失败: {ex.Message}");
+                }
+            };
+        }
         if (_settings.Current.IslandApiEnabled) _islandApi.Start();
 
         // ── 全屏自动隐藏（视频/游戏/演示等全屏时隐藏灵动岛，退出恢复）──
@@ -322,6 +347,8 @@ public partial class App : Application
                 ShowLyricsWindow();
             if (!s.StandaloneLyricsWindow && _lyricsWindow is { IsVisible: true })
                 _lyricsWindow.Hide();
+            if (_lyricsWindow is { IsVisible: true })
+                _lyricsWindow.ApplySettings(); // #5 歌词小窗不透明度/锁定实时生效
 
             // 仅位置/显示器类设置变更时重定位；锁定等其它变更保留拖动后的位置
             var posChanged = _lastPositionSettings is null
@@ -502,6 +529,41 @@ public partial class App : Application
         win.ShowDialog();
     }
 
+    /// <summary>#9 断开蓝牙设备：解除配对即断开；失败则回退打开蓝牙设置页。</summary>
+    private void DisconnectBluetooth(string deviceName)
+    {
+        _ = DisconnectBluetoothAsync(deviceName);
+    }
+
+    private async System.Threading.Tasks.Task DisconnectBluetoothAsync(string deviceName)
+    {
+        try
+        {
+            if (_bluetooth is not null && await _bluetooth.DisconnectAsync(deviceName)) return;
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"BT disconnect fallback: {ex.Message}");
+        }
+        OpenBluetoothSettings();
+    }
+
+    /// <summary>打开 Windows 蓝牙设置页。</summary>
+    private static void OpenBluetoothSettings()
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:bluetooth")
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"Open bluetooth settings failed: {ex.Message}");
+        }
+    }
+
     /// <summary>把 RSS/邮件设置应用到后台轮询服务（开关/地址/间隔等变化时即时生效）。</summary>
     private void ApplyRssMail(AppSettings s)
     {
@@ -530,7 +592,7 @@ public partial class App : Application
         if (_vm is null) return;
         if (_lyricsWindow is null)
         {
-            _lyricsWindow = new LyricsWindow(_vm);
+            _lyricsWindow = new LyricsWindow(_vm, _settings!);
         }
 
         _lyricsWindow.PositionNearBottom();

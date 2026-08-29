@@ -5,6 +5,38 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
         ShowActivated="False" Focusable="False">
+    <Window.Resources>
+        <Style x:Key="BannerActionButton" TargetType="Button">
+            <Setter Property="Background" Value="#2EFFFFFF"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#40FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="6" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#4DFFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#66FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <Border x:Name="Card" CornerRadius="14" Margin="10" Padding="14,12"
             Background="#F51B1B26" BorderBrush="#5AFFFFFF" BorderThickness="1"
             MouseLeftButtonUp="Card_MouseLeftButtonUp" Cursor="Hand">
@@ -13,6 +45,7 @@
         </Border.Effect>
         <Grid>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
@@ -31,8 +64,11 @@
                 <TextBlock x:Name="BodyText" FontSize="11" Foreground="#D9FFFFFF" TextWrapping="Wrap"
                            MaxHeight="66" MaxWidth="250" Margin="0,3,0,0"/>
             </StackPanel>
+            <!-- #9 通知操作按钮：横向按钮行（如蓝牙「断开」「设置」），点击回调后收起横幅 -->
+            <StackPanel x:Name="ActionsHost" Grid.Row="1" Grid.Column="1" Orientation="Horizontal"
+                        Margin="10,8,0,0" Visibility="Collapsed"/>
             <!-- 复制进度条（27 复制进度）：默认隐藏，进度模式显示 -->
-            <Grid x:Name="ProgressHost" Grid.Row="1" Grid.ColumnSpan="2" Height="4" Margin="0,8,0,0"
+            <Grid x:Name="ProgressHost" Grid.Row="2" Grid.ColumnSpan="2" Height="4" Margin="0,8,0,0"
                   Visibility="Collapsed">
                 <Border CornerRadius="2" Background="#33FFFFFF"/>
                 <Border x:Name="ProgressFill" CornerRadius="2" Background="#6C5CE7" HorizontalAlignment="Left"/>

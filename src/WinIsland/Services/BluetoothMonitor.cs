@@ -145,6 +145,46 @@ public sealed class BluetoothMonitor : IDisposable
         lock (_gate) { return _names.TryGetValue(id, out var n) ? n : id; }
     }
 
+    /// <summary>通过设备名反查设备 ID（#9 通知操作按钮：断开）。</summary>
+    public string? FindDeviceId(string deviceName)
+    {
+        lock (_gate)
+        {
+            foreach (var kv in _names)
+            {
+                if (string.Equals(kv.Value, deviceName, System.StringComparison.OrdinalIgnoreCase))
+                    return kv.Key;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// #9 断开指定蓝牙设备。Windows 没有「仅断开」官方 API，
+    /// 最接近的是解除配对（Unpair）；失败/未找到时返回 false，由调用方回退打开蓝牙设置页。
+    /// </summary>
+    public async System.Threading.Tasks.Task<bool> DisconnectAsync(string deviceName)
+    {
+        try
+        {
+            var id = FindDeviceId(deviceName);
+            if (string.IsNullOrEmpty(id))
+            {
+                AppLogger.Warn($"BT disconnect: device not found: {deviceName}");
+                return false;
+            }
+            var bt = await BluetoothDevice.FromIdAsync(id);
+            if (bt is null || bt.DeviceInformation is null) return false;
+            var result = await bt.DeviceInformation.Pairing.UnpairAsync();
+            AppLogger.Info($"BT disconnect (unpair) '{deviceName}' -> {result.Status}");
+            return result.Status == DeviceUnpairingResultStatus.Unpaired;
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"BT disconnect failed: {ex.Message}");
+            return false;
+        }
+    }
 
     public void Stop()
     {

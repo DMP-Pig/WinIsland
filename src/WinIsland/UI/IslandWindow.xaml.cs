@@ -134,6 +134,15 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private readonly List<TranslateTransform> _waveParticleTransformsCompact = new();
     private Storyboard? _currentStoryboard;
     private HwndSource? _hwndSource;
+    private CoverFullScreenWindow? _coverFullWindow;   // #2 封面沉浸：全屏封面预览窗口
+
+    // ── #8 动态主题：封面取色背景缓慢呼吸（60fps 合成帧驱动，仅在展开+取色开启时运行）──
+    private System.Windows.Media.Color? _tintCoverColor;   // 已采样的封面主色（变化时重建 brush）
+    private LinearGradientBrush? _tintBrush;               // 封面取色渐变（缓存，避免每帧重建 GC）
+    private GradientStop? _tintStop0;
+    private GradientStop? _tintStop1;
+    private DateTime _tintPhaseUtc;                        // 呼吸相位起点
+    private bool _tintRenderingSubscribed;
 
     public System.Windows.Forms.Screen Screen { get; }
 
@@ -194,6 +203,12 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             _clickDebounce.Stop();
             if (!_pendingClick) return;
             _pendingClick = false;
+            if (_toggleDoneOnDown)
+            {
+                // #7 点击抢先：MouseDown 已立即切换，这里只是等待双击窗口，不再重复切换
+                _toggleDoneOnDown = false;
+                return;
+            }
             _collapseTimer.Stop();
             _vm.IsExpanded = !_vm.IsExpanded;
         };
@@ -246,6 +261,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     public bool ExpandedShowControls => _vm.HasMedia && _settings.Current.ExpandedShowControls;
     public bool ExpandedShowLyrics => _vm.HasMedia && _settings.Current.ExpandedShowLyrics;
 
+    /// <summary>多媒体来源选择器可见性（#3：有媒体且多个会话并存时显示）。</summary>
+    public bool MediaSessionPickerVisible => _vm.HasMedia && _vm.HasMultipleSessions;
+
     // ── 单行模式：紧凑态所有组件一行显示 ──
     public bool SingleLineMode => _settings.Current.SingleLineMode;
     /// <summary>跑马灯开关（歌名/歌词超宽时横向滚动）。</summary>
@@ -265,6 +283,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private bool _draggedCard;
     private readonly DispatcherTimer _clickDebounce = new() { Interval = TimeSpan.FromMilliseconds(280) };
     private bool _pendingClick;
+    private bool _toggleDoneOnDown;   // #7 点击抢先：MouseDown 已切换，双击窗口到期后不再重复切换
+    private bool _isExpandedBeforeToggle; // #7 修复：拖动开始时还原按下时已切换的展开状态
     private Point _lastClickUp;
 
     private void OnCardMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -272,6 +292,16 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         _mouseDownOnCard = true;
         _draggedCard = false;
         _downPoint = e.GetPosition(this);
+
+        // #7 点击抢先（A方案）：按下立即切换展开/收起，不等 280ms 双击窗口，手感跟手。
+        // 交互元素（按钮/滑块，按钮自己处理点击）、上岛推送整卡回跳、封面沉浸大图各自处理，不在此切换。
+        if (!IsInteractiveElement(e.OriginalSource) && !IsWithinPushCard(e.OriginalSource) && !IsCoverElement(e.OriginalSource))
+        {
+            _toggleDoneOnDown = true;
+            _isExpandedBeforeToggle = _vm.IsExpanded;
+            _collapseTimer.Stop();
+            _vm.IsExpanded = !_vm.IsExpanded;
+        }
     }
 
     private void OnCardMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
@@ -282,6 +312,12 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         var pos = e.GetPosition(this);
         if (Math.Abs(pos.X - _downPoint.X) > 4 || Math.Abs(pos.Y - _downPoint.Y) > 4)
         {
+            // #7 修复：解锁拖动时按下已立即切换展开，这里还原，避免「想拖动却展开」
+            if (_toggleDoneOnDown)
+            {
+                _toggleDoneOnDown = false;
+                _vm.IsExpanded = _isExpandedBeforeToggle;
+            }
             _mouseDownOnCard = false;
             _draggedCard = true;
             CancelPendingClick();
@@ -305,6 +341,15 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
         // 点击按钮/滑块不触发展开切换（按钮自己处理点击）
         if (IsInteractiveElement(e.OriginalSource)) return;
+
+        // #2 封面沉浸：点击展开态的大封面/大卡（BigArt/HeroCard）打开全屏封面预览
+        if (IsCoverElement(e.OriginalSource))
+        {
+            CancelPendingClick();
+            OpenCoverFullScreen();
+            e.Handled = true;
+            return;
+        }
 
         // 上岛推送整卡点击回跳：点在推送卡片上且配置了 click 时，执行回跳而不展开
         if (_vm.ActivePushHasClick && IsWithinPushCard(e.OriginalSource))
@@ -338,6 +383,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     {
         _pendingClick = false;
         _clickDebounce.Stop();
+        _toggleDoneOnDown = false;
     }
 
     /// <summary>双击快捷动作（在设置-通用中配置）：播放/暂停、展开/收起、显示桌面、隐藏/显示、切歌、打开设置或无动作。</summary>
@@ -370,6 +416,42 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
                 if (_vm.CanPlayPause)
                     _vm.PlayPauseCommand.Execute(null);
                 break;
+        }
+    }
+
+    /// <summary>判断点击源是否位于封面沉浸元素（展开大封面 BigArt / 媒体大卡 HeroCard）上。</summary>
+    private static bool IsCoverElement(object source)
+    {
+        var d = source as DependencyObject;
+        while (d is not null)
+        {
+            if (d is Border b && (b.Name == "BigArt" || b.Name == "HeroCard"))
+                return true;
+            d = d is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D
+                ? VisualTreeHelper.GetParent(d)
+                : LogicalTreeHelper.GetParent(d);
+        }
+        return false;
+    }
+
+    /// <summary>#2 封面沉浸：打开全屏封面预览（同屏最大化，点击/Esc/右键关闭）。</summary>
+    private void OpenCoverFullScreen()
+    {
+        try
+        {
+            if (!_vm.HasMedia || _vm.Artwork is null) return;
+            if (_coverFullWindow is { IsVisible: true })
+            {
+                _coverFullWindow.Close();
+                return;
+            }
+            _coverFullWindow = new CoverFullScreenWindow(_vm.Artwork, _screen);
+            _coverFullWindow.Closed += (_, _) => _coverFullWindow = null;
+            _coverFullWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"Cover fullscreen failed: {ex.Message}");
         }
     }
 
@@ -451,6 +533,26 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         e.Handled = true;
     }
 
+    // #4 歌词时间微调：本曲歌词提前 / 延后 0.5 秒（立即生效并保存）
+    private void LyricOffsetDown_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.AdjustLyricTime(-0.5);
+        e.Handled = true;
+    }
+
+    private void LyricOffsetUp_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.AdjustLyricTime(0.5);
+        e.Handled = true;
+    }
+
+
+    /// <summary>多播放器切换（#3）：点击循环切换到下一个可用媒体来源。</summary>
+    private void MediaSessionCycle_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.CycleMediaSession();
+        e.Handled = true;
+    }
 
     /// <summary>上岛推送按钮点击：执行动作（打开 URL / 启动程序）后关闭当前推送。</summary>
     private void PushButton_Click(object sender, RoutedEventArgs e)
@@ -534,6 +636,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowBody)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowProgress)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowButtons)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MediaSessionPickerVisible)));
     }
 
     /// <summary>按设置调整窗口与卡片尺寸（紧凑/展开）。仅当窗口尺寸真正变化时才重定位，
@@ -671,6 +774,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
                 break;
             case nameof(IslandViewModel.IsExpanded):
                 AnimateSize();
+                ApplyCoverTint(); // 展开/收起时同步封面取色呼吸（#8 动态主题）
                 if (_vm.IsExpanded && _vm.LyricIndex >= 0)
                     Dispatcher.BeginInvoke(() => ScrollLyricsTo(_vm.LyricIndex), DispatcherPriority.Loaded);
                 if (!_vm.IsExpanded) _compactRestoreTimer.Start(); // 收起后兜底恢复精确尺寸，避免多次切换后上下间距异常
@@ -691,6 +795,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             case nameof(IslandViewModel.HasMedia):
                 ApplyExpandedSectionVisibility();
                 RefreshWave();
+                break;
+            case nameof(IslandViewModel.HasMultipleSessions):
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MediaSessionPickerVisible)));
                 break;
             case nameof(IslandViewModel.IsPlaying):
                 RefreshWave();
@@ -954,36 +1061,78 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         }
     }
 
-    /// <summary>展开背景随专辑封面取色：1x1 采样主色 + 主题底色线性渐变，失败则回退主题背景。</summary>
+    /// <summary>展开背景随专辑封面取色：1x1 采样主色 + 主题底色线性渐变；展开后以 60fps 缓慢呼吸。
+    /// 渐变 brush / GradientStop 缓存复用，渲染帧只更新首 stop 的 Alpha，避免每帧重建对象导致 GC 抖动。</summary>
     private void ApplyCoverTint()
     {
         try
         {
             var src = _vm.Artwork;
-            if (src is null || !_settings.Current.CoverTintBackground)
+            if (src is null || !_settings.Current.CoverTintBackground || !_vm.IsExpanded)
             {
                 ClearCoverTint();
+                SubscribeTintRendering(false);
                 return;
             }
             var color = SampleCoverColor(src);
-            if (color is null) { ClearCoverTint(); return; }
-            var c = color.Value;
-            var baseColor = (_theme.CardBackground as SolidColorBrush)?.Color
-                ?? System.Windows.Media.Color.FromArgb(0xF0, 0x14, 0x14, 0x1E);
-            var g = new LinearGradientBrush
+            if (color is null)
             {
-                StartPoint = new System.Windows.Point(0, 0),
-                EndPoint = new System.Windows.Point(1, 1),
-            };
-            g.GradientStops.Add(new GradientStop(System.Windows.Media.Color.FromArgb(0xE6, c.R, c.G, c.B), 0));
-            g.GradientStops.Add(new GradientStop(baseColor, 1));
-            g.Freeze();
-            Card.Background = g;
+                ClearCoverTint();
+                SubscribeTintRendering(false);
+                return;
+            }
+
+            // 封面主色变化（换曲）时重建渐变；同曲只复用并更新 Alpha（呼吸）
+            if (_tintBrush is null || _tintCoverColor != color)
+            {
+                _tintCoverColor = color;
+                var baseColor = (_theme.CardBackground as SolidColorBrush)?.Color
+                    ?? System.Windows.Media.Color.FromArgb(0xF0, 0x14, 0x14, 0x1E);
+                _tintBrush = new LinearGradientBrush
+                {
+                    StartPoint = new System.Windows.Point(0, 0),
+                    EndPoint = new System.Windows.Point(1, 1),
+                };
+                _tintStop0 = new GradientStop(System.Windows.Media.Color.FromArgb(0xE6, color.Value.R, color.Value.G, color.Value.B), 0);
+                _tintStop1 = new GradientStop(baseColor, 1);
+                _tintBrush.GradientStops.Add(_tintStop0);
+                _tintBrush.GradientStops.Add(_tintStop1);
+            }
+            Card.Background = _tintBrush;
+            _tintPhaseUtc = DateTime.UtcNow;
+            SubscribeTintRendering(true);
         }
         catch
         {
             ClearCoverTint();
+            SubscribeTintRendering(false);
         }
+    }
+
+    /// <summary>订阅 / 取消合成帧驱动（空闲时不占 CPU）。</summary>
+    private void SubscribeTintRendering(bool subscribe)
+    {
+        if (subscribe == _tintRenderingSubscribed) return;
+        if (subscribe) CompositionTarget.Rendering += OnTintFrame;
+        else CompositionTarget.Rendering -= OnTintFrame;
+        _tintRenderingSubscribed = subscribe;
+    }
+
+    /// <summary>每帧：取色层 Alpha 在 0.85~0.97 之间缓慢呼吸（约 18s 一个周期），丝滑不跳变。</summary>
+    private void OnTintFrame(object? sender, EventArgs e)
+    {
+        if (!_vm.IsExpanded || !_settings.Current.CoverTintBackground || _vm.Artwork is null || _tintStop0 is null)
+        {
+            SubscribeTintRendering(false);
+            return;
+        }
+        var c = _tintCoverColor;
+        if (c is null) { SubscribeTintRendering(false); return; }
+        var t = (DateTime.UtcNow - _tintPhaseUtc).TotalSeconds;
+        var alpha = 0.85 + 0.06 * (0.5 + 0.5 * Math.Sin(t * 0.35)); // 0.85..0.97 慢周期
+        var a = (byte)Math.Round(alpha * 255);
+        if (_tintStop0.Color.A != a)
+            _tintStop0.Color = System.Windows.Media.Color.FromArgb(a, c.Value.R, c.Value.G, c.Value.B);
     }
 
     /// <summary>恢复 Card 背景为绑定的主题色（移除封面取色）。</summary>

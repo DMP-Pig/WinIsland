@@ -152,6 +152,9 @@ public sealed class AppSettings
     public bool StandaloneLyricsWindow { get; set; } = false;
     public bool KaraokeHighlight { get; set; } = true;
     public bool BilingualLyrics { get; set; } = true;   // 双语歌词：自动合并相邻时间戳的翻译行（可关闭）
+    public Dictionary<string, double> LyricTimeOffsets { get; set; } = new();  // #4 歌词时间微调：每首歌的时间偏移（秒）
+    public double LyricsWindowOpacity { get; set; } = 0.85;   // #5 独立歌词小窗不透明度（0.3~1.0）
+    public bool LyricsWindowLocked { get; set; } = false;     // #5 锁定歌词小窗（锁定后不可拖动且鼠标穿透）
 
 
     // ── Volume ─────────────────────────────────────────────────

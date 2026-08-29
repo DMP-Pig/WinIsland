@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -26,7 +27,8 @@ public partial class NotificationBannerWindow : Window
     public string FoldKey { get; }
 
     public NotificationBannerWindow(string title, string body, string glyph, int timeoutSeconds,
-        System.Windows.Forms.Screen screen, int stackIndex, string foldKey = "", bool progressMode = false)
+        System.Windows.Forms.Screen screen, int stackIndex, string foldKey = "",
+        bool progressMode = false, IReadOnlyList<(string Label, Action Callback)>? actions = null)
     {
         _screen = screen;
         _stackIndex = stackIndex;
@@ -50,6 +52,28 @@ public partial class NotificationBannerWindow : Window
         _progressMode = progressMode;
         if (progressMode)
             ProgressHost.Visibility = Visibility.Visible; // 进度模式：先显示进度，完成后由 Complete() 接管
+
+        // #9 通知操作按钮：动态添加横向按钮，点击后先执行回调再收起横幅
+        if (actions is not null)
+        {
+            foreach (var (label, callback) in actions)
+            {
+                if (string.IsNullOrWhiteSpace(label)) continue;
+                var btn = new System.Windows.Controls.Button
+                {
+                    Content = label,
+                    Style = (System.Windows.Style)FindResource("BannerActionButton"),
+                };
+                btn.Click += (_, _) =>
+                {
+                    try { callback?.Invoke(); }
+                    catch (Exception ex) { AppLogger.Warn($"Banner action failed: {ex.Message}"); }
+                    CloseWithAnimation();
+                };
+                ActionsHost.Children.Add(btn);
+            }
+            if (ActionsHost.Children.Count > 0) ActionsHost.Visibility = Visibility.Visible;
+        }
 
         _closeTimer = new DispatcherTimer();
         _closeTimer.Tick += (_, _) => CloseWithAnimation();
@@ -153,7 +177,26 @@ public partial class NotificationBannerWindow : Window
         sb.Begin();
     }
 
-    private void Card_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => CloseWithAnimation();
+    private void Card_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        // #9 点击按钮不收起（按钮自己在回调后收起）
+        if (IsActionButton(e.OriginalSource)) return;
+        CloseWithAnimation();
+    }
+
+    /// <summary>判断点击源是否位于操作按钮上。</summary>
+    private static bool IsActionButton(object source)
+    {
+        var d = source as DependencyObject;
+        while (d is not null)
+        {
+            if (d is System.Windows.Controls.Button) return true;
+            d = d is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D
+                ? System.Windows.Media.VisualTreeHelper.GetParent(d)
+                : System.Windows.LogicalTreeHelper.GetParent(d);
+        }
+        return false;
+    }
 
     protected override void OnClosed(EventArgs e)
     {

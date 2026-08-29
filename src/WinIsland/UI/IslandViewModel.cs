@@ -35,6 +35,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private bool _suppressVolume;
     private int _suppressSeek;
     private string _lyricsKey = string.Empty;
+    private readonly Dictionary<string, double> _lyricTimeOffsets = new();  // #4 歌词时间微调：曲目 key -> 偏移秒
     private string? _restoredTrackKey;       // 上次退出时保存的曲目（用于启动恢复位置）
     private double _restoredPosition;        // 上次退出时保存的位置（秒）
     private bool _karaokeFrozen;             // 暂停时高亮是否已冻结（避免位置校正导致跳动）
@@ -90,6 +91,14 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _schedule.Changed += RefreshScheduleSummary;
         _pomodoro.Tick += RefreshTimerText;
         _pomodoro.Completed += OnPomodoroCompleted;
+
+        // #4 歌词时间微调：加载为每首歌保存的时间偏移（用户手动校准的歌词对齐）
+        try
+        {
+            foreach (var kv in _settings.Current.LyricTimeOffsets)
+                _lyricTimeOffsets[kv.Key] = Math.Clamp(kv.Value, -30, 30);
+        }
+        catch (Exception ex) { AppLogger.Warn($"Load lyric offsets failed: {ex.Message}"); }
 
         // 启动时恢复上次退出的播放位置（暂停后重启不跳回开头）
         var restored = PlaybackStateStore.Load();
@@ -173,10 +182,15 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
 
     public event EventHandler? OpenSettingsRequested;
     public event EventHandler? ToggleLyricsWindowRequested;
+    /// <summary>#10 上岛按钮回调：推送方配置了 notify 动作的按钮被点击时触发（参数：按钮 + 推送 ID）。</summary>
+    public event Action<IslandPushButton, string>? PushActionRequested;
 
     // ── 多播放器选择器 ────────────────────────────────────────
     /// <summary>当前可用媒体会话（SMTC 全部 + Cider 伪会话），供迷你播放器/设置切换来源。</summary>
     public ObservableCollection<MediaSessionItem> MediaSessions => _mediaSessions;
+
+    /// <summary>是否同时存在多个可用媒体来源（#3 多播放器切换：展开卡中显示选择器）。</summary>
+    public bool HasMultipleSessions => _mediaSessions.Count > 1;
 
     public MediaSessionItem? SelectedMediaSession
     {
@@ -184,9 +198,22 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         set
         {
             if (!Set(ref _selectedMediaSession, value)) return;
+            OnPropertyChanged(nameof(SelectedMediaSessionName));
             if (_suppressSessionSwitch || value is null) return;
             _ = SwitchSelectedSessionAsync(value.AppId);
         }
+    }
+
+    /// <summary>当前所选媒体来源名称（#3 选择器按钮显示）。</summary>
+    public string SelectedMediaSessionName => _selectedMediaSession?.AppName ?? "";
+
+    /// <summary>循环切换到下一个可用媒体来源（#3 多播放器切换）。</summary>
+    public void CycleMediaSession()
+    {
+        if (_mediaSessions.Count < 2) return;
+        var idx = _mediaSessions.IndexOf(_selectedMediaSession!);
+        var next = _mediaSessions[(idx + 1) % _mediaSessions.Count];
+        SelectedMediaSession = next;
     }
 
     /// <summary>刷新媒体会话列表并保持当前选中（不会触发切换）。</summary>
@@ -212,6 +239,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                 _suppressSessionSwitch = false;
             }
             OnPropertyChanged(nameof(SelectedMediaSession));
+            OnPropertyChanged(nameof(SelectedMediaSessionName));
+            OnPropertyChanged(nameof(HasMultipleSessions));
         }
         catch (Exception ex)
         {
@@ -395,6 +424,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public string LyricTranslateHint => Localization.Get("Lyric_TranslateHint");
     /// <summary>复制当前句提示。</summary>
     public string LyricCopyHint => Localization.Get("Lyric_CopyHint");
+    /// <summary>#4 歌词提前 0.5s 按钮提示。</summary>
+    public string LyricOffsetDownHint => Localization.Get("Lyric_OffsetDownHint");
+    /// <summary>#4 歌词延后 0.5s 按钮提示。</summary>
+    public string LyricOffsetUpHint => Localization.Get("Lyric_OffsetUpHint");
 
     /// <summary>紧凑态逐字卡拉OK已点亮字符数。</summary>
     private double _compactHighlightFraction;
@@ -1462,12 +1495,21 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         catch (Exception ex) { AppLogger.Warn($"Timer toggle failed: {ex.Message}"); }
     }
 
-    /// <summary>执行上岛卡片按钮动作（打开 URL / 启动程序）。</summary>
+    /// <summary>执行上岛卡片按钮动作（url/启动程序；notify 回调给推送方，#10）。</summary>
     public void ExecutePushAction(IslandPushButton button)
     {
-        if (button is null || string.IsNullOrWhiteSpace(button.Value)) return;
+        if (button is null) return;
         try
         {
+            // #10 notify 动作：不打开链接，触发事件由 App 转发给 WebSocket 订阅端（推送方自行处理回调）
+            if (string.Equals(button.Action, "notify", StringComparison.OrdinalIgnoreCase))
+            {
+                var pushId = FindPushIdByButton(button);
+                PushActionRequested?.Invoke(button, pushId);
+                AppLogger.Info($"Island push notify action: {button.Label ?? button.Value} (push={pushId})");
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(button.Value)) return;
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(button.Value)
             {
                 UseShellExecute = true,
@@ -1478,6 +1520,17 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         {
             AppLogger.Warn($"Island push action failed: {ex.Message}");
         }
+    }
+
+    /// <summary>查找包含该按钮的推送 ID（用于 notify 回调广播）。</summary>
+    private string FindPushIdByButton(IslandPushButton button)
+    {
+        foreach (var p in _pushes)
+        {
+            if (p.Buttons is not null && p.Buttons.Contains(button)) return p.Id;
+            if (p.Click == button) return p.Id;
+        }
+        return ActivePush?.Id ?? string.Empty;
     }
 
     /// <summary>执行整卡点击回跳动作（推送配置了 click 时），执行后关闭该条推送。</summary>
@@ -1727,8 +1780,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         }
         if (LyricLines.Count > 0)
         {
-            // 直接按当前（已恢复的）位置定位当前句，避免启动瞬间先显示第 0 行再跳
-            var idx = result.Document.IndexAt(TimeSpan.FromSeconds(Math.Max(0, _interpolatedPosition)));
+            // 直接按当前（已恢复的）位置定位当前句，避免启动瞬间先显示第 0 行再跳；
+            // #4：叠加用户校准的时间偏移
+            var idx = result.Document.IndexAt(LyricsAdjustedPosition(TimeSpan.FromSeconds(Math.Max(0, _interpolatedPosition))));
             LyricIndex = idx < 0 ? -1 : idx;
             CurrentLyricText = LyricLines[Math.Clamp(idx, 0, LyricLines.Count - 1)].Text;
         }
@@ -1746,6 +1800,52 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             _ => Localization.Get("LyricsUnavailable"),
         };
         OnPropertyChanged(nameof(HasLyrics));
+        OnPropertyChanged(nameof(LyricOffsetText)); // 本曲可能带已保存的偏移
+    }
+
+    // #4 ── 歌词时间微调 ────────────────────────────────────────
+    /// <summary>当前曲目的歌词时间偏移（秒），未校准为 0。</summary>
+    public double CurrentLyricOffset
+    {
+        get => _lyricsKey.Length > 0 && _lyricTimeOffsets.TryGetValue(_lyricsKey, out var v) ? v : 0;
+    }
+
+    /// <summary>歌词对齐偏移的显示文本（按钮上显示）。</summary>
+    public string LyricOffsetText
+    {
+        get
+        {
+            var off = CurrentLyricOffset;
+            if (Math.Abs(off) < 0.001) return Localization.Get("Lyric_Aligned");
+            return off > 0 ? $"+{off:0.0}s" : $"{off:0.0}s";
+        }
+    }
+
+    /// <summary>把播放位置叠加歌词偏移后用于歌词定位/卡拉OK。</summary>
+    private TimeSpan LyricsAdjustedPosition(TimeSpan pos)
+        => pos + TimeSpan.FromSeconds(CurrentLyricOffset);
+
+    /// <summary>微调当前曲目的歌词时间：delta 秒（±0.5 步进），立即生效并持久化到设置。</summary>
+    public void AdjustLyricTime(double delta)
+    {
+        if (_lyricsKey.Length == 0) return;
+        try
+        {
+            var off = Math.Clamp(CurrentLyricOffset + delta, -30, 30);
+            _lyricTimeOffsets[_lyricsKey] = off;
+            _settings.Update(s => s.LyricTimeOffsets = new Dictionary<string, double>(_lyricTimeOffsets));
+            OnPropertyChanged(nameof(LyricOffsetText));
+            if (HasLyrics && _lyrics.Document.Lines.Count > 0)
+            {
+                var idx = _lyrics.Document.IndexAt(LyricsAdjustedPosition(Position));
+                if (idx != LyricIndex) LyricIndex = idx;
+                UpdateKaraokeHighlight();
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"Lyric time adjust failed: {ex.Message}");
+        }
     }
 
     // ── Progress interpolation ─────────────────────────────────
@@ -1775,7 +1875,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
 
         if (HasLyrics)
         {
-            var idx = _lyrics.Document.IndexAt(Position);
+            var idx = _lyrics.Document.IndexAt(LyricsAdjustedPosition(Position)); // #4 叠加歌词偏移
             if (idx != LyricIndex) LyricIndex = idx;
             UpdateKaraokeHighlight();
         }
@@ -1789,7 +1889,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         var cur = lines[LyricIndex];
         var nextStart = (LyricIndex + 1 < lines.Count) ? lines[LyricIndex + 1].Time.TotalSeconds : cur.Time.TotalSeconds + 5.0;
         var duration = Math.Max(0.1, nextStart - cur.Time.TotalSeconds);
-        var frac = Math.Clamp((Position.TotalSeconds - cur.Time.TotalSeconds) / duration, 0, 1);
+        var posSec = Position.TotalSeconds + CurrentLyricOffset; // #4 叠加歌词偏移
+        var frac = Math.Clamp((posSec - cur.Time.TotalSeconds) / duration, 0, 1);
 
         if (Status == PlaybackStatus.Playing)
         {

@@ -25,19 +25,23 @@ public sealed class NotificationService
     }
 
     /// <summary>弹出通知横幅。source = 来源应用（exe 名 / 显示名），用于勿扰白名单与通知中心打开来源。</summary>
-    public void Show(string title, string body, string glyph = "\uE7F4", string? source = null)
+    /// <summary>弹出通知横幅。source = 来源应用（exe 名 / 显示名），用于勿扰白名单与通知中心打开来源。
+    /// actions = 可选操作按钮（#9：如蓝牙「断开」「设置」），点击后执行回调并收起横幅。</summary>
+    public void Show(string title, string body, string glyph = "\uE7F4", string? source = null,
+        IReadOnlyList<(string Label, Action Callback)>? actions = null)
     {
         if (_dispatcher.CheckAccess())
         {
-            ShowCore(title, body, glyph, source);
+            ShowCore(title, body, glyph, source, actions);
         }
         else
         {
-            _dispatcher.BeginInvoke(() => ShowCore(title, body, glyph, source));
+            _dispatcher.BeginInvoke(() => ShowCore(title, body, glyph, source, actions));
         }
     }
 
-    private void ShowCore(string title, string body, string glyph, string? source)
+    private void ShowCore(string title, string body, string glyph, string? source,
+        IReadOnlyList<(string Label, Action Callback)>? actions = null)
     {
         try
         {
@@ -73,7 +77,7 @@ public sealed class NotificationService
             }
 
             var win = new NotificationBannerWindow(title, body, glyph, timeout, screen, _active.Count,
-                (source ?? string.Empty) + "\u0001" + title);
+                (source ?? string.Empty) + "\u0001" + title, actions: actions);
             win.Closed += (_, _) => _active.Remove(win);
             _active.Add(win);
             win.Show();
