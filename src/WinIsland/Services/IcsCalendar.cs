@@ -321,9 +321,28 @@ public static class IcsParser
     private static string Unescape(string s)
     {
         if (string.IsNullOrEmpty(s)) return s;
-        var x = s.Replace("\\", "\u0001");
-        x = x.Replace("\\n", "\r\n").Replace("\\N", "\r\n");
-        x = x.Replace("\\,", ",").Replace("\\;", ";");
-        return x.Replace("\u0001", "\\");
+        // ICS 转义：\\ → \、\n → 换行、\, → 逗号、\; → 分号。
+        // 必须逐个字符扫描：先用占位符方案会丢掉后续的 \n/\,/\; 替换（旧实现实为无效操作）。
+        var sb = new System.Text.StringBuilder(s.Length);
+        for (var i = 0; i < s.Length; i++)
+        {
+            if (s[i] == '\\' && i + 1 < s.Length)
+            {
+                switch (s[i + 1])
+                {
+                    case 'n':
+                    case 'N': sb.Append('\n'); i++; break;
+                    case ',': sb.Append(','); i++; break;
+                    case ';': sb.Append(';'); i++; break;
+                    case '\\': sb.Append('\\'); i++; break;
+                    default: sb.Append(s[i]); break; // 未知转义保留原样
+                }
+            }
+            else
+            {
+                sb.Append(s[i]);
+            }
+        }
+        return sb.ToString();
     }
 }
