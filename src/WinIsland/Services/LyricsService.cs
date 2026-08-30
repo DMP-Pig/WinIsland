@@ -3,9 +3,13 @@ using System.Text;
 
 namespace WinIsland.Services;
 
-public enum LyricsSourceKind { None, LocalFile, Cider, Online }
+public enum LyricsSourceKind { None, LocalFile, Cider, Online, AmllTtml }
 
-public sealed record LyricsResult(LrcDocument Document, LyricsSourceKind Source, string SourceDetail)
+/// <summary>
+/// 歌词解析结果：<see cref="Document"/> 是行级 LRC 时间轴（用于定位/滚动），
+/// <see cref="Ttml"/> 是可选的原生 TTML 逐字时间轴（用于逐字卡拉OK，可能为 null）。
+/// </summary>
+public sealed record LyricsResult(LrcDocument Document, LyricsSourceKind Source, string SourceDetail, TtmlDocument? Ttml = null)
 {
     public bool IsEmpty => Document.IsEmpty;
     public static LyricsResult Empty { get; } = new(new LrcDocument(), LyricsSourceKind.None, string.Empty);
@@ -13,7 +17,7 @@ public sealed record LyricsResult(LrcDocument Document, LyricsSourceKind Source,
 
 /// <summary>
 /// Resolves lyrics for the currently playing track.
-/// Priority: local .lrc file > player/client lyrics (Cider API) > online API (opt-in).
+/// Priority: local .lrc file > AMLL TTML API (逐字) > player/client lyrics (Cider API) > online API (opt-in).
 /// Missing lyrics degrade gracefully to an empty result — callers just hide the panel.
 /// </summary>
 public sealed class LyricsService
@@ -21,6 +25,7 @@ public sealed class LyricsService
     private readonly SettingsService _settings;
     private readonly CiderMediaProvider? _cider;
     private readonly OnlineLyricsService _online = new();
+    private readonly AmllTtmlApiService _amll = new();
     private readonly Dictionary<string, LyricsResult> _cache = new();
     private readonly object _cacheLock = new();
 
@@ -69,7 +74,17 @@ public sealed class LyricsService
             }
         }
 
-        // 2) Cider API lyrics (only meaningful when the active source is Cider).
+        // 2) AMLL TTML API —— 逐字卡拉OK歌词库（独立开关，默认开启；失败自动降级到下一来源）。
+        if (_settings.Current.AmllTtmlEnabled)
+        {
+            var amll = await _amll.FetchAsync(track.Title, track.Artist, track.Album, ct);
+            if (!amll.Lrc.IsEmpty)
+            {
+                return new LyricsResult(amll.Lrc, LyricsSourceKind.AmllTtml, "AMLL TTML", amll.Ttml);
+            }
+        }
+
+        // 3) Cider API lyrics (only meaningful when the active source is Cider).
         if (snapshot.Source == MediaSourceKind.Cider && _cider is not null)
         {
             var lrc = await _cider.GetLyricsAsync();
@@ -80,7 +95,7 @@ public sealed class LyricsService
             }
         }
 
-        // 3) Online API — strictly opt-in.
+        // 4) Online API — strictly opt-in.
         if (_settings.Current.OnlineLyricsEnabled)
         {
             var lrc = await _online.FetchLrcAsync(track.Title, track.Artist, ct);
@@ -170,4 +185,3 @@ public sealed class LyricsService
         return sb.ToString();
     }
 }
-

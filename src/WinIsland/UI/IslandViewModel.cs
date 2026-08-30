@@ -27,6 +27,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
 
     private MediaSnapshot? _snapshot;
     private LyricsResult _lyrics = LyricsResult.Empty;
+    private Dictionary<double, TtmlLine> _ttmlLineIndex = new(); // 当前歌词的 TTML 行索引（按行开始秒，双语合并后按时间取逐字词）
     private DateTime _lastPositionTime;
     private double _interpolatedPosition;
     private int _lyricIndex = -1;
@@ -497,6 +498,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             if (value >= 0 && value < LyricLines.Count) LyricLines[value].IsCurrent = true;
             // 换句时解除暂停冻结，让 UpdateKaraokeHighlight 按当前（正确）位置重算一次
             _karaokeFrozen = false;
+            // 换句时按「行开始秒」取该句逐字时间轴（时间匹配兼容双语合并后的行序变化）
+            CurrentLyricWords = value >= 0 && value < LyricLines.Count
+                ? WordsForLine(_ttmlLineIndex, LyricLines[value].Time.TotalSeconds)
+                : Array.Empty<TtmlWord>();
             CurrentLyricText = LyricLines.Count > 0
                 ? LyricLines[Math.Clamp(value, 0, LyricLines.Count - 1)].Text
                 : string.Empty;
@@ -542,6 +547,14 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     /// <summary>紧凑态逐字卡拉OK已点亮字符数。</summary>
     private double _compactHighlightFraction;
     public double CompactHighlightFraction { get => _compactHighlightFraction; private set => Set(ref _compactHighlightFraction, value); }
+
+    /// <summary>当前卡拉OK绝对秒（含歌词偏移），驱动逐字高亮（控件按墙钟 60fps 连续推进）。</summary>
+    private double _karaokePositionSeconds;
+    public double KaraokePositionSeconds { get => _karaokePositionSeconds; private set => Set(ref _karaokePositionSeconds, value); }
+
+    /// <summary>当前句逐字时间轴（AMLL TTML），供逐字卡拉OK控件使用；无则空集合。</summary>
+    private IReadOnlyList<TtmlWord> _currentLyricWords = Array.Empty<TtmlWord>();
+    public IReadOnlyList<TtmlWord> CurrentLyricWords { get => _currentLyricWords; private set => Set(ref _currentLyricWords, value); }
 
     // ── Idle widgets（无媒体时组件）───────────────────────────
     private bool _hasMedia;
@@ -1304,8 +1317,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                 }
                 w += 8; // 组件间右边距（模板 Margin 0,0,8,0 左右），这里按单边即可
             }
-            if (HasMedia) w += 68 + 34; // 播放/暂停 + 下一首 按钮
-            return Math.Clamp(w + 4, 260, 720);
+            if (HasMedia) w += 120; // 播放/暂停 + 下一首 按钮
+            return Math.Clamp(w + 4, 260, 800);
         }
     }
 
@@ -1877,6 +1890,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _wave.SetPlaying(false);
         LyricLines = Array.Empty<LyricLineViewModel>();
         _lyrics = LyricsResult.Empty;
+        _ttmlLineIndex = new();
         LyricIndex = -1;
         CurrentLyricText = string.Empty;
         OnPropertyChanged(nameof(IsPlaying));
@@ -1895,15 +1909,20 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         var result = await _lyricsService.GetLyricsAsync(snapshot);
         if (_lyricsKey != key) return; // track changed while loading
         _lyrics = result;
+        _ttmlLineIndex = BuildTtmlLineIndex(result.Ttml); // 供按时间取逐字词
         if (_settings.Current.BilingualLyrics)
         {
-            // 双语歌词：相邻时间戳的翻译行自动合并到主句下方显示
+            // 双语歌词：相邻时间戳的翻译行自动合并到主句下方显示；
+            // 逐字时间轴按「行开始秒」与 TTML 行对齐（翻译行是翻译文本，不参与卡拉OK）。
             var pairs = LrcParser.PairLines(result.Document.Lines, TimeSpan.FromMilliseconds(250), enable: true);
-            LyricLines = pairs.Select(x => new LyricLineViewModel(x.Main, x.Translation)).ToList();
+            LyricLines = pairs.Select(x => new LyricLineViewModel(x.Main, x.Translation,
+                WordsForLine(_ttmlLineIndex, x.Main.Time.TotalSeconds))).ToList();
         }
         else
         {
-            LyricLines = result.Document.Lines.Select(l => new LyricLineViewModel(l)).ToList();
+            LyricLines = result.Document.Lines
+                .Select(l => new LyricLineViewModel(l, null, WordsForLine(_ttmlLineIndex, l.Time.TotalSeconds)))
+                .ToList();
         }
         if (LyricLines.Count > 0)
         {
@@ -1911,11 +1930,16 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             // #4：叠加用户校准的时间偏移
             var idx = result.Document.IndexAt(LyricsAdjustedPosition(TimeSpan.FromSeconds(Math.Max(0, _interpolatedPosition))));
             LyricIndex = idx < 0 ? -1 : idx;
+            // 显式对齐（LyricIndex 可能未变化）；按时间取词兼容双语合并行序
+            CurrentLyricWords = idx >= 0 && idx < LyricLines.Count
+                ? WordsForLine(_ttmlLineIndex, LyricLines[idx].Time.TotalSeconds)
+                : Array.Empty<TtmlWord>();
             CurrentLyricText = LyricLines[Math.Clamp(idx, 0, LyricLines.Count - 1)].Text;
         }
         else
         {
             LyricIndex = -1;
+            CurrentLyricWords = Array.Empty<TtmlWord>();
             CurrentLyricText = string.Empty;
         }
 
@@ -1924,6 +1948,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             LyricsSourceKind.LocalFile => Localization.Get("Lyrics_Local"),
             LyricsSourceKind.Cider => Localization.Get("Lyrics_FromCider"),
             LyricsSourceKind.Online => Localization.Get("Lyrics_Online"),
+            LyricsSourceKind.AmllTtml => Localization.Get("Lyrics_Amll"),
             _ => Localization.Get("LyricsUnavailable"),
         };
         OnPropertyChanged(nameof(HasLyrics));
@@ -2023,16 +2048,18 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         {
             // 播放中：实时推进（连续比例 0..1，供控件 60fps 缓动）
             _karaokeFrozen = false;
+            KaraokePositionSeconds = posSec; // 播放中持续更新逐字位置（控件按墙钟 60fps 推进）
             SetHighlightFraction(frac);
         }
         else if (!_karaokeFrozen)
         {
             // 暂停：用当前（已正确恢复的）位置设置一次高亮，然后冻结，
             // 之后任何位置校正都不再改动高亮 → 稳定在暂停时刻的样子。
+            KaraokePositionSeconds = posSec; // 暂停首次：按当前正确位置渲染一次后冻结
             SetHighlightFraction(frac);
             _karaokeFrozen = true;
         }
-        // 已冻结：保持不动
+        // 已冻结：保持不动（既不更新比例也不更新逐字位置，避免暂停时跳动）
 
     }
 
@@ -2044,6 +2071,32 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             if (Math.Abs(lvm.HighlightFraction - frac) > 0.0005) lvm.HighlightFraction = frac;
         }
         if (Math.Abs(CompactHighlightFraction - frac) > 0.0005) CompactHighlightFraction = frac;
+    }
+
+    // ── AMLL TTML 逐字时间轴辅助 ──────────────────────────────
+    /// <summary>按「行开始秒」（round 2 位）建立 TTML 行索引，供双语合并后按时间定位逐字词。</summary>
+    private static Dictionary<double, TtmlLine> BuildTtmlLineIndex(TtmlDocument? ttml)
+    {
+        var map = new Dictionary<double, TtmlLine>();
+        if (ttml is null) return map;
+        foreach (var line in ttml.Lines)
+        {
+            var key = Math.Round(line.BeginSec, 2);
+            if (!map.ContainsKey(key)) map[key] = line;
+        }
+        return map;
+    }
+
+    /// <summary>按行开始秒查找该行逐字词（容差 50ms；找不到返回空 → 优雅降级为整行均分）。</summary>
+    private static IReadOnlyList<TtmlWord> WordsForLine(Dictionary<double, TtmlLine> index, double beginSec)
+    {
+        var key = Math.Round(beginSec, 2);
+        if (index.TryGetValue(key, out var line)) return line.Words;
+        foreach (var kv in index)
+        {
+            if (Math.Abs(kv.Key - key) <= 0.05) return kv.Value.Words;
+        }
+        return Array.Empty<TtmlWord>();
     }
 
     /// <summary>保存当前播放位置（退出/暂停/切歌时调用，供下次启动恢复）。</summary>

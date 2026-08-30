@@ -1,3 +1,14 @@
+## WinIsland 1.1.5（正式版 / Stable）
+
+一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新内容
+- **AMLL 逐字歌词（真·卡拉OK）**：接入 amll.dev 的 Apple Music 风格 TTML 曲库，设置 → 歌词「AMLL 逐字歌词」开关（默认开启）；来源优先级：本地 LRC → AMLL TTML → Cider → 在线歌词
+- **逐字高亮引擎重写**：60fps 墙钟连续推进 + 非线性缓动；整行均分兜底；双语歌词按时间轴匹配
+- **暂停高亮稳定**：暂停后冻结在暂停时刻，退出重启不跳动；仅活动行驱动动画，空闲近 0 CPU
+- **紧凑态歌词间距修复**：歌词与右侧按钮保持固定间距；空间不足自动扩大岛宽（720→800）
+- **稳定性**：AMLL 5 秒超时 + 优雅降级；控件重新可见校准墙钟基准
+
 ## WinIsland 1.1.4（正式版 / Stable）
 一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
 

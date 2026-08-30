@@ -893,6 +893,7 @@
                 <TabItem x:Name="TabLyrics" Header="歌词">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10,6">
+                        <CheckBox x:Name="ChkAmllTtml" IsChecked="{Binding Working.AmllTtmlEnabled}" Margin="0,0,0,6"/>
                         <CheckBox x:Name="ChkOnlineLyrics" Content="在线歌词（网易云，非官方接口，默认开启）" IsChecked="{Binding Working.OnlineLyricsEnabled}"/>
                         <TextBlock x:Name="TxtLyricsNote" Text="在线歌词使用非官方接口，仅供个人学习，请尊重版权。" FontSize="11" Foreground="#E6A055" TextWrapping="Wrap" Margin="0,2,0,8"/>
                         <TextBlock x:Name="LblLyricsFolder" Style="{StaticResource Label}" Text="歌词文件夹（留空自动搜索）"/>

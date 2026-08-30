@@ -529,10 +529,12 @@
                                         <TextBlock Text="{Binding DataContext.Artist, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="11" Margin="0,1,0,0"
                                                    Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                                    TextTrimming="CharacterEllipsis"/>
-                                        <Grid ClipToBounds="True">
+                                        <Grid MaxWidth="300" ClipToBounds="True">
                                             <karaoke:KaraokeTextBlock
                                                 KaraokeText="{Binding DataContext.CurrentLyricText, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 HighlightFraction="{Binding DataContext.CompactHighlightFraction, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                Words="{Binding DataContext.CurrentLyricWords, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                PositionSeconds="{Binding DataContext.KaraokePositionSeconds, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 HighlightBrush="White" BaseBrush="#80FFFFFF"
                                                 karaoke:Marquee.IsEnabled="{Binding MarqueeEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -570,6 +572,8 @@
                                         <karaoke:KaraokeTextBlock
                                             KaraokeText="{Binding DataContext.CurrentLyricText, RelativeSource={RelativeSource AncestorType=Window}}"
                                             HighlightFraction="{Binding DataContext.CompactHighlightFraction, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            Words="{Binding DataContext.CurrentLyricWords, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            PositionSeconds="{Binding DataContext.KaraokePositionSeconds, RelativeSource={RelativeSource AncestorType=Window}}"
                                             IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}}"
                                             HighlightBrush="White" BaseBrush="#A0FFFFFF" FontSize="12" Margin="8,0,0,0"
                                             TextAlignment="Left" FontWeight="SemiBold"
@@ -686,7 +690,7 @@
                     </StackPanel>
 
                     <!-- 按钮靠右 -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0"
                                 Visibility="{Binding HasMedia, Converter={StaticResource BoolToVis}}">
                         <!-- 声音波纹：随音量起伏（紧凑行） -->
                                                 <StackPanel x:Name="WaveBoxCompact" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0"
@@ -1013,6 +1017,8 @@
                                             <karaoke:KaraokeTextBlock
                                                 KaraokeText="{Binding Text}"
                                                 HighlightFraction="{Binding HighlightFraction}"
+                                                Words="{Binding Words}"
+                                                PositionSeconds="{Binding DataContext.KaraokePositionSeconds, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=False}"
                                                 HighlightBrush="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
                                                 BaseBrush="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"

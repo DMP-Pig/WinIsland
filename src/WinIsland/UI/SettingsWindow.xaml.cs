@@ -488,6 +488,7 @@ public partial class SettingsWindow : Window
         ChkUseSystemVolume.Content = Localization.Get("Media_UseSystemVolume");
         LblAudioOutput.Text = Localization.Get("Media_AudioOutput");
         TxtAudioOutputNote.Text = Localization.Get("Media_AudioOutputNote");
+        ChkAmllTtml.Content = Localization.Get("Lyrics_AmllToggle");
         ChkOnlineLyrics.Content = Localization.Get("Lyrics_Online");
         ChkStandaloneLyrics.Content = Localization.Get("Lyrics_StandaloneWindow");
         LblLyricsOpacity.Text = Localization.Get("Lyrics_Opacity");

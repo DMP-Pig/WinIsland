@@ -159,6 +159,8 @@ public sealed class AppSettings
     public string CiderToken { get; set; } = string.Empty;
 
     // ── Lyrics ─────────────────────────────────────────────────
+    // ── Lyrics ─────────────────────────────────────────────────
+    public bool AmllTtmlEnabled { get; set; } = true;         // AMLL TTML 逐字歌词库（api.amll.dev，非官方；基于 LRC/TTML 更精确的逐字卡拉OK）
     public bool OnlineLyricsEnabled { get; set; } = true;    // 在线歌词（网易云非官方接口）；右键灵动岛可一键开关
     public string LyricsFolder { get; set; } = string.Empty; // extra .lrc folder; empty = auto (Music)
     public bool StandaloneLyricsWindow { get; set; } = false;

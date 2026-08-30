@@ -46,7 +46,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             PillRow.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
             var w = PillRow.DesiredSize.Width;
             // 字号缩放：逻辑宽度按比例缩小，卡片渲染时再放大，最终视觉宽度不变
-            return w >= 20 ? Math.Clamp((w + 56) / FontScale, 240 / FontScale, 720 / FontScale) : fallback; // 总留白 56（左侧 22 + 右侧 24，右侧略多）
+            return w >= 20 ? Math.Clamp((w + 56) / FontScale, 240 / FontScale, 800 / FontScale) : fallback; // 总留白 56（左侧 22 + 右侧 24，右侧略多）
         }
         catch
         {
@@ -79,7 +79,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             if (_vm.HasActivePush)
             {
                 var baseW = _noPushWValid ? _noPushCompactW : Math.Max(autoW, ManualCompactW);
-                return Math.Clamp(baseW + PushCardCompactWidth(), 240 / FontScale, 720 / FontScale);
+                return Math.Clamp(baseW + PushCardCompactWidth(), 240 / FontScale, 800 / FontScale);
             }
             _noPushCompactW = autoW;
             _noPushWValid = true;
@@ -104,7 +104,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     }
     private double ExpandedWidth => _settings.Current.ExpandedWidthAuto
         ? _vm.EstimatedExpandedWidth / FontScale
-        : Math.Clamp(_settings.Current.ExpandedWidth / FontScale, CompactWidth, 720 / FontScale);
+        : Math.Clamp(_settings.Current.ExpandedWidth / FontScale, CompactWidth, 800 / FontScale);
     private double MaxExpandedHeight => _settings.Current.MaxExpandedHeightAuto
         ? _vm.EstimatedExpandedHeight / FontScale
         : Math.Clamp(_settings.Current.MaxExpandedHeight / FontScale, 240 / FontScale, 620 / FontScale);
