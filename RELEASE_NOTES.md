@@ -10,6 +10,7 @@
 - **稳定性**：AMLL 5 秒超时 + 优雅降级；控件重新可见校准墙钟基准
 
 ## WinIsland 1.1.4（正式版 / Stable）
+
 一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
 
 ### 更新内容
