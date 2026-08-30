@@ -61,15 +61,15 @@ public sealed class MediaCoordinator : IDisposable
             await _cider.EnsureConnectedAsync();
             var snapshot = await _cider.GetSnapshotAsync();
 
-            // 2) SMTC global session
+            // 2) SMTC global session（已有缓存曲目时走轻量路径，避免每秒重取媒体属性）
             if (snapshot is null)
             {
-                await _smtc.PushAsync();
+                await _smtc.PushAsync(useCachedTrack: true);
                 snapshot = _smtc.LastSnapshot;
             }
 
-            // 3) Window-title fallback (cheap, every other tick)
-            if (snapshot is null && (_tick % 2 == 0))
+            // 3) Window-title fallback（无媒体时每 5 秒扫一次，降低空闲 CPU）
+            if (snapshot is null && (_tick % 5 == 0))
             {
                 snapshot = _title.GetSnapshot();
             }

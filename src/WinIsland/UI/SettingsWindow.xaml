@@ -467,7 +467,7 @@
                     <ListBoxItem>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE8D7;" FontFamily="Segoe MDL2 Assets" FontSize="13" Width="24" VerticalAlignment="Center" Opacity="0.9"/>
-                            <TextBlock x:Name="NavNotify" Text="通知" FontSize="12.5" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="NavEvents" Text="事件" FontSize="12.5" Margin="6,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                     </ListBoxItem>
                     <ListBoxItem>
@@ -510,6 +510,7 @@
                             <CheckBox x:Name="ChkStartHidden" Content="启动时隐藏灵动岛" IsChecked="{Binding Working.StartHidden}"/>
                             <CheckBox x:Name="ChkHideWhenNoMedia" Content="无媒体播放时自动隐藏" IsChecked="{Binding Working.HideWhenNoMedia}"/>
                             <CheckBox x:Name="ChkFullScreenHide" IsChecked="{Binding Working.FullScreenAutoHideEnabled}"/>
+                            <CheckBox x:Name="ChkLockScreenHide" IsChecked="{Binding Working.LockScreenAutoHideEnabled}"/>
                             <CheckBox x:Name="ChkShowWhenPaused" Content="暂停时仍然显示" IsChecked="{Binding Working.ShowWhenPaused}"/>
                             <CheckBox x:Name="ChkAlwaysVisible" IsChecked="{Binding Working.IslandAlwaysVisible}"/>
                             <TextBlock x:Name="LblDoubleClick" Style="{StaticResource Label}"/>
@@ -522,6 +523,17 @@
                                 <ComboBoxItem x:Name="CbiDcPrev" Tag="PrevTrack" Content="上一首"/>
                                 <ComboBoxItem x:Name="CbiDcOpenSettings" Tag="OpenSettings" Content="打开设置"/>
                                 <ComboBoxItem x:Name="CbiDcNone" Tag="None" Content="无动作"/>
+                            </ComboBox>
+                            <TextBlock x:Name="LblMiddleClick" Style="{StaticResource Label}"/>
+                            <ComboBox x:Name="CmbMiddleClick" SelectedValuePath="Tag" SelectedValue="{Binding Working.MiddleClickAction}">
+                                <ComboBoxItem x:Name="CbiMcPlayPause" Tag="PlayPause" Content="播放 / 暂停"/>
+                                <ComboBoxItem x:Name="CbiMcToggleExpand" Tag="ToggleExpand" Content="展开 / 收起"/>
+                                <ComboBoxItem x:Name="CbiMcShowDesktop" Tag="ShowDesktop" Content="显示桌面"/>
+                                <ComboBoxItem x:Name="CbiMcToggleVisible" Tag="ToggleVisible" Content="隐藏 / 显示灵动岛"/>
+                                <ComboBoxItem x:Name="CbiMcNext" Tag="NextTrack" Content="下一首"/>
+                                <ComboBoxItem x:Name="CbiMcPrev" Tag="PrevTrack" Content="上一首"/>
+                                <ComboBoxItem x:Name="CbiMcOpenSettings" Tag="OpenSettings" Content="打开设置"/>
+                                <ComboBoxItem x:Name="CbiMcNone" Tag="None" Content="无动作"/>
                             </ComboBox>
                             <CheckBox x:Name="ChkReduceMotion" IsChecked="{Binding Working.ReduceMotion}"/>
                             <CheckBox x:Name="ChkLowPower" IsChecked="{Binding Working.LowPowerMode}"/>
@@ -609,6 +621,19 @@
                                       DisplayMemberPath="Display" SelectedValue="{Binding Working.ThemePreset}"/>
                             <ComboBox ItemsSource="{Binding ThemeOptions}" SelectedValuePath="Value"
                                       DisplayMemberPath="Display" SelectedValue="{Binding Working.Theme}"/>
+                            <CheckBox x:Name="ChkThemeScheduled" IsChecked="{Binding Working.ThemeScheduledEnabled}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <TextBlock x:Name="LblThemeDarkStart" Style="{StaticResource Label}" Margin="0,0,10,0"/>
+                                <Slider Minimum="0" Maximum="23" Value="{Binding Working.ThemeScheduleDarkStartHour}" Width="130" HorizontalAlignment="Left"
+                                        IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <TextBlock x:Name="LblThemeDarkEnd" Style="{StaticResource Label}" Margin="0,0,10,0"/>
+                                <Slider Minimum="0" Maximum="23" Value="{Binding Working.ThemeScheduleDarkEndHour}" Width="130" HorizontalAlignment="Left"
+                                        IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock x:Name="TxtThemeScheduleNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,2,0,0"/>
                             <TextBlock x:Name="LblThemeTint" Style="{StaticResource Label}"/>
                             <TextBox x:Name="TxtThemeTint" Width="130" HorizontalAlignment="Left"
                                      Text="{Binding Working.ThemeTint}"/>
@@ -1074,7 +1099,7 @@
                     </StackPanel>
                 </TabItem>
 
-                <TabItem x:Name="TabNotify" Header="通知">
+                <TabItem x:Name="TabEvents" Header="事件">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10,6">
                         <CheckBox x:Name="ChkBluetoothNotify" IsChecked="{Binding Working.BluetoothNotifyEnabled}"/>
@@ -1089,11 +1114,6 @@
                                 IsSnapToTickEnabled="True" TickFrequency="5"/>
                         <TextBlock x:Name="TxtDiskThresholdHint" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,2,0,0"/>
-                        <CheckBox x:Name="ChkNotifyTakeover" IsChecked="{Binding Working.NotificationTakeoverEnabled}"/>
-                        <CheckBox x:Name="ChkNotifyFold" IsChecked="{Binding Working.NotifyFoldEnabled}"/>
-                        <TextBlock x:Name="LblNotifyTimeout" Style="{StaticResource Label}"/>
-                        <Slider Minimum="3" Maximum="15" Value="{Binding Working.NotificationTimeoutSeconds}" Width="300" HorizontalAlignment="Left"
-                                IsSnapToTickEnabled="True" TickFrequency="1"/>
                         <TextBlock x:Name="LblDndTitle" Style="{StaticResource Label}" Margin="0,16,0,0"/>
                         <CheckBox x:Name="ChkDndManual" IsChecked="{Binding Working.DoNotDisturbManual}"/>
                         <CheckBox x:Name="ChkDndSchedule" IsChecked="{Binding Working.DoNotDisturbEnabled}"/>
@@ -1181,58 +1201,6 @@
                                 IsSnapToTickEnabled="True" TickFrequency="1"/>
                         <TextBlock x:Name="TxtMailNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,6,0,0" MaxWidth="520"/>
-
-                        <TextBlock x:Name="TxtNotifyNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
-                                   TextWrapping="Wrap" Margin="0,10,0,0"/>
-
-                        <TextBlock x:Name="LblHistory" Style="{StaticResource Label}" Margin="0,14,0,0"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <Button x:Name="BtnMarkAllRead" Padding="10,4" Click="MarkAllRead_Click"/>
-                            <Button x:Name="BtnClearHistory" Padding="10,4" Margin="8,0,0,0" Click="ClearHistory_Click"/>
-                        </StackPanel>
-                        <Border CornerRadius="12" Background="{DynamicResource ControlBgBrush}"
-                                BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Padding="6">
-                            <StackPanel>
-                                <ListBox x:Name="HistoryList" MaxHeight="220" BorderThickness="0"
-                                Foreground="{DynamicResource TextPrimaryBrush}"
-                                         Background="Transparent" ScrollViewer.VerticalScrollBarVisibility="Auto">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,3,0,3" MouseLeftButtonUp="HistoryItem_MouseLeftButtonUp" Cursor="Hand">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <Ellipse Width="8" Height="8" Fill="#E17055" VerticalAlignment="Center" Margin="2,0,8,0"
-                                                         Visibility="{Binding Read, Converter={StaticResource InvBoolToVis}}"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="13"
-                                                           VerticalAlignment="Center" Margin="0,0,8,0" Opacity="0.8"/>
-                                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12.5"
-                                                               TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock Text="{Binding SourceText}" FontSize="10" Opacity="0.5"
-                                                               TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock Text="{Binding Body}" FontSize="11" Opacity="0.75"
-                                                               TextTrimming="CharacterEllipsis"/>
-                                                </StackPanel>
-                                                <TextBlock Grid.Column="3" Text="{Binding TimeText}" FontSize="10" Opacity="0.6"
-                                                           VerticalAlignment="Center" Margin="8,0,6,0"/>
-                                                <Button Grid.Column="4" Content="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="9"
-                                                        Width="22" Height="22" Padding="0" VerticalAlignment="Center"
-                                                        Background="Transparent" BorderThickness="0" Opacity="0.7"
-                                                        Click="DeleteHistoryItem_Click" CommandParameter="{Binding}"
-                                                        ToolTip="&#x5220;&#x9664;"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                                <TextBlock x:Name="TxtHistoryEmpty" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
-                                           HorizontalAlignment="Center" Margin="0,12,0,12"/>
-                            </StackPanel>
-                        </Border>
                     </StackPanel>
                     </ScrollViewer>
                 </TabItem>

@@ -15,12 +15,21 @@ public static class DoNotDisturb
         // 开会静音助手：检测到会议时自动勿扰（仅本机前台窗口检测，不联网）
         if (s.MeetingAssistantEnabled && s.MeetingAutoDnd && MeetingMonitor.IsInMeeting) return true;
         if (!s.DoNotDisturbEnabled) return false;
-        var start = Math.Clamp(s.DoNotDisturbStartHour, 0, 23);
-        var end = Math.Clamp(s.DoNotDisturbEndHour, 0, 23);
+        var start = TimeOfDay(s.DoNotDisturbStartHour, s.DoNotDisturbStartMinute);
+        var end = TimeOfDay(s.DoNotDisturbEndHour, s.DoNotDisturbEndMinute);
         if (start == end) return false;
         if (IsAllowlisted(s, source)) return false;
-        var now = DateTime.Now.Hour;
+        var now = DateTime.Now.TimeOfDay;
+        // 分钟级判断；跨天（start > end）时采用“现在 >= start 或 现在 < end”
         return start < end ? now >= start && now < end : now >= start || now < end;
+    }
+
+    /// <summary>把「小时 + 分钟」合成 TimeSpan（越界值夹紧到合法范围）。</summary>
+    private static TimeSpan TimeOfDay(int hour, int minute)
+    {
+        var h = Math.Clamp(hour, 0, 23);
+        var m = Math.Clamp(minute, 0, 59);
+        return TimeSpan.FromHours(h) + TimeSpan.FromMinutes(m);
     }
 
     /// <summary>来源（exe 名 / 应用显示名，大小写不敏感）是否在勿扰白名单内。</summary>

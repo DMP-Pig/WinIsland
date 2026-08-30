@@ -24,6 +24,29 @@ public sealed class IslandPushButton
 }
 
 /// <summary>
+/// 输入框：用户在上岛卡片填写文字并提交，按推送方配置的 action 执行（默认 notify 回传推送方，
+/// 由推送方通过 WebSocket push_input 事件自行处理）。
+/// </summary>
+public sealed class IslandPushInput
+{
+    /// <summary>输入框占位提示（可选）。</summary>
+    [JsonPropertyName("placeholder")]
+    public string Placeholder { get; set; } = "";
+
+    /// <summary>输入框初始值（可选，预填文字）。</summary>
+    [JsonPropertyName("value")]
+    public string Value { get; set; } = "";
+
+    /// <summary>提交按钮文字（可选，默认「提交」）。</summary>
+    [JsonPropertyName("submit_label")]
+    public string SubmitLabel { get; set; } = "";
+
+    /// <summary>提交后执行的动作；默认 notify（把用户输入作为 value 回传推送方）。</summary>
+    [JsonPropertyName("action")]
+    public string Action { get; set; } = "notify"; // url | launch | notify
+}
+
+/// <summary>
 /// 第三方软件通过本地上岛 API 推送的“灵动岛卡片”。
 /// 字段均为可选：WinIsland 会用设置里的全局默认补齐（显示时长、点击行为）。
 /// </summary>
@@ -79,6 +102,10 @@ public sealed class IslandPush
     /// <summary>整卡点击回跳（可选）：url 打开链接/文件，launch 启动程序。</summary>
     [JsonPropertyName("click")]
     public IslandPushButton? Click { get; set; }
+
+    /// <summary>输入框（可选）：用户输入文字提交后按 Input.Action 执行（默认 notify 回传推送方）。</summary>
+    [JsonPropertyName("input")]
+    public IslandPushInput? Input { get; set; }
 
     /// <summary>排序用优先级数值（不入 JSON）：high=2 / normal=1 / low=0。</summary>
     [JsonIgnore]

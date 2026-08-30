@@ -390,11 +390,13 @@ public sealed class IslandApiServer : IDisposable
     /// <summary>
     /// #10 上岛按钮回调：推送方配置了 notify 动作的按钮被点击时，
     /// 向所有 WebSocket 订阅端广播 push_button 事件（推送方接收后自行处理）。
+    /// value 为附加载荷：普通按钮为按钮值；输入框提交时为用户填写的文字（#11）。
     /// </summary>
-    public void BroadcastPushButton(string pushId, string button)
+    public void BroadcastPushButton(string pushId, string button, string? value = null)
     {
         if (_wsClients.IsEmpty) return;
-        var json = JsonSerializer.Serialize(new { type = "event", @event = "push_button", push_id = pushId, button });
+        var payload = new { type = "event", @event = "push_button", push_id = pushId, button, value = string.IsNullOrEmpty(value) ? null : value };
+        var json = JsonSerializer.Serialize(payload);
         BroadcastJson(json);
     }
 

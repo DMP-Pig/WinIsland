@@ -80,6 +80,9 @@ public sealed class AppSettings
     // ── Appearance ─────────────────────────────────────────────
     public string Language { get; set; } = "zh-CN";
     public ThemeMode Theme { get; set; } = ThemeMode.Auto;
+    public bool ThemeScheduledEnabled { get; set; } = false;   // 明暗主题定时切换（仅 Theme=Auto 时生效）
+    public int ThemeScheduleDarkStartHour { get; set; } = 19;  // 定时切换：深色开始小时
+    public int ThemeScheduleDarkEndHour { get; set; } = 7;     // 定时切换：深色结束小时
     public string AccentColor { get; set; } = "#6C5CE7";
     public IslandPosition Position { get; set; } = IslandPosition.Center;
     public MonitorSelection Monitor { get; set; } = MonitorSelection.Primary;
@@ -89,6 +92,7 @@ public sealed class AppSettings
     public double Opacity { get; set; } = 0.92;
     public bool EdgeSnapEnabled { get; set; } = true;        // 拖动松手自动吸附屏幕边缘/居中
     public bool FullScreenAutoHideEnabled { get; set; } = true;   // 全屏（视频/游戏/演示）时自动隐藏灵动岛
+    public bool LockScreenAutoHideEnabled { get; set; } = true;   // 锁屏（Win+L/远程桌面断开）时自动隐藏灵动岛，解锁后恢复
     public double? IslandManualLeft { get; set; }            // 手动拖动后的窗口 Left（DIP）；null=跟随默认定位
     public double? IslandManualTop { get; set; }             // 手动拖动后的窗口 Top（DIP）；null=跟随默认定位
 
@@ -103,6 +107,7 @@ public sealed class AppSettings
     public bool ReduceMotion { get; set; } = false;             // 减少动态效果（无障碍/省电）
     public bool GlobalHotkeysEnabled { get; set; } = true;         // 全局快捷键
     public string DoubleClickAction { get; set; } = "PlayPause";   // 双击灵动岛快捷动作：PlayPause | OpenSettings | None
+    public string MiddleClickAction { get; set; } = "PlayPause";   // 中键单击灵动岛快捷动作（与双击动作同值域）
     // ── 快捷操作按钮（展开卡片底部一排）──
     // QuickActions = 全部可用操作的顺序；QuickActionsShown = 勾选显示的子集。
     public bool QuickActionsEnabled { get; set; } = true;
@@ -245,6 +250,8 @@ public sealed class AppSettings
     public bool DoNotDisturbManual { get; set; } = false;    // 手动开关勿扰
     public int DoNotDisturbStartHour { get; set; } = 22;
     public int DoNotDisturbEndHour { get; set; } = 8;
+    public int DoNotDisturbStartMinute { get; set; } = 0;    // 定时勿扰开始分钟（0-55，步进 5）
+    public int DoNotDisturbEndMinute { get; set; } = 0;      // 定时勿扰结束分钟（0-55，步进 5）
     public List<string> DnDAllowlist { get; set; } = new();   // 勿扰白名单：来源 exe/AppName（大小写不敏感），白名单内的来源仍弹横幅
 
     // ── 开会静音助手（会议检测 + 自动勿扰；纯本机启发式，不联网）──

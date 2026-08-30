@@ -57,18 +57,50 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private double _noPushCompactW;
     private bool _noPushWValid;
 
-    /// <summary>推送卡片在紧凑态的单行估算宽度：标题 + 图标30 + 间距8 + 内边距24 + 余量6，保证文字完整。</summary>
+    /// <summary>
+    /// 推送卡片在紧凑态所需宽度：按 标题/副标题/正文单行/按钮 中最宽者计算
+    /// （图标30 + 间距8 + 内边距24 + 右边距10 + 余量6），保证文字完整显示、不裁剪不溢出。
+    /// 正文过长限制单行 ≤ 460，允许换行（高度已按行数估算）。
+    /// </summary>
     private double PushCardCompactWidth()
     {
-        var title = _vm.ActivePush?.Title ?? string.Empty;
-        double tw = 0;
-        foreach (var ch in title) tw += ch > 0x2E7F ? 13 : 7;
-        return (Math.Min(tw, 150) + 68) / FontScale;
+        var p = _vm.ActivePush;
+        if (p is null) return 0;
+        double need = 0;
+        need = Math.Max(need, TextW(p.Title, 13, 7));                        // 标题（SemiBold）
+        if (!string.IsNullOrEmpty(p.Subtitle))
+            need = Math.Max(need, TextW(p.Subtitle, 11.5, 6.2));             // 副标题（系统事件长文本常在此处）
+        if (!string.IsNullOrEmpty(p.Body))
+            need = Math.Max(need, Math.Min(TextW(p.Body, 12.5, 6.8), 460));  // 正文单行上限 460，超出换行
+        if (p.Buttons is { Count: > 0 })
+        {
+            double btnW = 0;
+            foreach (var b in p.Buttons) btnW += TextW(b.Label ?? string.Empty, 12, 6.5) + 26;
+            btnW += (p.Buttons.Count - 1) * 8;
+            need = Math.Max(need, btnW);
+        }
+        // 内容宽度上限 540（逻辑像素），超长由 TextTrimming 省略兜底；正常事件文本均完整显示
+        return (Math.Min(need, 540) + 72) / FontScale;
     }
 
+    /// <summary>估算多行文本的最宽单行宽度：中文/全角按 cjkPx，ASCII 按 asciiPx（换行符按行分离取最大值）。</summary>
+    private static double TextW(string? s, double cjkPx, double asciiPx)
+    {
+        if (string.IsNullOrEmpty(s)) return 0;
+        double max = 0;
+        foreach (var line in s.Split('\n'))
+        {
+            double w = 0;
+            foreach (var ch in line) w += ch > 0x2E7F ? cjkPx : asciiPx;
+            if (w > max) max = w;
+        }
+        return max;
+    }
+
+
     /// <summary>
-    /// 紧凑宽度：推送出现时 = 「无推送宽度 + 推送卡片宽度」确定性加长，
-    /// 确保推送卡片与所有组件完整显示（不依赖 UI 布局时序）；手动模式恒定。
+    /// 紧凑宽度：有推送时取「实测（含推送卡片实际布局宽）」与「估算（无推送基准 + 推送宽）」的较大者。
+    /// 实测保证任何文本都放得下（不依赖估算精度），估算兜底布局时序（首帧未布局时实测可能偏小）。
     /// </summary>
     private double CompactWidth
     {
@@ -78,8 +110,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             var autoW = MeasureCompactWidthNow();
             if (_vm.HasActivePush)
             {
-                var baseW = _noPushWValid ? _noPushCompactW : Math.Max(autoW, ManualCompactW);
-                return Math.Clamp(baseW + PushCardCompactWidth(), 240 / FontScale, 800 / FontScale);
+                var estBase = _noPushWValid ? _noPushCompactW : Math.Max(autoW, ManualCompactW);
+                var estimated = estBase + PushCardCompactWidth();
+                return Math.Clamp(Math.Max(autoW, estimated), 240 / FontScale, 800 / FontScale);
             }
             _noPushCompactW = autoW;
             _noPushWValid = true;
@@ -119,6 +152,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private readonly System.Windows.Forms.Screen _screen;
     private readonly DispatcherTimer _collapseTimer;
     private readonly DispatcherTimer _compactRestoreTimer;
+    private readonly EventHandler _onThemeChanged;      // 具名处理器：窗口关闭时可退订，防泄漏
+    private readonly EventHandler<AppSettings> _onSettingsChanged;
     private bool _waveRendering;                  // 波纹渲染中（已挂接合成帧事件）
     private DispatcherTimer? _waveTimer;                  // 低功耗模式：波纹降帧定时器（~30fps）
     private double _lastWaveTime;                 // 上一帧时间（秒），用于帧率无关平滑
@@ -217,14 +252,14 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         Card.PreviewMouseLeftButtonDown += OnCardMouseLeftButtonDown;
         Card.PreviewMouseMove += OnCardMouseMove;
         Card.PreviewMouseLeftButtonUp += OnCardMouseLeftButtonUp;
+        Card.PreviewMouseUp += OnCardMiddleMouseUp;   // 中键快捷操作
 
         // 进度条拖拽 seek
         ProgressSlider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler((_, _) => _vm.BeginSeek()));
         ProgressSlider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler(async (_, _) => await _vm.EndSeekAsync(ProgressSlider.Value)));
 
-        _vm.PropertyChanged += OnVmPropertyChanged;
-        _theme.ThemeChanged += (_, _) => ApplyTheme();
-        _settings.Changed += (_, _) =>
+        _onThemeChanged = (_, _) => ApplyTheme();
+        _onSettingsChanged = (_, _) =>
         {
             ApplyExpandedSectionVisibility();
             ApplyAppearance();
@@ -232,9 +267,33 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             ApplyCoverTint();
             PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(MarqueeEnabled)));
         };
+        _vm.PropertyChanged += OnVmPropertyChanged;
+        _theme.ThemeChanged += _onThemeChanged;
+        _settings.Changed += _onSettingsChanged;
 
         Loaded += OnLoaded;
         DpiChanged += (_, _) => Reposition();
+        Closed += OnWindowClosed; // 关闭时退订外部事件源，避免 RecreateWindows 重建后事件泄漏
+    }
+
+    /// <summary>窗口关闭：退订外部事件并停止本窗口定时器 / 渲染循环，防止内存与 CPU 泄漏。</summary>
+    private void OnWindowClosed(object? sender, EventArgs e)
+    {
+        try
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _theme.ThemeChanged -= _onThemeChanged;
+            _settings.Changed -= _onSettingsChanged;
+            _collapseTimer.Stop();
+            _compactRestoreTimer.Stop();
+            _lyricsScrollTimer.Stop();
+            CancelPendingClick();
+            StopWaveRender();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Island window cleanup failed", ex);
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -338,6 +397,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     public bool PushShowBody => _vm.ActivePushHasBody && !SingleLineMode;
     public bool PushShowProgress => _vm.ActivePushHasProgress && !SingleLineMode;
     public bool PushShowButtons => _vm.ActivePushHasButtons && !SingleLineMode;
+    public bool PushShowInput => _vm.HasPushInput && !SingleLineMode;
 
     // ── 点击展开 / 解锁拖动 / 右键菜单 ─────────────────────────
 
@@ -442,6 +502,15 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         e.Handled = true;
     }
 
+    /// <summary>中键单击：执行设置-通用中配置的中键快捷动作（默认播放/暂停）。</summary>
+    private void OnCardMiddleMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Middle) return;
+        e.Handled = true;
+        CancelPendingClick();
+        ExecuteQuickAction(_settings.Current.MiddleClickAction);
+    }
+
     private void CancelPendingClick()
     {
         _pendingClick = false;
@@ -450,9 +519,15 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     }
 
     /// <summary>双击快捷动作（在设置-通用中配置）：播放/暂停、展开/收起、显示桌面、隐藏/显示、切歌、打开设置或无动作。</summary>
-    private void ExecuteDoubleClickAction()
+    private void ExecuteDoubleClickAction() => ExecuteQuickAction(_settings.Current.DoubleClickAction);
+
+    /// <summary>中键快捷动作（在设置-通用中配置，与双击动作同值域）。</summary>
+    private void ExecuteMiddleClickAction() => ExecuteQuickAction(_settings.Current.MiddleClickAction);
+
+    /// <summary>按动作名执行快捷操作；未知动作回退为播放/暂停。</summary>
+    private void ExecuteQuickAction(string action)
     {
-        switch (_settings.Current.DoubleClickAction)
+        switch (action)
         {
             case "OpenSettings":
                 _vm.OpenSettingsCommand.Execute(null);
@@ -539,7 +614,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         while (d is not null)
         {
             if (d is System.Windows.Controls.Primitives.ButtonBase or Slider
-                or System.Windows.Controls.Primitives.Thumb or System.Windows.Controls.Primitives.RepeatButton)
+                or System.Windows.Controls.Primitives.Thumb or System.Windows.Controls.Primitives.RepeatButton
+                or System.Windows.Controls.TextBox)   // 上岛输入框：点击输入不触发展开/收起
                 return true;
             // Run/Inline 等 ContentElement 不是 Visual，VisualTreeHelper.GetParent 会抛异常，
             // 需沿逻辑树向上（歌词 Run → TextBlock），到达 UIElement 后继续沿视觉树。
@@ -629,8 +705,17 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         if ((sender as FrameworkElement)?.DataContext is IslandPushButton button)
         {
             _vm.ExecutePushAction(button);
-            _vm.DismissActivePush();
         }
+        e.Handled = true;
+    }
+
+    /// <summary>上岛输入框提交：把用户输入按推送方配置的动作执行（默认 notify 回传）。</summary>
+    private void PushInputSubmit_Click(object sender, RoutedEventArgs e)
+    {
+        // 提交输入执行推送动作（默认 notify 回传），随后关闭当前推送卡片
+        _vm.SubmitPushInput();
+        _vm.DismissActivePush();
+        e.Handled = true;
     }
 
     private void MenuOnlineLyrics_Click(object sender, RoutedEventArgs e)
@@ -706,6 +791,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowBody)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowProgress)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowButtons)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowInput)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MediaSessionPickerVisible)));
     }
 
@@ -1405,16 +1491,16 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         AddAnim(sb, Card, FrameworkElement.HeightProperty, height, (int)(styleSizeMs * lm), styleEase);
 
         // 展开内容：错峰淡入 + 轻微缩放/位移（展开延迟 95ms，让尺寸先动、内容跟上）
-        var contentDelay = TimeSpan.FromMilliseconds((expand ? 80 : 0) * lm);
-        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, (int)((expand ? 380 : 260) * lm), smooth, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, (int)((expand ? 560 : 520) * lm), styleEase, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, (int)((expand ? 560 : 520) * lm), styleEase, contentDelay);
-        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, (int)((expand ? 560 : 520) * lm), smooth, contentDelay);
+        var contentDelay = TimeSpan.FromMilliseconds((expand ? 100 : 0) * lm);
+        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, (int)((expand ? 450 : 300) * lm), smooth, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, (int)((expand ? 660 : 560) * lm), styleEase, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, (int)((expand ? 660 : 560) * lm), styleEase, contentDelay);
+        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, (int)((expand ? 660 : 560) * lm), smooth, contentDelay);
 
         // 胶囊行：展开后淡出（由大图区接管）；收起时立即恢复完全不透明，
         // 避免缩回瞬间胶囊内容还在淡入而出现"空内容"
         if (expand)
-            AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, 260, smooth, TimeSpan.FromMilliseconds(60));
+            AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, 300, smooth, TimeSpan.FromMilliseconds(90));
         else
             PillRow.Opacity = 1;
 
@@ -1458,18 +1544,18 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         switch (_settings.Current.AnimationStyle)
         {
             case "Soft":
-                return (new SoftSpringEase(), expand ? 840 : 720);
+                return (new SoftSpringEase(), expand ? 940 : 800);
             case "Elastic":
                 return (new ElasticEase
                 {
                     Oscillations = 1,
                     Springiness = 6,
                     EasingMode = EasingMode.EaseOut,
-                }, expand ? 760 : 640);
+                }, expand ? 840 : 700);
             case "Fade":
-                return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? 500 : 420);
+                return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? 600 : 500);
             default: // Spring
-                return (new SpringEase { Damping = 10, Stiffness = 200, Mass = 1 }, expand ? 680 : 560);
+                return (new SpringEase { Damping = 11, Stiffness = 85, Mass = 1 }, expand ? 900 : 760);
         }
     }
     private void AddAnim(Storyboard sb, DependencyObject target, DependencyProperty prop, double to, int ms, IEasingFunction easing, TimeSpan? beginTime = null)

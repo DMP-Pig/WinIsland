@@ -42,6 +42,7 @@
 | `accent` | 否 | string | 自定义强调色 `#RRGGBB` 或 `#AARRGGBB`，覆盖类型默认色 |
 | `theme` | 否 | string | 卡片主题：`dark` / `light` / `auto`（默认 auto 跟随 WinIsland 明暗主题） |
 | `click` | 否 | object | 整卡点击回跳（结构同 `buttons[]` 项）：点击卡片执行该动作 |
+| `input` | 否 | object | 输入框（结构见下）：用户在上岛卡片填写文字后提交，动作默认 `notify` 回传推送方 |
 | `expires_at` | 否 | string | 服务端计算（返回用）；请求时忽略 |
 | `image` | 否 | string | 图片：data URI（`data:image/png;base64,...`）或 http(s) 链接（v3，展开态显示） |
 | `progress_from` / `progress_to` | 否 | number | 动态进度段 0~1（v3，配合 `progress_duration_seconds` 自动推进；默认 from=0 / to=1） |
@@ -56,6 +57,15 @@
 | `action` | `url`（默认，用系统默认方式打开 value）、`launch`（启动 value 指定的程序）或 `command`（在本地执行 value 命令行，`cmd /c`） |
 | `value` | url 地址 / 程序路径（可带参数）/ 命令字符串 |
 | ⚠️ `command` | 仅本机回环 API（127.0.0.1）且可配 Token；会执行任意命令，请只给可信推送方使用 |
+
+`input` 每项：
+
+| 字段 | 说明 |
+|---|---|
+| `placeholder` | 输入框占位提示（可选） |
+| `value` | 输入框初始值（可选，预填文字） |
+| `submit_label` | 提交按钮文字（可选，默认「提交」） |
+| `action` | 提交后执行的动作：`notify`（默认，把用户输入作为 `value` 通过 WebSocket `push_button` 事件回传推送方）、`url`（用系统默认方式打开 value）、`launch`（启动 value） |
 
 ### 响应
 
@@ -95,6 +105,7 @@
 |---|---|
 | `push_updated` | 推送被新增 / 更新（`type: "event"`, `event: "push_updated"`, `push: {...}`） |
 | `push_removed` | 推送被移除 / 过期（`type: "event"`, `event: "push_removed"`, `id: "..."`） |
+| `push_button` | 推送按钮被点击（`type: "event"`, `event: "push_button"`, `push_id: "..."`, `button: "按钮文字"`, `value: "按钮值或用户输入"`）；`notify` 动作按钮 / 输入框提交时触发，推送方据此自行处理回调 |
 
 ```json
 { "type": "event", "event": "push_updated", "push": { "id": "download-1", "title": "正在下载", "progress_from": 0, "progress_to": 1, "progress_duration_seconds": 60, "expires_at": "2026-08-25T10:00:00Z" } }
@@ -205,6 +216,25 @@ Invoke-RestMethod -Uri "http://127.0.0.1:9840/v1/island/active" -Method Get
 5. **动态进度（v3）**：下载 / 安装 / 渲染等任务只需推一次，设置 `progress_from=0,progress_to=1,progress_duration_seconds=120`，进度条自动推进；中途可 PATCH 覆盖。
 6. **图片卡片（v3）**：二维码、验证码图片、截图等用 `image` 传 data URI 或 http 链接，展开态显示在卡片右侧。
 7. **长驻状态 + 心跳（v3）**：长时间显示的状态（如勿扰中、VPN、监控）设置 `heartbeat_seconds` 并周期以同 id 重新 push/更新续期；停止续期超过 2 倍间隔自动消失，避免残留。
+8. **输入框（v4 新增）**：如消息回复、关键词搜索等，推送 `input` 字段即可在上岛卡片内显示输入框 + 提交按钮。
+
+```python
+import requests
+
+requests.post("http://127.0.0.1:9840/v1/island/push", json={
+    "id": "ask-1",
+    "title": "小助手提问",
+    "body": "请输入你要查询的内容",
+    "duration_seconds": 60,
+    "input": {
+        "placeholder": "输入内容…",
+        "submit_label": "发送",
+        "action": "notify",
+    },
+})
+```
+
+推送方通过 WebSocket 订阅 `push_button` 事件即可收到用户输入：`{ "type": "event", "event": "push_button", "push_id": "ask-1", "button": "发送", "value": "用户输入的文字" }`。
 
 ## 七、注意事项
 

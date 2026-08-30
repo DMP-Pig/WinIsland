@@ -19,6 +19,9 @@ public sealed class ThemeService
 
     public bool IsDark { get; private set; } = true;
 
+    /// <summary>定时明暗切换：非 null 时以该值覆盖系统跟随（仅 Theme=Auto 时由 App 设置）。</summary>
+    public bool? OverrideDark { get; set; }
+
     public Brush CardBackground { get; private set; } = Brushes.Transparent;
     public Brush CardBorder { get; private set; } = Brushes.Transparent;
     public Brush TextPrimary { get; private set; } = Brushes.White;
@@ -116,7 +119,7 @@ public sealed class ThemeService
         {
             ThemeMode.Light => false,
             ThemeMode.Dark => true,
-            _ => ThemeHelper.IsSystemDark(),
+            _ => OverrideDark ?? ThemeHelper.IsSystemDark(),
         };
         IsDark = dark;
         Opacity = Math.Clamp(settings.Opacity, 0.3, 1.0);

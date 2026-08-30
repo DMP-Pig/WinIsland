@@ -198,6 +198,7 @@
                             Background="{Binding PushCardBackground, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#221B1B26}"
                             BorderBrush="{Binding PushCardBorder, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#59FFFFFF}"
                             BorderThickness="1"
+                            MaxWidth="640"
                             Padding="12,8" Margin="0,0,10,0" VerticalAlignment="Center">
                         <Border.RenderTransform>
                             <ScaleTransform x:Name="CompactPushScale" ScaleX="0.94" ScaleY="0.94"/>
@@ -214,13 +215,13 @@
                                                Visibility="{Binding ActivePushHasImage, Converter={StaticResource BoolToVis}}"/>
                                     </Grid>
                                 </Border>
-                                <TextBlock Text="{Binding ActivePushTitle}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                <TextBlock Text="{Binding ActivePushTitle}" FontSize="13" FontWeight="SemiBold" MaxWidth="560" VerticalAlignment="Center"
                                            Foreground="{Binding PushCardForeground, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                           TextTrimming="CharacterEllipsis" MaxWidth="150"/>
+                                           TextTrimming="CharacterEllipsis"/>
                                                             </StackPanel>
-                            <TextBlock Text="{Binding ActivePushSubtitle}" FontSize="10.5" Margin="0,2,0,0"
+                            <TextBlock Text="{Binding ActivePushSubtitle}" FontSize="10.5" MaxWidth="560" Margin="0,2,0,0"
                                        Foreground="{Binding PushCardSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
-                                       TextTrimming="CharacterEllipsis" MaxWidth="150"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
                                        Visibility="{Binding ActivePushHasSubtitle, Converter={StaticResource BoolToVis}}"/>
                             <TextBlock Text="{Binding ActivePushBody}" FontSize="11.5" Margin="0,5,0,0" TextWrapping="Wrap" MaxWidth="420"
                                        Foreground="{Binding PushCardSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
@@ -250,6 +251,22 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
+                                        Visibility="{Binding PushShowInput, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                                <Grid Width="214" Height="26">
+                                    <TextBox Text="{Binding PushInputValue, UpdateSourceTrigger=PropertyChanged}" FontSize="11.5"
+                                             VerticalContentAlignment="Center" Padding="6,0"
+                                             Background="#22FFFFFF" BorderBrush="#44FFFFFF" BorderThickness="1"
+                                             Foreground="{Binding PushCardForeground, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"/>
+                                    <TextBlock Text="{Binding PushInputPlaceholder}" FontSize="11.5" Margin="8,0,0,0"
+                                               VerticalAlignment="Center" IsHitTestVisible="False" Opacity="0.55"
+                                               Foreground="{Binding PushCardSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                               Visibility="{Binding PushInputHasText, Converter={StaticResource BoolToVisInvert}}"/>
+                                </Grid>
+                                <Button Style="{StaticResource IconButton}" Padding="10,4" Margin="8,0,0,0" Click="PushInputSubmit_Click">
+                                    <TextBlock Text="{Binding PushInputSubmitLabel}" FontSize="11.5"/>
+                                </Button>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
@@ -772,15 +789,15 @@
                                         Visibility="{Binding ActivePushHasImage, Converter={StaticResource BoolToVis}}">
                                     <Image Source="{Binding ActivePushImageSource}" Stretch="UniformToFill"/>
                                 </Border>
-                                <TextBlock Text="{Binding ActivePushTitle}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"
+                                <TextBlock Text="{Binding ActivePushTitle}" FontSize="15" FontWeight="SemiBold" MaxWidth="560" VerticalAlignment="Center"
                                            Foreground="{Binding PushCardForeground, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
                                            TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
-                            <TextBlock Text="{Binding ActivePushSubtitle}" FontSize="11.5" Margin="0,2,0,0"
+                            <TextBlock Text="{Binding ActivePushSubtitle}" FontSize="11.5" MaxWidth="560" Margin="0,2,0,0"
                                        Foreground="{Binding PushCardSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                        TextTrimming="CharacterEllipsis"
                                        Visibility="{Binding ActivePushHasSubtitle, Converter={StaticResource BoolToVis}}"/>
-                            <TextBlock Text="{Binding ActivePushBody}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                            <TextBlock Text="{Binding ActivePushBody}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap" MaxWidth="560"
                                        Foreground="{Binding PushCardSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
                                        Visibility="{Binding ActivePushHasBody, Converter={StaticResource BoolToVis}}"/>
                             <ProgressBar Height="4" Maximum="1" Value="{Binding ActivePushProgress, Mode=OneWay}" Margin="0,8,0,0"
@@ -808,6 +825,22 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
+                                        Visibility="{Binding HasPushInput, Converter={StaticResource BoolToVis}}">
+                                <Grid Width="300" Height="28">
+                                    <TextBox Text="{Binding PushInputValue, UpdateSourceTrigger=PropertyChanged}" FontSize="12"
+                                             VerticalContentAlignment="Center" Padding="7,0"
+                                             Background="#22FFFFFF" BorderBrush="#44FFFFFF" BorderThickness="1"
+                                             Foreground="{Binding PushCardForeground, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"/>
+                                    <TextBlock Text="{Binding PushInputPlaceholder}" FontSize="12" Margin="9,0,0,0"
+                                               VerticalAlignment="Center" IsHitTestVisible="False" Opacity="0.55"
+                                               Foreground="{Binding PushCardSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                               Visibility="{Binding PushInputHasText, Converter={StaticResource BoolToVisInvert}}"/>
+                                </Grid>
+                                <Button Style="{StaticResource IconButton}" Padding="12,5" Margin="8,0,0,0" Click="PushInputSubmit_Click">
+                                    <TextBlock Text="{Binding PushInputSubmitLabel}" FontSize="12"/>
+                                </Button>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 

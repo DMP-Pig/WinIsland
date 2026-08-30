@@ -29,7 +29,6 @@ public partial class SettingsWindow : Window
     private readonly SettingsService _service;
     private readonly CiderMediaProvider? _cider;
     private readonly DispatcherTimer _autoApply;
-    private readonly NotificationHistoryService? _history;
     private readonly TodoService? _todo;
     private readonly ScheduleService? _schedule;
     private readonly ClipboardHistoryService? _clipboard;
@@ -40,7 +39,6 @@ public partial class SettingsWindow : Window
     private bool _audioOutputLoading;     // 音频输出下拉初始化期间不触发切换
 
     public SettingsWindow(SettingsViewModel vm, SettingsService service, CiderMediaProvider? cider,
-        NotificationHistoryService? history = null,
         TodoService? todo = null,
         ScheduleService? schedule = null,
         ClipboardHistoryService? clipboard = null,
@@ -50,7 +48,6 @@ public partial class SettingsWindow : Window
         _vm = vm;
         _service = service;
         _cider = cider;
-        _history = history;
         _todo = todo;
         _schedule = schedule;
         _clipboard = clipboard;
@@ -65,10 +62,8 @@ public partial class SettingsWindow : Window
 
         ApplyLocalization();
         TxtMailPass.Password = _vm.Working.MailPassword; // PasswordBox 不支持绑定，回填初值
-        RefreshHistory();
         InitAudioOutput();
         InitCardStyle();
-        if (_history is not null) _history.Changed += (_, _) => RefreshHistory();
 
         // 效率工具：初值 + 变动刷新
         if (_todo is not null)
@@ -315,7 +310,7 @@ public partial class SettingsWindow : Window
     {
         "Settings_General", "Settings_QuickActions", "Settings_Appearance", "Settings_Components", "Settings_Media",
         "Settings_MediaInfo", "Settings_Lyrics", "Settings_Cider", "Settings_Island",
-        "Settings_Productivity", "Settings_Update", "Settings_About", "Settings_Notifications", "Settings_Rules",
+        "Settings_Productivity", "Settings_Update", "Settings_About", "Settings_Events", "Settings_Rules",
     };
 
     /// <summary>左侧导航选中 → 同步切换右侧页面。</summary>
@@ -395,7 +390,7 @@ public partial class SettingsWindow : Window
         TabLyrics.Header = Localization.Get("Settings_Lyrics");
         TabCider.Header = Localization.Get("Settings_Cider");
         TabAbout.Header = Localization.Get("Settings_About");
-        TabNotify.Header = Localization.Get("Settings_Notifications");
+        TabEvents.Header = Localization.Get("Settings_Events");
         TabIsland.Header = Localization.Get("Settings_Island");
         TabRules.Header = Localization.Get("Settings_Rules");
         LblRulesIntro.Text = Localization.Get("Rules_Intro");
@@ -412,7 +407,7 @@ public partial class SettingsWindow : Window
         NavProductivity.Text = Localization.Get("Settings_Productivity");
         NavUpdate.Text = Localization.Get("Settings_Update");
         NavAbout.Text = Localization.Get("Settings_About");
-        NavNotify.Text = Localization.Get("Settings_Notifications");
+        NavEvents.Text = Localization.Get("Settings_Events");
         NavRules.Text = Localization.Get("Settings_Rules");
         UpdatePageTitle();
         ChkIslandApi.Content = Localization.Get("Island_Enabled");
@@ -423,6 +418,10 @@ public partial class SettingsWindow : Window
 
         LblLanguage.Text = Localization.Get("General_Language");
         LblTheme.Text = Localization.Get("Appearance_Theme");
+        ChkThemeScheduled.Content = Localization.Get("Appearance_ThemeSchedule");
+        LblThemeDarkStart.Text = Localization.Get("Appearance_ThemeScheduleDarkStart");
+        LblThemeDarkEnd.Text = Localization.Get("Appearance_ThemeScheduleDarkEnd");
+        TxtThemeScheduleNote.Text = Localization.Get("Appearance_ThemeScheduleNote");
         LblAccent.Text = Localization.Get("Appearance_Accent");
         LblPosition.Text = Localization.Get("Appearance_Position");
         LblMonitor.Text = Localization.Get("Appearance_Monitor");
@@ -454,12 +453,17 @@ public partial class SettingsWindow : Window
         ChkStartHidden.Content = Localization.Get("General_StartHidden");
         ChkHideWhenNoMedia.Content = Localization.Get("General_HideWhenNoMedia");
         ChkFullScreenHide.Content = Localization.Get("General_FullScreenHide");
+        ChkLockScreenHide.Content = Localization.Get("General_LockScreenHide");
         ChkShowWhenPaused.Content = Localization.Get("General_ShowWhenPaused");
         ChkAlwaysVisible.Content = Localization.Get("General_AlwaysVisible");
         LblDoubleClick.Text = Localization.Get("General_DoubleClick");
+        LblMiddleClick.Text = Localization.Get("General_MiddleClick");
         CbiDcPlayPause.Content = Localization.Get("DoubleClick_PlayPause");
         CbiDcOpenSettings.Content = Localization.Get("DoubleClick_OpenSettings");
         CbiDcNone.Content = Localization.Get("DoubleClick_None");
+        CbiMcPlayPause.Content = Localization.Get("DoubleClick_PlayPause");
+        CbiMcOpenSettings.Content = Localization.Get("DoubleClick_OpenSettings");
+        CbiMcNone.Content = Localization.Get("DoubleClick_None");
         ChkReduceMotion.Content = Localization.Get("General_ReduceMotion");
         ChkLowPower.Content = Localization.Get("General_LowPower");
         ChkShowLunar.Content = Localization.Get("General_ShowLunar");
@@ -480,11 +484,6 @@ public partial class SettingsWindow : Window
         ChkChargedNotify.Content = Localization.Get("General_ChargedCheck");
         LblChargedThreshold.Text = Localization.Get("General_ChargedThreshold");
         TxtChargedHint.Text = Localization.Get("General_ChargedHint");
-        LblHistory.Text = Localization.Get("Notifications_History");
-        TxtHistoryEmpty.Text = Localization.Get("Notifications_HistoryEmpty");
-        BtnClearHistory.Content = Localization.Get("Notifications_HistoryClear");
-        BtnMarkAllRead.Content = Localization.Get("Notifications_MarkAllRead");
-        ChkNotifyFold.Content = Localization.Get("Notifications_Fold");
         ChkUseSystemVolume.Content = Localization.Get("Media_UseSystemVolume");
         LblAudioOutput.Text = Localization.Get("Media_AudioOutput");
         TxtAudioOutputNote.Text = Localization.Get("Media_AudioOutputNote");
@@ -502,9 +501,6 @@ public partial class SettingsWindow : Window
         ChkDiskAlert.Content = Localization.Get("Notifications_Disk");
         LblDiskThreshold.Text = Localization.Get("Disk_Threshold");
         TxtDiskThresholdHint.Text = Localization.Get("Disk_ThresholdHint");
-        ChkNotifyTakeover.Content = Localization.Get("Notifications_Takeover");
-        LblNotifyTimeout.Text = Localization.Get("Notifications_Timeout");
-        TxtNotifyNote.Text = Localization.Get("Notifications_Note");
         ChkCompactArt.Content = Localization.Get("Appearance_CompactArt");
         ChkCompactTitle.Content = Localization.Get("Appearance_CompactTitle");
         ChkCompactProgress.Content = Localization.Get("Appearance_CompactProgress");
@@ -875,74 +871,6 @@ public partial class SettingsWindow : Window
             {
                 MessageBox.Show(this, ex.Message, Localization.Get("Settings"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-    }
-
-    /// <summary>刷新通知历史列表（设置打开 / 历史变化时调用）。</summary>
-    private void RefreshHistory()
-    {
-        if (HistoryList is null || _history is null) return;
-        HistoryList.ItemsSource = _history.Entries;
-        TxtHistoryEmpty.Visibility = _history.Entries.Count == 0
-            ? System.Windows.Visibility.Visible
-            : System.Windows.Visibility.Collapsed;
-    }
-
-    private void ClearHistory_Click(object sender, RoutedEventArgs e)
-    {
-        _history?.Clear();
-        RefreshHistory();
-    }
-
-    /// <summary>通知中心"全部已读"。</summary>
-    private void MarkAllRead_Click(object sender, RoutedEventArgs e)
-    {
-        _history?.MarkAllRead();
-        RefreshHistory();
-    }
-
-    /// <summary>通知历史单条删除。</summary>
-    private void DeleteHistoryItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { DataContext: NotificationHistoryEntry entry })
-        {
-            _history?.Remove(entry);
-        }
-    }
-
-    /// <summary>点击历史条目：打开来源应用（12 通知一键处理）。</summary>
-    private void HistoryItem_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-    {
-        if (sender is FrameworkElement { DataContext: NotificationHistoryEntry entry })
-        {
-            OpenSourceApp(entry.Source);
-        }
-    }
-
-    /// <summary>打开通知来源应用：优先唤起已运行的进程窗口，否则按名称/URL 启动。</summary>
-    private static void OpenSourceApp(string? source)
-    {
-        if (string.IsNullOrWhiteSpace(source)) return;
-        var name = source.Trim();
-        try
-        {
-            if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-            {
-                var baseName = Path.GetFileNameWithoutExtension(name);
-                foreach (var p in Process.GetProcessesByName(baseName))
-                {
-                    if (p.MainWindowHandle != IntPtr.Zero)
-                    {
-                        NativeUser32.SetForegroundWindow(p.MainWindowHandle);
-                        return;
-                    }
-                }
-            }
-            Process.Start(new ProcessStartInfo(name) { UseShellExecute = true });
-        }
-        catch (Exception ex)
-        {
-            AppLogger.Warn($"Open notification source failed: {ex.Message}");
         }
     }
 

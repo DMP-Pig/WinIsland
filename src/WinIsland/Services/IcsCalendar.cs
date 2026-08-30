@@ -37,6 +37,13 @@ public sealed class CalendarService : IDisposable
         _timer.Start();
     }
 
+    /// <summary>按需启停后台轮询：总开关关闭或未配置 .ics 路径时停止 30 秒定时器，避免空转。</summary>
+    public void SetEnabled(bool enabled)
+    {
+        if (enabled) { _timer.Start(); Refresh(); }
+        else _timer.Stop();
+    }
+
     /// <summary>解析出的全部事件（按开始时间排序）。</summary>
     public IReadOnlyList<CalendarEvent> Events => _events;
 

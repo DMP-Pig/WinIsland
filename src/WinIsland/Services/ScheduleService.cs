@@ -32,6 +32,13 @@ public sealed class ScheduleService : IDisposable
         Check();
     }
 
+    /// <summary>按需启停后台轮询：仅当日程组件显示或需要到点提醒时运行，避免空闲空转。</summary>
+    public void SetPollingEnabled(bool enabled)
+    {
+        if (enabled) { _timer.Start(); Check(); }
+        else _timer.Stop();
+    }
+
     public IReadOnlyList<ScheduleItem> Items { get { lock (_gate) return _items.OrderBy(i => i.When).ToList(); } }
 
     /// <summary>下一个未到期的日程；没有则 null。</summary>

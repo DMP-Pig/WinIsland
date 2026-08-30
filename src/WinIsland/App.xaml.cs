@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 using System.Windows;
 using Application = System.Windows.Application;
 using Localization = WinIsland.UI.Localization;
@@ -26,11 +27,8 @@ public partial class App : Application
     private SingleInstance? _singleInstance;
     private AppSettings? _lastPositionSettings;
     private BluetoothMonitor? _bluetooth;
-    private SystemNotificationMonitor? _systemNotifications;
     private IncomingCallMonitor? _callMonitor;
     private NetworkStatusMonitor? _network;
-    private NotificationService? _notifications;
-    private NotificationHistoryService? _notificationHistory;
     private GlobalHotkeyService? _hotkeys;
     private QuickLauncherWindow? _launcher;
     private ClipboardPanelWindow? _clipboardPanel;
@@ -38,6 +36,9 @@ public partial class App : Application
     private MediaAppRegistry? _mediaApps;
     private ScreenCaptureMonitor? _screenCapture;
     private FullScreenMonitor? _fullScreenMonitor;
+    private SessionSwitchEventHandler? _sessionSwitchHandler;   // 锁屏自动隐藏：SessionSwitch 订阅句柄
+    private readonly DispatcherTimer _themeScheduleTimer = new() { Interval = TimeSpan.FromSeconds(30) }; // 定时明暗切换：每 30 秒检查一次
+    private bool? _lastScheduledDark;   // 上次应用的定时深色状态，避免无变化时重复 Apply
     private CalendarService? _calendar;
     private RssMailService? _rssMail;
 
@@ -109,45 +110,37 @@ public partial class App : Application
         _coordinator = new MediaCoordinator(_settings, smtc, _cider, title, Dispatcher);
         _lyrics = new LyricsService(_settings, _cider);
 
-        // ── 通知服务（右上角横幅 + 蓝牙/系统通知监控）──
-        _notificationHistory = new NotificationHistoryService();
-        _notifications = new NotificationService(Dispatcher, _settings, _notificationHistory);
+        // ── 蓝牙监控：连接/断开事件以 iOS 风格卡片在灵动岛上展示 ──
         _bluetooth = new BluetoothMonitor();
-        // #9 通知操作按钮：蓝牙连接提示备上「断开」「设置」按钮
-        _bluetooth.DeviceConnected += (_, name) =>
-        {
-            var actions = new List<(string Label, Action Callback)>
-            {
-                (Localization.Get("Notify_BtDisconnect"), () => DisconnectBluetooth(name)),
-                (Localization.Get("Notify_OpenBtSettings"), OpenBluetoothSettings),
-            };
-            _notifications.Show("蓝牙设备已连接", name, "\uE702", "Bluetooth", actions);
-        };
-        _bluetooth.DeviceDisconnected += (_, name) => _notifications.Show("蓝牙设备已断开", name, "\uE702", "Bluetooth");
-        _systemNotifications = new SystemNotificationMonitor();
-        _systemNotifications.NotificationCaptured += (_, n) => _notifications.Show(n.Title, n.Body, "\uE945", n.AppName);
+        _bluetooth.DeviceConnected += (_, name) => Dispatcher.BeginInvoke(() =>
+            _vm?.ShowEventCard("bt:conn:" + name, Localization.Get("Events_BluetoothConnected"), name, "\uE702", "success", 5));
+        _bluetooth.DeviceDisconnected += (_, name) => Dispatcher.BeginInvoke(() =>
+            _vm?.ShowEventCard("bt:disc:" + name, Localization.Get("Events_BluetoothDisconnected"), name, "\uE702", "info", 5));
         // 来电提醒：微信/QQ 语音视频通话窗口检测（仅本机，不上传数据）
         _callMonitor = new IncomingCallMonitor();
         _callMonitor.CallStarted += (appName, title, kind) =>
         {
             if (!_settings!.Current.CallNotifyEnabled) return;
             var isIncoming = kind == CallKind.Incoming;
-            _notifications?.Show(
+            Dispatcher.BeginInvoke(() => _vm?.ShowEventCard(
+                "call:" + appName,
                 Localization.Get(isIncoming ? "Call_NotifyTitle" : "Call_Title"),
                 isIncoming ? $"{appName} · {Localization.Get("Call_Body")}（{Localization.Get("Call_Coming")}）" : $"{appName} · {Localization.Get("Call_Body")}",
-                "\uE8F2", "Call");
+                "\uE8F2", "info", 8));
         };
         // 断网 / 网络恢复提醒（每次状态变化只提示一次；去抖在服务内部）
         _network = new NetworkStatusMonitor();
         _network.NetworkLost += (_, _) =>
         {
             if (_settings!.Current.NetworkNotifyEnabled)
-                _notifications?.Show(Localization.Get("Network_LostTitle"), Localization.Get("Network_LostBody"), "\uE945", "WinIsland");
+                Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("net:lost",
+                    Localization.Get("Network_LostTitle"), Localization.Get("Network_LostBody"), "\uE945", "error", 6));
         };
         _network.NetworkRestored += (_, _) =>
         {
             if (_settings!.Current.NetworkNotifyEnabled)
-                _notifications?.Show(Localization.Get("Network_BackTitle"), Localization.Get("Network_BackBody"), "\uE945", "WinIsland");
+                Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("net:back",
+                    Localization.Get("Network_BackTitle"), Localization.Get("Network_BackBody"), "\uE945", "success", 6));
         };
 
         // ── 效率工具 / 波纹 / 更新服务 ──
@@ -167,28 +160,34 @@ public partial class App : Application
         _clipboard.EntryAdded += OnClipboardEntryAdded;
         UpdateClipboardPolling();
         UpdateKeyboardPolling();
-        _schedule.Reminder += item => _notifications?.Show("日程提醒", item.Title, "\uE8B7", "WinIsland");
+        _schedule.Reminder += item => Dispatcher.BeginInvoke(() =>
+            _vm?.ShowEventCard("schedule:" + item.Id, Localization.Get("Events_ScheduleReminder"), item.Title, "\uE8B7", "info", 8));
 
         _vm = new IslandViewModel(_coordinator, _settings, _lyrics,
             _wave, _keyboard, _clipboard, _todo, _schedule, _pomodoro);
         // 番茄钟到点提醒
         _vm.PomodoroCompletedRequested += phase =>
-            _notifications?.Show("番茄钟结束",
-                phase == PomodoroPhase.Work ? "工作阶段结束，休息一下吧" : "休息结束，开始新的专注吧",
-                "\uE823", "WinIsland");
+            Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("pomodoro:done",
+                Localization.Get("Events_PomodoroDone"),
+                phase == PomodoroPhase.Work ? Localization.Get("Events_PomodoroWorkDone") : Localization.Get("Events_PomodoroBreakDone"),
+                "\uE823", "success", 6));
         _vm.OpenSettingsRequested += (_, _) => OpenSettings();
         _vm.ToggleLyricsWindowRequested += (_, _) => ToggleLyricsWindow();
-        // 播放媒体时不弹「正在播放」通知（用户要求；蓝牙/低电量/系统通知等仍保留）
-        // _vm.NowPlayingRequested += (title, artist) =>
-        //     _notifications?.Show(Localization.Get("NowPlaying_Title"), string.IsNullOrEmpty(artist) ? title : $"{title} - {artist}", "\uE8D6");
+        // 低电量 / 开始充电 / 充电完成 / 磁盘不足：统一以灵动岛卡片展示（iOS 风格）
         _vm.LowBatteryRequested += percent =>
-            _notifications?.Show(Localization.Get("LowBattery_Title"), $"{percent}%", "\uEBA0", "WinIsland");
+            Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("battery:low",
+                Localization.Get("LowBattery_Title"), $"{percent}%", "\uEBA0", "warning", 6));
+        _vm.ChargingStartedRequested += percent =>
+            Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("battery:charging",
+                Localization.Get("Events_ChargingStarted"), $"{percent}%", "\uEBA0", "success", 5));
         _vm.ChargedRequested += percent =>
-            _notifications?.Show(Localization.Get("Charged_Title"),
-                string.Format(Localization.Get("Charged_Body"), percent), "\uEBA0", "WinIsland");
+            Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("battery:charged",
+                Localization.Get("Charged_Title"),
+                string.Format(Localization.Get("Charged_Body"), percent), "\uEBA0", "success", 6));
         _vm.DiskLowRequested += gb =>
-            _notifications?.Show(Localization.Get("Disk_Title"),
-                string.Format(Localization.Get("Disk_Body"), gb), "\uEDA2", "WinIsland");
+            Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("disk:low",
+                Localization.Get("Disk_Title"),
+                string.Format(Localization.Get("Disk_Body"), gb), "\uEDA2", "warning", 6));
 
         // ── 上岛 API：第三方软件推送信息到灵动岛 ──
         _islandApi = new IslandApiServer(_settings);
@@ -202,7 +201,7 @@ public partial class App : Application
                 try
                 {
                     if (string.IsNullOrEmpty(pushId) && _vm.ActivePush is not null) pushId = _vm.ActivePush.Id;
-                    _islandApi?.BroadcastPushButton(pushId ?? string.Empty, button.Label);
+                    _islandApi?.BroadcastPushButton(pushId ?? string.Empty, button.Label, button.Value);
                 }
                 catch (Exception ex)
                 {
@@ -230,16 +229,18 @@ public partial class App : Application
         {
             _vm?.NotifyScreenshotTaken(); // 灵动岛「已截图」临时指示
             if (_settings!.Current.ScreenCaptureNotifyEnabled && _settings.Current.ScreenshotNotifyEnabled)
-                _notifications?.Show(Localization.Get("ScreenCap_ScreenshotTitle"),
-                    Localization.Get("ScreenCap_ScreenshotBody"), "\uE7B3", "WinIsland");
+                Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("screencap:shot",
+                    Localization.Get("ScreenCap_ScreenshotTitle"),
+                    Localization.Get("ScreenCap_ScreenshotBody"), "\uE7B3", "info", 4));
         };
         _screenCapture.RecordingChanged += (recording, app) =>
         {
             _vm?.SetRecordingStatus(recording, app); // 灵动岛「录制中」指示
             if (!_settings!.Current.ScreenCaptureNotifyEnabled || !_settings.Current.RecordingNotifyEnabled) return;
             if (recording)
-                _notifications?.Show(Localization.Get("ScreenCap_RecordingTitle"),
-                    string.Format(Localization.Get("ScreenCap_RecordingBody"), app), "\uE786", "WinIsland");
+                Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("screencap:rec",
+                    Localization.Get("ScreenCap_RecordingTitle"),
+                    string.Format(Localization.Get("ScreenCap_RecordingBody"), app), "\uE786", "warning", 6));
         };
         // 录屏智能勿扰（录屏时自动勿扰）也需要轮询录制状态，与提示开关共用监控实例
         if (_settings.Current.ScreenCaptureNotifyEnabled || _settings.Current.RecordingDndEnabled)
@@ -259,7 +260,8 @@ public partial class App : Application
             var body = isAllDay
                 ? $"{start:yyyy-MM-dd}  {ev.Title}"
                 : $"{start:HH:mm} ~ {ev.End.LocalDateTime:HH:mm}  {ev.Title}";
-            _notifications?.Show(Localization.Get("Calendar_ReminderTitle"), body, "\uE787", "Calendar");
+            Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("cal:" + ev.Id,
+                Localization.Get("Calendar_ReminderTitle"), body, "\uE787", "info", 8));
         });
         _calendar.Refresh(_settings.Current.CalendarIcsPath);
 
@@ -268,8 +270,9 @@ public partial class App : Application
         _rssMail.RssItemReceived += (title, summary, link) => Dispatcher.BeginInvoke(() =>
         {
             if (!_settings!.Current.RssNotifyEnabled) return;
-            _notifications?.Show(Localization.Get("Rss_NotifyTitle"),
-                string.IsNullOrEmpty(summary) ? title : summary, "\uE8A5", "RSS");
+            Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("rss:" + title,
+                Localization.Get("Rss_NotifyTitle"),
+                string.IsNullOrEmpty(summary) ? title : summary, "\uE8A5", "info", 8));
         });
         _rssMail.MailReceived += (subject, from, date) => Dispatcher.BeginInvoke(() =>
         {
@@ -277,8 +280,9 @@ public partial class App : Application
             var body = string.IsNullOrEmpty(from)
                 ? date
                 : (string.IsNullOrEmpty(date) ? from : $"{from} · {date}");
-            _notifications?.Show(Localization.Get("Mail_NotifyTitle"),
-                string.IsNullOrEmpty(subject) ? body : $"{subject}\n{body}", "\uE715", "Mail");
+            Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("mail:" + (subject ?? from ?? date),
+                Localization.Get("Mail_NotifyTitle"),
+                string.IsNullOrEmpty(subject) ? body : $"{subject}\n{body}", "\uE715", "info", 8));
         });
         ApplyRssMail(_settings.Current);
 
@@ -350,8 +354,8 @@ public partial class App : Application
         // ── Settings changed → re-apply live ──
         _settings.Changed += (_, s) =>
         {
-            _theme?.Apply(s);
             Localization.CurrentLanguage = s.Language;
+            RefreshScheduledTheme(s);
             _vm?.RebuildQuickActions(); // 快捷操作按钮：开关/勾选/顺序变化即时生效
 
             if (AutoStart.IsEnabled() != s.StartWithWindows)
@@ -376,7 +380,6 @@ public partial class App : Application
 
             // 通知监控开关
             if (s.BluetoothNotifyEnabled) _bluetooth?.Start(); else _bluetooth?.Stop();
-            if (s.NotificationTakeoverEnabled) _systemNotifications?.Start(); else _systemNotifications?.Stop();
             if (s.CallNotifyEnabled) _callMonitor?.Start(s.CallNotifyApps); else _callMonitor?.Stop();
 
             // 屏幕录制/截图提示：开关或细分项变化时实时生效
@@ -391,8 +394,12 @@ public partial class App : Application
                 else if (!capWanted && capRunning) _screenCapture.Stop();
             }
 
-            // 日历提醒：路径/开关变化立即重新解析（服务内部有文件未变短路）
+            // 日历提醒：路径/开关变化立即重新解析；总开关关闭或无路径时停止轮询
             _calendar?.Refresh(s.CalendarIcsPath);
+            _calendar?.SetEnabled(s.CalendarEnabled && !string.IsNullOrWhiteSpace(s.CalendarIcsPath));
+
+            // 日程提醒轮询：仅当日程组件显示时运行，避免空闲空转
+            _schedule?.SetPollingEnabled(s.Components.ScheduleWhenIdle || s.Components.ScheduleWhenPlaying);
 
             // RSS / 邮件提醒：开关、地址、间隔变化立即生效
             ApplyRssMail(s);
@@ -420,6 +427,13 @@ public partial class App : Application
                 }
             }
 
+            // 锁屏自动隐藏：开关关闭时立即恢复显示
+            if (!s.LockScreenAutoHideEnabled && _vm is not null && _vm.LockScreenHidden)
+            {
+                _vm.LockScreenHidden = false;
+                _vm.UpdateVisibility();
+            }
+
             // 波纹可视化开关
             if (s.WaveVisualizerEnabled) _wave?.Start(); else _wave?.Stop();
             _wave?.SetSyncEnabled(s.WaveSyncEnabled);
@@ -441,6 +455,31 @@ public partial class App : Application
             UpdateMiniPlayerVisibility();
         };
 
+        // ── 定时明暗切换：到点自动切换深/浅主题（仅 Theme=Auto 且开关开启时生效）──
+        _themeScheduleTimer.Tick += (_, _) => RefreshScheduledTheme(_settings!.Current);
+        RefreshScheduledTheme(_settings.Current);   // 启动即应用一次
+        if (_settings.Current.ThemeScheduledEnabled) _themeScheduleTimer.Start();
+
+        // 启动即按当前设置应用日程/日历轮询状态（避免空闲空转）
+        _schedule?.SetPollingEnabled(_settings.Current.Components.ScheduleWhenIdle || _settings.Current.Components.ScheduleWhenPlaying);
+        _calendar?.SetEnabled(_settings.Current.CalendarEnabled && !string.IsNullOrWhiteSpace(_settings.Current.CalendarIcsPath));
+
+        // ── 锁屏自动隐藏：锁屏/远程桌面断开时隐藏灵动岛，解锁后恢复 ──
+        _sessionSwitchHandler = (_, args) =>
+        {
+            if (_settings is null || !_settings.Current.LockScreenAutoHideEnabled) return;
+            var locked = args.Reason is SessionSwitchReason.SessionLock;
+            var unlocked = args.Reason is SessionSwitchReason.SessionUnlock;
+            if (!locked && !unlocked) return;
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_vm is null) return;
+                _vm.LockScreenHidden = locked;
+                _vm.UpdateVisibility();
+            });
+        };
+        SystemEvents.SessionSwitch += _sessionSwitchHandler;
+
         // Sync registry state once at startup (in case settings were edited externally).
         if (AutoStart.IsEnabled() != _settings.Current.StartWithWindows)
             AutoStart.SetEnabled(_settings.Current.StartWithWindows);
@@ -449,7 +488,6 @@ public partial class App : Application
         _coordinator.Start();
 
         if (_settings.Current.BluetoothNotifyEnabled) _bluetooth?.Start();
-        if (_settings.Current.NotificationTakeoverEnabled) _systemNotifications?.Start();
         if (_settings.Current.CallNotifyEnabled) _callMonitor?.Start(_settings.Current.CallNotifyApps);
         _network?.Start(); // 网络监控很轻量，始终启动；是否弹横幅由 NetworkNotifyEnabled 开关控制
         _vm.UpdateVisibility();
@@ -482,7 +520,8 @@ public partial class App : Application
             if (_updater is null) return;
             var hasNew = await _updater.CheckAsync();
             if (!hasNew && showWhenUpToDate)
-                _notifications?.Show(Localization.Get("Update_Title"), Localization.Get("Update_None"), "\uE72E");
+                Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("update:none",
+                    Localization.Get("Update_Title"), Localization.Get("Update_None"), "\uE72E", "info", 5));
         }
         catch (Exception ex)
         {
@@ -537,11 +576,30 @@ public partial class App : Application
         }
     }
 
+    /// <summary>定时明暗切换：计算当前应处的明/暗状态并应用到主题（跨天与勿扰同理，起止相同视为不生效）。</summary>
+    private void RefreshScheduledTheme(AppSettings s)
+    {
+        if (_theme is null) return;
+        var enabled = s.ThemeScheduledEnabled && s.Theme == ThemeMode.Auto;
+        bool? dark = null;
+        if (enabled)
+        {
+            var start = TimeSpan.FromHours(Math.Clamp(s.ThemeScheduleDarkStartHour, 0, 23));
+            var end = TimeSpan.FromHours(Math.Clamp(s.ThemeScheduleDarkEndHour, 0, 23));
+            var now = DateTime.Now.TimeOfDay;
+            dark = start == end ? false : start < end ? now >= start && now < end : now >= start || now < end;
+        }
+        if (dark == _lastScheduledDark && _theme.OverrideDark == dark) return;   // 无变化，避免重复刷新
+        _lastScheduledDark = dark;
+        _theme.OverrideDark = dark;
+        _theme.Apply(s);
+    }
+
     private void OpenSettings()
     {
         if (_settings is null) return;
         var vm = new SettingsViewModel(_settings, _mediaApps);
-        var win = new SettingsWindow(vm, _settings, _cider, _notificationHistory,
+        var win = new SettingsWindow(vm, _settings, _cider,
             _todo, _schedule, _clipboard, _pomodoro, _updater);
         win.ShowDialog();
     }
@@ -675,7 +733,7 @@ public partial class App : Application
     {
         try
         {
-            if (_notifications is null || _settings is null) return;
+            if (_settings is null) return;
             var s = _settings.Current;
             var text = entry.Text;
             if (string.IsNullOrWhiteSpace(text)) return;
@@ -683,29 +741,26 @@ public partial class App : Application
             // 验证码高亮提示优先（短信场景，通常很短）
             if (s.CodeToastEnabled && VerificationCodeDetector.TryExtract(text, out var code))
             {
-                _notifications.Show(Localization.Get("Clipboard_CodeTitle"),
+                Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("clip:code",
+                    Localization.Get("Clipboard_CodeTitle"),
                     Localization.Get("Clipboard_CodeBody").Replace("{code}", code),
-                    "", "Clipboard");
+                    "", "info", 6));
                 return;
             }
 
             // 大文本：复制进度（Windows 不暴露真实进度，按长度估算动画）
             if (s.CopyProgressEnabled && text.Length >= Math.Max(500, s.CopyProgressThreshold))
             {
-                var estimatedMs = Math.Clamp(400 + text.Length / 60, 400, 1800);
-                _notifications.ShowCopyProgress(
-                    Localization.Get("Clipboard_CopyingTitle"),
-                    Localization.Get("Clipboard_CopyingBody"),
-                    estimatedMs,
+                Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("clip:progress",
                     Localization.Get("Clipboard_CopiedTitle"),
-                    ClipboardPreview(text),
-                    "", "Clipboard");
+                    ClipboardPreview(text), "", "info", 4));
                 return;
             }
 
             // 普通复制：已复制提示
             if (s.CopyToastEnabled)
-                _notifications.Show(Localization.Get("Clipboard_CopiedTitle"), ClipboardPreview(text), "", "Clipboard");
+                Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("clip:copied",
+                    Localization.Get("Clipboard_CopiedTitle"), ClipboardPreview(text), "", "info", 4));
         }
         catch (Exception ex)
         {
@@ -740,7 +795,6 @@ public partial class App : Application
             _pomodoro?.Dispose();
             _coordinator?.Dispose();
             _bluetooth?.Dispose();
-            _systemNotifications?.Dispose();
             _network?.Dispose();
             _hotkeys?.Dispose();
             _islandApi?.Dispose();
@@ -751,6 +805,9 @@ public partial class App : Application
             _rssMail?.Dispose();
             _tray?.Dispose();
             _singleInstance?.Dispose();
+            if (_sessionSwitchHandler is not null)
+                SystemEvents.SessionSwitch -= _sessionSwitchHandler;
+            _themeScheduleTimer.Stop();
             _miniPlayer?.Close();
             foreach (var w in _windows) w.Close();
         }

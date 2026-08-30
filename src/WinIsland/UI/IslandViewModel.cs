@@ -53,6 +53,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     // ── 上岛推送（第三方软件推送到灵动岛）──
     private readonly List<IslandPush> _pushes = new();
     private IslandPush? _activePush;
+    private string _pushInputValue = "";   // 上岛输入框当前文字
 
     // ── 效率工具 / 波纹 / 键盘指示灯 ──
     private readonly AudioWaveService _wave;
@@ -131,7 +132,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
 
         _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _progressTimer.Tick += (_, _) => AdvanceProgress();
-        _progressTimer.Start();
+        // 不立即启动：有媒体快照时（OnSnapshotChanged）才启动，空闲/无媒体时停用，降低后台占用
 
         _widgetTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _widgetTimer.Tick += async (_, _) =>
@@ -149,10 +150,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             if (_activePush is not null) OnPropertyChanged(nameof(ActivePushProgress)); // v3 动态进度按秒推进
             UpdateSystemStats();
             UpdateCapsLockCountdown();
-            RefreshClipboardSummary();
-            RefreshTodoSummary();
-            RefreshScheduleSummary();
-            RefreshTimerText();
+            if (ShowIdleClipboard) RefreshClipboardSummary(); // 后台减负：组件未勾选时不轮询
+            if (ShowIdleTodo) RefreshTodoSummary();
+            if (ShowIdleSchedule) RefreshScheduleSummary();
+            if (ShowIdleTimer) RefreshTimerText();
             // 开会静音助手：检测前台窗口会议状态（仅勾选组件或开启会议勿扰时才有意义，但检测开销极小）
             if (ShowIdleMeeting || (_settings.Current.MeetingAssistantEnabled && _settings.Current.MeetingAutoDnd))
             {
@@ -839,10 +840,22 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                 if (battery > _settings.Current.LowBatteryThreshold + 5) _lowBatteryNotified = false;
             }
 
+            var acOnline = ps.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
+
+            // 开始充电提醒（电源接入瞬间触发一次，iOS 风格上岛卡片；拔出电源后复位可再次触发）
+            if (hasBattery && _settings.Current.ChargedNotifyEnabled)
+            {
+                if (!_chargingNotified && acOnline)
+                {
+                    _chargingNotified = true;
+                    ChargingStartedRequested?.Invoke((int)Math.Round(battery));
+                }
+                if (!acOnline) _chargingNotified = false;
+            }
+
             // 充电完成提醒（每个充电周期提醒一次；连接电源且电量达到阈值时）
             if (hasBattery && _settings.Current.ChargedNotifyEnabled && _settings.Current.ChargedThreshold > 0)
             {
-                var acOnline = ps.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
                 if (!_chargedNotified && acOnline && battery >= _settings.Current.ChargedThreshold)
                 {
                     _chargedNotified = true;
@@ -886,15 +899,18 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             // CPU / 内存（每 2 秒；计数器实例复用，避免首次采样为 0）
             if (++_statsTick % 2 == 0)
             {
-                try
+                if (ShowIdleCpu) // 后台减负：CPU 组件未勾选时不采样
                 {
-                    if (_cpuCounter is not null)
+                    try
                     {
-                        _cpuValue = (float?)_cpuCounter.NextValue();
-                        CpuText = _cpuValue.HasValue ? $"{_cpuValue.Value:0}%" : "--";
+                        if (_cpuCounter is not null)
+                        {
+                            _cpuValue = (float?)_cpuCounter.NextValue();
+                            CpuText = _cpuValue.HasValue ? $"{_cpuValue.Value:0}%" : "--";
+                        }
                     }
+                    catch { CpuText = "--"; }
                 }
-                catch { CpuText = "--"; }
                 // GPU：与 CPU 同节奏采样（新实例先预热，避免首采显示 0%）
                 if (ShowIdleGpu)
                 {
@@ -909,21 +925,26 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                     if (ShowIdleCam) CamText = cam ? Localization.Get("Comp_Cam") : string.Empty;
                     RebuildCompactItems();
                 }
-                try
+                if (ShowIdleRam) // 后台减负：内存组件未勾选时不采样
                 {
-                    if (_ramCounter is not null)
+                    try
                     {
-                        var ram = _ramCounter.NextValue();
-                        RamText = $"{ram:0}%";
+                        if (_ramCounter is not null)
+                        {
+                            var ram = _ramCounter.NextValue();
+                            RamText = $"{ram:0}%";
+                        }
                     }
+                    catch { RamText = "--"; }
                 }
-                catch { RamText = "--"; }
             }
 
-            // 网络速度（每秒）：下行文字 + 上行文字 + 迷你曲线
-            try
+            // 网络速度（每秒）：下行文字 + 上行文字 + 迷你曲线（仅网络组件勾选时采样）
+            if (ShowIdleNet)
             {
-                var iface = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+                try
+                {
+                    var iface = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
                     .FirstOrDefault(i => i.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up
                         && i.NetworkInterfaceType != System.Net.NetworkInformation.NetworkInterfaceType.Loopback && i.Speed > 0);
                 if (iface is not null)
@@ -940,9 +961,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                     NetTextUp = FormatKbs(upKbs);
                     PushNetSample(downKbs);
                 }
-                else { NetText = string.Empty; NetTextUp = string.Empty; }
+                    else { NetText = string.Empty; NetTextUp = string.Empty; }
+                }
+                catch { NetText = string.Empty; NetTextUp = string.Empty; }
             }
-            catch { NetText = string.Empty; NetTextUp = string.Empty; }
 
             // 节假日倒计时（仅勾选显示时计算，纯本地）
             if (ShowIdleHoliday)
@@ -1042,8 +1064,11 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public event Action<int>? LowBatteryRequested;
     /// <summary>充电完成触发（参数：电量百分比）。</summary>
     public event Action<int>? ChargedRequested;
+    /// <summary>开始充电触发（参数：电量百分比）。</summary>
+    public event Action<int>? ChargingStartedRequested;
     private bool _lowBatteryNotified;
     private bool _chargedNotified;
+    private bool _chargingNotified;
     /// <summary>磁盘剩余不足触发（参数：剩余 GB）。</summary>
     public event Action<int>? DiskLowRequested;
     private bool _diskAlertNotified;
@@ -1158,6 +1183,11 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(ActivePushHasClick));
             OnPropertyChanged(nameof(ActivePushAccent));
             OnPropertyChanged(nameof(ActivePushTheme));
+            OnPropertyChanged(nameof(HasPushInput));
+            OnPropertyChanged(nameof(PushInputPlaceholder));
+            OnPropertyChanged(nameof(PushInputSubmitLabel));
+            OnPropertyChanged(nameof(PushInputValue));
+            OnPropertyChanged(nameof(PushInputHasText));
             UpdateVisibility(); // 上岛卡片显示/消失影响灵动岛可见性
         }
     }
@@ -1171,6 +1201,35 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool ActivePushHasBody => !string.IsNullOrEmpty(ActivePush?.Body);
     public bool ActivePushHasProgress => ActivePush?.EffectiveProgress is not null;
     public double ActivePushProgress => Math.Clamp(ActivePush?.EffectiveProgress ?? 0, 0, 1);
+
+    // ── 上岛输入框（v4）：第三方推送配置 input 时，卡片内显示输入框 + 提交按钮 ──
+    public bool HasPushInput => ActivePush?.Input is not null;
+    public string PushInputPlaceholder => string.IsNullOrEmpty(ActivePush?.Input?.Placeholder)
+        ? Localization.Get("Push_InputPlaceholder") : ActivePush!.Input!.Placeholder;
+    public string PushInputSubmitLabel => string.IsNullOrEmpty(ActivePush?.Input?.SubmitLabel)
+        ? Localization.Get("Push_InputSubmit") : ActivePush!.Input!.SubmitLabel;
+    public string PushInputValue
+    {
+        get => _pushInputValue;
+        set { if (Set(ref _pushInputValue, value)) OnPropertyChanged(nameof(PushInputHasText)); }
+    }
+    public bool PushInputHasText => !string.IsNullOrEmpty(PushInputValue);
+
+    /// <summary>提交上岛输入框内容：按推送方配置的 action 执行（默认 notify 回传），提交后清空输入框。</summary>
+    public void SubmitPushInput()
+    {
+        if (ActivePush?.Input is not IslandPushInput input) return;
+        var value = PushInputValue?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(input.Value)) return; // 空输入且无默认值时忽略
+        var b = new IslandPushButton
+        {
+            Label = string.IsNullOrEmpty(input.SubmitLabel) ? Localization.Get("Push_InputSubmit") : input.SubmitLabel,
+            Action = string.IsNullOrEmpty(input.Action) ? "notify" : input.Action,
+            Value = string.IsNullOrWhiteSpace(value) ? input.Value : value,
+        };
+        ExecutePushAction(b);
+        PushInputValue = string.Empty;
+    }
 
     /// <summary>上岛推送图片（v3）：data URI 或 http(s) 链接。</summary>
     public bool ActivePushHasImage => !string.IsNullOrEmpty(ActivePush?.Image);
@@ -1227,6 +1286,19 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         double w = 0;
         foreach (var ch in s) w += ch > 0x2E7F ? cjkPx : asciiPx;
         return w;
+    }
+
+    /// <summary>估算多行文本的最宽单行宽度（换行符按行分离，取最大值），用于推送卡片宽度自适应。</summary>
+    private static double MeasureTextML(string s, double cjkPx, double asciiPx)
+    {
+        double max = 0;
+        foreach (var line in s.Split('\n'))
+        {
+            double w = 0;
+            foreach (var ch in line) w += ch > 0x2E7F ? cjkPx : asciiPx;
+            if (w > max) max = w;
+        }
+        return max;
     }
 
     /// <summary>天气图标（按 WMO weather_code 选 emoji）。</summary>
@@ -1356,6 +1428,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                 h += 96;
                 if (!string.IsNullOrEmpty(ActivePushBody)) h += 34;
                 if (ActivePushHasButtons) h += 40;
+                if (HasPushInput) h += 42;                    // 展开状输入框行
                 if (ActivePushHasProgress) h += 12;
             }
             if (HasMedia)
@@ -1378,6 +1451,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             if (ActivePush is null) return baseW;
             double need = 0;
             need = Math.Max(need, MeasureText(ActivePush.Title ?? string.Empty, 15, 8));
+            if (!string.IsNullOrEmpty(ActivePush.Subtitle))
+                need = Math.Max(need, MeasureTextML(ActivePush.Subtitle, 12, 6.5)); // 副标题（事件长文本常在此处）
             if (!string.IsNullOrEmpty(ActivePush.Body))
                 need = Math.Max(need, Math.Min(MeasureText(ActivePush.Body, 13.5, 7), 460)); // 正文单行最宽，超出换行
             if (ActivePush.Buttons is { Count: > 0 })
@@ -1387,6 +1462,8 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                 btnW += (ActivePush.Buttons.Count - 1) * 8;
                 need = Math.Max(need, btnW);
             }
+            if (ActivePush?.Input is not null)
+                need = Math.Max(need, 214 + 64 + 8); // 输入框 + 提交按钮 + 间距
             // 基础宽 + 超出 180px 的部分，限制在 280~640
             return Math.Clamp(baseW + Math.Max(0, need - 180), 280, 640);
         }
@@ -1400,7 +1477,14 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             if (ActivePush is null) return _settings.Current.CompactHeight;
             if (_settings.Current.SingleLineMode) return Math.Max(46, _settings.Current.CompactHeight);
             double h = 46; // 图标/标题行 + 内边距
-            if (!string.IsNullOrEmpty(ActivePush.Subtitle)) h += 15; // 副标题行
+            if (!string.IsNullOrEmpty(ActivePush.Subtitle))
+            {
+                // 副标题按内容行数估算高度（邮件等事件副标题可能换行）
+                var subW = MeasureTextML(ActivePush.Subtitle, 12, 6.5);
+                var subLineW = Math.Max(80, PushCompactWidth - 40);
+                var subLines = Math.Max(1, (int)Math.Ceiling(subW / subLineW));
+                h += subLines * 15 + 2;
+            }
             if (!string.IsNullOrEmpty(ActivePush.Body))
             {
                 var bodyW = Math.Min(MeasureText(ActivePush.Body, 13.5, 7), 460);
@@ -1410,8 +1494,33 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             }
             if (ActivePush.Progress is not null) h += 12;
             if (ActivePush.Buttons is { Count: > 0 }) h += 34;
+            if (ActivePush?.Input is not null) h += 38;   // 输入框行
             return Math.Clamp(h, 54, 210);
         }
+    }
+
+    /// <summary>
+    /// 系统事件以「灵动岛卡片」形式展示（iOS 风格）：自动过期、弹簧动画入场、不阻塞主流程。
+    /// 复用上岛推送队列：同 id 覆盖；到点后由 CheckPushExpiry 自动回收。
+    /// </summary>
+    public void ShowEventCard(string id, string title, string? subtitle, string icon,
+        string type = "info", int durationSeconds = 5, string? body = null)
+    {
+        // 勿扰模式：灵动岛事件卡片不展示（白名单仍展示由上层决定，这里只做总开关）
+        if (DoNotDisturb.IsActive(_settings.Current)) return;
+        var dur = Math.Max(2, durationSeconds);
+        PushIsland(new IslandPush
+        {
+            Id = "sys:" + id,
+            Title = title,
+            Subtitle = subtitle ?? string.Empty,
+            Body = body ?? string.Empty,
+            Icon = icon,
+            Type = type,
+            Priority = "high", // 系统事件优先于普通第三方推送展示
+            DurationSeconds = dur,
+            ExpiresAt = DateTime.UtcNow.AddSeconds(dur),
+        });
     }
 
     /// <summary>上岛 API 收到推送：加入/更新推送队列（同 id 覆盖、保留原过期时间），并按优先级刷新显示。</summary>
@@ -1702,6 +1811,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     /// <summary>全屏（视频/游戏/演示）时由 FullScreenMonitor 置位，灵动岛自动隐藏，退出全屏恢复。</summary>
     public bool FullScreenHidden { get; set; }
 
+    /// <summary>Windows 锁屏时由 SessionSwitch 置位，灵动岛自动隐藏，解锁后恢复。</summary>
+    public bool LockScreenHidden { get; set; }
+
     public bool IsVisible
     {
         get => _visible;
@@ -1721,6 +1833,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             LyricsService.TrackKey(_snapshot.Track) != LyricsService.TrackKey(snapshot.Track);
         var firstTrack = _snapshot is null;
         _snapshot = snapshot;
+        if (firstTrack && !_progressTimer.IsEnabled) _progressTimer.Start(); // 有媒体才跑进度插值，空闲停用
         if (trackChanged && !firstTrack && !string.IsNullOrEmpty(snapshot.Track.Title))
             NowPlayingRequested?.Invoke(snapshot.Track.Title, snapshot.Track.Artist);
 
@@ -1874,6 +1987,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private void OnMediaEnded(object? sender, EventArgs e)
     {
         _snapshot = null;
+        _progressTimer.Stop(); // 无媒体时空闲停用，避免 100ms 空转
         _restoredMode = false;
         _statusOverrideActive = false;
         _pauseLock = false;
@@ -2135,7 +2249,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         // 截图/录屏/音量/复制/下载等临时指示激活时也强制显示（到期自动消失后恢复隐藏）
         var anyTempStatus = (ScreenshotStatusText.Length > 0 || RecordingText.Length > 0 || VolumeTempText.Length > 0
             || FileCopyText.Length > 0 || DownloadText.Length > 0);
-        var show = !_userHidden && !FullScreenHidden && (hasMedia || showWidgets || HasActivePush || !_settings.Current.HideWhenNoMedia || anyTempStatus);
+        var show = !_userHidden && !FullScreenHidden && !LockScreenHidden && (hasMedia || showWidgets || HasActivePush || !_settings.Current.HideWhenNoMedia || anyTempStatus);
         // 常驻时不因暂停而隐藏
         if (!alwaysVisible && hasMedia && Status == PlaybackStatus.Paused && !_settings.Current.ShowWhenPaused)
             show = false;
@@ -2240,23 +2354,30 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     /// <summary>点击快捷开关（which: wifi / bluetooth / night / mute）。</summary>
     public async void ToggleQuickSwitch(string which)
     {
-        switch (which)
+        try
         {
-            case "wifi":
-                var ok = await QuickSwitchService.SetRadioAsync(false, !QuickSwitchService.IsWifiOn);
-                if (!ok) TryOpenNetworkSettings(); // Radio 不可控（硬件/驱动限制）时兜底：打开系统网络设置
-                break;
-            case "bluetooth":
-                await QuickSwitchService.SetRadioAsync(true, !QuickSwitchService.IsBluetoothOn);
-                break;
-            case "night":
-                QuickSwitchService.ToggleNightMode();
-                break;
-            case "mute":
-                QuickSwitchService.ToggleMute();
-                break;
+            switch (which)
+            {
+                case "wifi":
+                    var ok = await QuickSwitchService.SetRadioAsync(false, !QuickSwitchService.IsWifiOn);
+                    if (!ok) TryOpenNetworkSettings(); // Radio 不可控（硬件/驱动限制）时兜底：打开系统网络设置
+                    break;
+                case "bluetooth":
+                    await QuickSwitchService.SetRadioAsync(true, !QuickSwitchService.IsBluetoothOn);
+                    break;
+                case "night":
+                    QuickSwitchService.ToggleNightMode();
+                    break;
+                case "mute":
+                    QuickSwitchService.ToggleMute();
+                    break;
+            }
+            RefreshQuickToggles();
         }
-        RefreshQuickToggles();
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"ToggleQuickSwitch failed: {ex.Message}");
+        }
     }
 
     private static void TryOpenNetworkSettings()
