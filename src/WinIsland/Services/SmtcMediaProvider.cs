@@ -40,6 +40,9 @@ public sealed class SmtcMediaProvider : IDisposable
     /// <summary>Most recently published snapshot (null when nothing is active).</summary>
     public MediaSnapshot? LastSnapshot { get; private set; }
 
+    /// <summary>当前是否持有有效的 SMTC 会话（媒体应用退出后为 false）。</summary>
+    public bool HasActiveSession => _session is not null;
+
     /// <summary>Raised on the calling thread whenever a new snapshot is available.</summary>
     public event EventHandler<MediaSnapshot>? SnapshotReady;
 
@@ -220,15 +223,31 @@ public sealed class SmtcMediaProvider : IDisposable
     public async Task PushAsync(bool useCachedTrack = false)
     {
         var session = _session;
-        if (session is null) return;
+        if (session is null)
+        {
+            // 媒体应用退出 / 会话消失：立即清空缓存，避免协调器一直读到旧曲目
+            ClearCachedSnapshot();
+            return;
+        }
 
         try
         {
+            // 会话存在但已关闭/停止（应用退出后残留的会话壳）：同样视为媒体结束
+            var statusNow = ReadPlaybackStatus(session);
+            if (statusNow is PlaybackStatus.Closed or PlaybackStatus.Stopped)
+            {
+                ClearCachedSnapshot();
+                return;
+            }
+
             var snapshot = useCachedTrack && LastSnapshot is not null
                 ? BuildLightSnapshot(session, LastSnapshot)
                 : await BuildSnapshotAsync(session).ConfigureAwait(true);
             if (snapshot is null)
             {
+                // 有会话但暂时读不到有效曲目（如刚打开尚未加载元数据）：保留旧缓存避免闪烁；
+                // 完全没有缓存时清空，防止占位残留
+                if (LastSnapshot is null) ClearCachedSnapshot();
                 return;
             }
             var changed = snapshot.Track != _lastSnapshot?.Track
@@ -251,8 +270,45 @@ public sealed class SmtcMediaProvider : IDisposable
         }
         catch (Exception ex)
         {
+            // 会话对象可能已随媒体应用退出而失效：尝试读一次状态，读不到则清空
+            if (!ReadPlaybackStatusSafe(session)) ClearCachedSnapshot();
             AppLogger.Warn($"SMTC PushAsync failed: {ex.Message}");
         }
+    }
+
+    /// <summary>读取会话播放状态；读取失败视为会话失效。</summary>
+    private static PlaybackStatus ReadPlaybackStatus(GlobalSystemMediaTransportControlsSession session)
+    {
+        try
+        {
+            return (PlaybackStatus)session.GetPlaybackInfo().PlaybackStatus;
+        }
+        catch
+        {
+            return PlaybackStatus.Closed;
+        }
+    }
+
+    /// <summary>会话是否仍可读取（应用退出后 COM 对象失效会抛异常）。</summary>
+    private static bool ReadPlaybackStatusSafe(GlobalSystemMediaTransportControlsSession session)
+    {
+        try
+        {
+            var s = (PlaybackStatus)session.GetPlaybackInfo().PlaybackStatus;
+            return s is PlaybackStatus.Playing or PlaybackStatus.Paused or PlaybackStatus.Opened or PlaybackStatus.Changing;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>清空缓存的快照（媒体结束 / 会话失效时调用，下次协调器轮询即发布 MediaEnded）。</summary>
+    private void ClearCachedSnapshot()
+    {
+        if (_lastSnapshot is null && LastSnapshot is null) return;
+        _lastSnapshot = null;
+        LastSnapshot = null;
     }
 
     /// <summary>Fast path: update only status/position/timeline, keep cached metadata.</summary>
@@ -560,6 +616,7 @@ public sealed class SmtcMediaProvider : IDisposable
 
 /// <summary>一个 SMTC 媒体会话（供多播放器选择器展示/切换）。</summary>
 public sealed record MediaSessionInfo(string AppId, string AppName, PlaybackStatus Status, bool IsCurrent);
+
 
 
 

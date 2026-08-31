@@ -512,7 +512,8 @@ public partial class SettingsWindow : Window
         TxtMediaInfo.Text = Localization.Get("Media_SourcePriority");
         LblMediaApps.Text = Localization.Get("Media_Apps");
         TxtMediaNote.Text = Localization.Get("Media_Note");
-        TxtAbout.Text = Localization.Get("About_Text");
+        TxtAbout.Text = BuildAboutText();
+
 
         BtnExport.Content = Localization.Get("Export");
         BtnImport.Content = Localization.Get("Import");
@@ -889,6 +890,25 @@ public partial class SettingsWindow : Window
     private void RuleRemove_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is RuleRow row) _vm.RemoveRule(row);
+    }
+
+    /// <summary>关于页：在 WinIsland 名称后追加当前版本号（如 WinIsland 1.1.7）。</summary>
+    private static string BuildAboutText()
+    {
+        var about = Localization.Get("About_Text");
+        try
+        {
+            var ver = typeof(SettingsWindow).Assembly.GetName().Version;
+            if (ver is null) return about;
+            const string name = "WinIsland";
+            var idx = about.IndexOf(name, StringComparison.Ordinal);
+            if (idx < 0) return about;
+            return about.Insert(idx + name.Length, string.Concat(" ", ver.ToString(3)));
+        }
+        catch
+        {
+            return about;
+        }
     }
 
 }

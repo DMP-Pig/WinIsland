@@ -168,6 +168,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private readonly List<TranslateTransform> _waveParticleTransformsExpanded = new();
     private readonly List<TranslateTransform> _waveParticleTransformsCompact = new();
     private Storyboard? _currentStoryboard;
+    private Storyboard? _positionStoryboard;   // 位置动画独占：连续重定位先停旧动画
     private HwndSource? _hwndSource;
     private CoverFullScreenWindow? _coverFullWindow;   // #2 封面沉浸：全屏封面预览窗口
 
@@ -201,7 +202,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         };
 
         // 收起动画可能被快速切换打断导致 Card 尺寸残留：动画结束后兜底恢复精确紧凑尺寸
-        _compactRestoreTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
+        _compactRestoreTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1200) };
         _compactRestoreTimer.Tick += (_, _) =>
         {
             _compactRestoreTimer.Stop();
@@ -430,6 +431,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private void OnCardMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (!_mouseDownOnCard || e.LeftButton != MouseButtonState.Pressed) return;
+        if (_fileDragArmed) return; // 文件中转站组件：拖动由组件自己的拖出逻辑处理
         if (_settings.Current.IsLocked) return; // 上锁不可拖动
 
         var pos = e.GetPosition(this);
@@ -617,6 +619,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
                 or System.Windows.Controls.Primitives.Thumb or System.Windows.Controls.Primitives.RepeatButton
                 or System.Windows.Controls.TextBox)   // 上岛输入框：点击输入不触发展开/收起
                 return true;
+            // 文件中转站组件：整个组件视为交互元素（点击不展开、拖动交给拖出逻辑）
+            if (d is FrameworkElement { Tag: string tag } && tag == "FileTransfer") return true;
             // Run/Inline 等 ContentElement 不是 Visual，VisualTreeHelper.GetParent 会抛异常，
             // 需沿逻辑树向上（歌词 Run → TextBlock），到达 UIElement 后继续沿视觉树。
             d = d is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D
@@ -851,7 +855,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         EnsureWindowSizeFits(); // 先扩宽窗口，避免卡片动画期间超出窗口被裁剪
         var (styleEase, styleMs) = GetSizeAnimationStyle(expand: false);
         var lm = _settings.Current.LowPowerMode ? 0.6 : 1.0;
-        var dur = (int)Math.Clamp(400 * (styleMs / 680.0), 260, 560) * lm;
+        var dur = (int)Math.Clamp(520 * (styleMs / 680.0), 340, 720) * lm;
         var sb = new Storyboard();
         AddAnim(sb, Card, FrameworkElement.WidthProperty, CompactWidth, (int)dur, styleEase);
         AddAnim(sb, Card, FrameworkElement.HeightProperty, CompactHeight, (int)dur, styleEase);
@@ -869,8 +873,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         var (styleEase, styleMs) = GetSizeAnimationStyle(expand: true);
         var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
         var lm = _settings.Current.LowPowerMode ? 0.6 : 1.0;
-        var scaleDur = (int)(Math.Min(360, styleMs) * lm);
-        AddAnim(sb, CompactPushCard, UIElement.OpacityProperty, 1, (int)(260 * lm), smooth);
+        var scaleDur = (int)(Math.Min(460, styleMs) * lm);
+        AddAnim(sb, CompactPushCard, UIElement.OpacityProperty, 1, (int)(320 * lm), smooth);
         AddAnim(sb, CompactPushScale, ScaleTransform.ScaleXProperty, 1, scaleDur, styleEase);
         AddAnim(sb, CompactPushScale, ScaleTransform.ScaleYProperty, 1, scaleDur, styleEase);
         Timeline.SetDesiredFrameRate(sb, 60); // 稳定 60fps（120Hz 显示器上也按 60fps 渲染，减少开销不掉帧）
@@ -1369,7 +1373,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         }
 
         Opacity = 0;
-        BeginOpacity(1, 220);
+        BeginOpacity(1, 280);
     }
 
     private void HideIsland()
@@ -1377,7 +1381,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         if (!IsVisible) return;
         var sb = new Storyboard();
         // 非线性淡出：先快后慢（EaseIn），消失过程不匀速、不生硬
-        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(200))
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(260))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn },
         };
@@ -1491,43 +1495,52 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         AddAnim(sb, Card, FrameworkElement.HeightProperty, height, (int)(styleSizeMs * lm), styleEase);
 
         // 展开内容：错峰淡入 + 轻微缩放/位移（展开延迟 95ms，让尺寸先动、内容跟上）
-        var contentDelay = TimeSpan.FromMilliseconds((expand ? 100 : 0) * lm);
-        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, (int)((expand ? 450 : 300) * lm), smooth, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, (int)((expand ? 660 : 560) * lm), styleEase, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, (int)((expand ? 660 : 560) * lm), styleEase, contentDelay);
-        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, (int)((expand ? 660 : 560) * lm), smooth, contentDelay);
+        var contentDelay = TimeSpan.FromMilliseconds((expand ? 120 : 0) * lm);
+        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, (int)((expand ? 520 : 350) * lm), smooth, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, (int)((expand ? 820 : 700) * lm), styleEase, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, (int)((expand ? 820 : 700) * lm), styleEase, contentDelay);
+        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, (int)((expand ? 820 : 700) * lm), smooth, contentDelay);
 
         // 胶囊行：展开后淡出（由大图区接管）；收起时立即恢复完全不透明，
         // 避免缩回瞬间胶囊内容还在淡入而出现"空内容"
         if (expand)
-            AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, 300, smooth, TimeSpan.FromMilliseconds(90));
+            AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, 400, smooth, TimeSpan.FromMilliseconds(120));
         else
             PillRow.Opacity = 1;
 
         sb.Completed += (_, _) =>
         {
-            _currentStoryboard = null;
-            // 关键：清除动画对 Card 尺寸的 HoldEnd 锁定，否则之后设置本地尺寸（含自动重算）不生效，
-            // 多次展开/收起后组件上下间距会残留异常
-            Card.BeginAnimation(FrameworkElement.WidthProperty, null);
-            Card.BeginAnimation(FrameworkElement.HeightProperty, null);
-            // 必须写回最终尺寸：清除动画后若只依赖本地值，Card 会回退到紧凑时设置的
-            // 本地尺寸（Width/Height），展开态瞬间缩回紧凑大小导致内容被裁剪而黑屏
-            Card.Width = width;
-            Card.Height = height;
-            // 动画结束后整理可见性：展开态折叠胶囊行并固定展开内容不透明，收起态恢复胶囊行
-            if (_vm.IsExpanded)
+            // 防旧动画完成回调覆盖新动画状态（快速连续展开/收起时尺寸错乱）
+            if (!ReferenceEquals(_currentStoryboard, sb)) return;
+            try
             {
-                PillRow.Visibility = Visibility.Collapsed;
-                PillRow.Opacity = 0;
-                ExpandedContent.Opacity = 1;
+                _currentStoryboard = null;
+                // 关键：清除动画对 Card 尺寸的 HoldEnd 锁定，否则之后设置本地尺寸（含自动重算）不生效，
+                // 多次展开/收起后组件上下间距会残留异常
+                Card.BeginAnimation(FrameworkElement.WidthProperty, null);
+                Card.BeginAnimation(FrameworkElement.HeightProperty, null);
+                // 必须写回最终尺寸：清除动画后若只依赖本地值，Card 会回退到紧凑时设置的
+                // 本地尺寸（Width/Height），展开态瞬间缩回紧凑大小导致内容被裁剪而黑屏
+                Card.Width = width;
+                Card.Height = height;
+                // 动画结束后整理可见性：展开态折叠胶囊行并固定展开内容不透明，收起态恢复胶囊行
+                if (_vm.IsExpanded)
+                {
+                    PillRow.Visibility = Visibility.Collapsed;
+                    PillRow.Opacity = 0;
+                    ExpandedContent.Opacity = 1;
+                }
+                else
+                {
+                    PillRow.Visibility = Visibility.Visible;
+                    PillRow.Opacity = 1;
+                }
+                onCompleted?.Invoke();
             }
-            else
+            catch (Exception ex)
             {
-                PillRow.Visibility = Visibility.Visible;
-                PillRow.Opacity = 1;
+                AppLogger.Error("Card animation completed failed", ex);
             }
-            onCompleted?.Invoke();
         };
         _currentStoryboard = sb;
         Timeline.SetDesiredFrameRate(sb, 60); // 稳定 60fps（120Hz 显示器上也按 60fps 渲染，减少开销不掉帧）
@@ -1544,18 +1557,18 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         switch (_settings.Current.AnimationStyle)
         {
             case "Soft":
-                return (new SoftSpringEase(), expand ? 940 : 800);
+                return (new SoftSpringEase(), expand ? 1180 : 1000);
             case "Elastic":
                 return (new ElasticEase
                 {
                     Oscillations = 1,
                     Springiness = 6,
                     EasingMode = EasingMode.EaseOut,
-                }, expand ? 840 : 700);
+                }, expand ? 980 : 820);
             case "Fade":
-                return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? 600 : 500);
+                return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? 720 : 600);
             default: // Spring
-                return (new SpringEase { Damping = 11, Stiffness = 85, Mass = 1 }, expand ? 900 : 760);
+                return (new SpringEase { Damping = 12, Stiffness = 62, Mass = 1 }, expand ? 1100 : 940);
         }
     }
     private void AddAnim(Storyboard sb, DependencyObject target, DependencyProperty prop, double to, int ms, IEasingFunction easing, TimeSpan? beginTime = null)
@@ -1623,7 +1636,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         ShowDragHint(false);
         if (!e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop)) return;
         if (e.Data.GetData(System.Windows.DataFormats.FileDrop) is not string[] { Length: > 0 } files) return;
-        ShowFileDropMenu(files);
+        // 文件中转站：拖入的文件进入组件，可再拖出到其他应用 / 资源管理器（仅存路径引用）
+        _vm.AddFilesToTransfer(files);
         e.Handled = true;
     }
 
@@ -1639,7 +1653,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             var card = (_theme.CardBorder as SolidColorBrush)?.Color ?? System.Windows.Media.Color.FromArgb(60, 255, 255, 255);
             var brush = new SolidColorBrush(on ? card : accent);
             brush.BeginAnimation(SolidColorBrush.ColorProperty,
-                new ColorAnimation(on ? accent : card, TimeSpan.FromMilliseconds(160)));
+                new ColorAnimation(on ? accent : card, TimeSpan.FromMilliseconds(200)));
             Card.BorderBrush = brush;
             if (!on)
             {
@@ -1653,89 +1667,49 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         catch { /* 动画失败忽略 */ }
     }
 
-    /// <summary>文件拖入后弹出快捷操作菜单（固定到岛 / 复制路径 / 打开所在文件夹）。</summary>
-    private void ShowFileDropMenu(string[] files)
+    // ── 文件中转站：把中转文件拖出到其他应用 / 资源管理器 ──
+    private bool _fileDragArmed;
+    private Point _fileDownPoint;
+
+    private void FileTransferItem_Down(object sender, MouseButtonEventArgs e)
     {
-        var file = files[0];
-        var grap = (Brush?)Resources["MenuBgBrush"] ?? _theme.CardBackground;
-        var text = (Brush?)Resources["MenuTextBrush"] ?? System.Windows.Media.Brushes.White;
-        var border = (Brush?)Resources["MenuBorderBrush"] ?? _theme.CardBorder;
-
-        var menu = new ContextMenu
-        {
-            PlacementTarget = Card,
-            Placement = PlacementMode.MousePoint,
-            Background = grap,
-            Foreground = text,
-            BorderBrush = border,
-        };
-
-        var pin = new MenuItem { Header = $"固定到灵动岛：{Shorten(Path.GetFileName(file), 26)}" };
-        pin.Click += (_, _) => PinDroppedFile(file);
-        var copy = new MenuItem { Header = "复制文件路径" };
-        copy.Click += (_, _) => { try { System.Windows.Clipboard.SetText(file); } catch { /* 剪贴板占用等 */ } };
-        var folder = new MenuItem { Header = "打开所在文件夹" };
-        folder.Click += (_, _) => OpenContainingFolder(file);
-        menu.Items.Add(pin);
-        menu.Items.Add(copy);
-        menu.Items.Add(folder);
-
-        if (files.Length > 1)
-        {
-            menu.Items.Add(new Separator());
-            var openAll = new MenuItem { Header = $"打开这 {files.Length} 个文件" };
-            openAll.Click += (_, _) =>
-            {
-                foreach (var f in files) OpenFile(f);
-            };
-            menu.Items.Add(openAll);
-        }
-        menu.IsOpen = true;
+        if (e.LeftButton != MouseButtonState.Pressed) return;
+        _fileDragArmed = true;
+        _fileDownPoint = e.GetPosition(this);
+        e.Handled = true;
     }
 
-    /// <summary>把文件信息推送到灵动岛（短暂显示，可打开文件/所在文件夹）。</summary>
-    private void PinDroppedFile(string file)
+    private void FileTransferItem_Move(object sender, System.Windows.Input.MouseEventArgs e)
     {
-        var dir = Path.GetDirectoryName(file);
-        _vm.PushIsland(new IslandPush
-        {
-            Id = "file:" + file.ToLowerInvariant(),
-            Title = Path.GetFileName(file),
-            Body = dir is { Length: > 0 } ? dir : file,
-            Icon = "", // 文档
-            DurationSeconds = 12,
-            Buttons = new System.Collections.Generic.List<IslandPushButton>
-            {
-                new() { Label = "打开文件", Action = "url", Value = file },
-                new() { Label = "所在文件夹", Action = "url", Value = dir ?? file },
-            },
-            Click = new IslandPushButton { Action = "url", Value = file },
-        });
-    }
-
-    private static void OpenContainingFolder(string file)
-    {
+        if (!_fileDragArmed || e.LeftButton != MouseButtonState.Pressed) return;
+        var pos = e.GetPosition(this);
+        if (Math.Abs(pos.X - _fileDownPoint.X) <= 4 && Math.Abs(pos.Y - _fileDownPoint.Y) <= 4) return;
+        _fileDragArmed = false;
+        var paths = _vm.FileTransferItems.Select(f => f.Path).ToArray();
+        if (paths.Length == 0) return;
         try
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", "/select, \"" + file + "\"")
-            {
-                UseShellExecute = true,
-            });
+            // 用真实路径发起系统拖放（复制语义），源文件不会被移动或删除
+            var data = new System.Windows.DataObject(System.Windows.DataFormats.FileDrop, paths);
+            System.Windows.DragDrop.DoDragDrop(sender is DependencyObject d ? d : Card, data,
+                System.Windows.DragDropEffects.Copy | System.Windows.DragDropEffects.Move);
         }
-        catch { /* 忽略 */ }
+        catch { /* 用户取消拖放等 */ }
+        e.Handled = true;
     }
 
-    private static void OpenFile(string file)
+    private void FileTransferItem_Up(object sender, MouseButtonEventArgs e)
     {
-        try
-        {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(file) { UseShellExecute = true });
-        }
-        catch { /* 忽略 */ }
+        _fileDragArmed = false;
+        e.Handled = true;
     }
 
-    private static string Shorten(string s, int max)
-        => s.Length <= max ? s : s[..(max - 1)] + "…";
+    /// <summary>点击文件中转组件上的「×」：清空中转站。</summary>
+    private void FileTransferClear_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.ClearFileTransfer();
+        e.Handled = true;
+    }
 
     // ── 拖动定位：吸附 + 持久化 ─────────────────────────────
 
@@ -1790,11 +1764,14 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             Top = top;
             return;
         }
+        _positionStoryboard?.Stop(); // 连续重定位先停旧动画，避免并发抖动
         var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
         var sb = new Storyboard();
-        AddAnim(sb, this, Window.LeftProperty, left, 320, easing);
-        AddAnim(sb, this, Window.TopProperty, top, 320, easing);
+        AddAnim(sb, this, Window.LeftProperty, left, 430, easing);
+        AddAnim(sb, this, Window.TopProperty, top, 430, easing);
+        sb.Completed += (_, _) => { if (ReferenceEquals(_positionStoryboard, sb)) _positionStoryboard = null; };
         Timeline.SetDesiredFrameRate(sb, 60);
+        _positionStoryboard = sb;
         sb.Begin();
     }
     // ── 歌词自动滚动 ──────────────────────────────────────────
@@ -1838,13 +1815,13 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     {
         var current = LyricsScroll.VerticalOffset;
         var delta = _lyricsScrollTarget - current;
-        if (Math.Abs(delta) < 0.5)
+        if (Math.Abs(delta) < 0.3)
         {
             LyricsScroll.ScrollToVerticalOffset(_lyricsScrollTarget);
             _lyricsScrollTimer.Stop();
             return;
         }
 
-        LyricsScroll.ScrollToVerticalOffset(current + delta * 0.22);
+        LyricsScroll.ScrollToVerticalOffset(current + delta * 0.18);
     }
 }

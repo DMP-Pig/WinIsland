@@ -29,19 +29,19 @@
 - **🏝 上岛 API**：本地 HTTP / WebSocket 接口，让任何第三方软件把信息实时推送到灵动岛（类似 iOS 第三方 App 的灵动岛集成）。支持图片、动态进度、心跳续期、深浅主题、按钮动作、输入框；推送不影响灵动岛长宽，不遮挡其他组件。
 - **✨ 提示动画**：蓝牙连接/断开、开始充电/充电完成、低电量、网络恢复、日历/RSS/邮件提醒等事件，以精美动画在灵动岛上展示。
 - **✦ 外观与动效**：18 种主题皮肤、自定义强调色、液态玻璃毛玻璃、壁纸取色、跑马灯、4 种动效皮肤（iOS 弹簧等）、4 种音频波纹样式（随音乐节奏抖动）；展开/收起非线性缓动，60fps 丝滑；PerMonitorV2 高 DPI。
-- **🖱 交互与智能**：解锁拖动 + 边缘吸附、全屏/锁屏自动隐藏、双击/中键快捷动作、快捷操作按钮、拖文件上岛、录屏智能勿扰、定时明暗主题切换。
+- **🖱 交互与智能**：解锁拖动 + 边缘吸附、全屏/锁屏自动隐藏、双击/中键快捷动作、快捷操作按钮、文件中转站（拖文件上岛、可再拖出到其他应用）、录屏智能勿扰、定时明暗主题切换。
 - **⚡ 效率工具与自动化**：番茄钟、待办、剪贴板历史、快速启动器、日程提醒；会议静音助手、屏幕录制/截图提示、文件复制/下载进度上岛；全局快捷键与规则引擎。
 - **🛡 隐私安全**：无遥测、无广告、无数据上报。除用户手动开启的在线歌词/天气外完全离线；所有配置与数据仅存于本机 `%APPDATA%\WinIsland`。
 
 ---
 
-## 📥 下载（最新稳定版 1.1.6）
+## 📥 下载（最新稳定版 1.1.7）
 
 | 平台 | 下载 | 说明 |
 | --- | --- | --- |
-| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
-| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备 |
-| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-Setup-1.1.6.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
+| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
+| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备 |
+| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-Setup-1.1.7.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
 
 历史版本与完整更新日志见 [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases)。
 
@@ -238,19 +238,19 @@ dotnet test  WinIsland.slnx -c Release
 - **🏝 上島 API**：本機 HTTP / WebSocket 介面，讓任何第三方軟體把資訊即時推送到動態島（類似 iOS 第三方 App 的動態島整合）。支援圖片、動態進度、心跳續期、深淺主題、按鈕動作、輸入框；推送不影響動態島長寬，不遮擋其他元件。
 - **✨ 提示動畫**：藍牙連線/斷開、開始充電/充電完成、低電量、網路恢復、行事曆/RSS/郵件提醒等事件，以精美動畫在動態島上展示。
 - **✦ 外觀與動效**：18 種主題皮膚、自訂強調色、液態玻璃毛玻璃、桌布取色、跑馬燈、4 種動效皮膚（iOS 彈簧等）、4 種音訊波紋樣式（隨音樂節奏抖動）；展開/收起非線性緩動，60fps 絲滑；PerMonitorV2 高 DPI。
-- **🖱 互動與智慧**：解鎖拖曳 + 邊緣吸附、全螢幕/鎖定螢幕自動隱藏、雙擊/中鍵快捷動作、快捷操作按鈕、拖檔案上島、錄影智慧勿擾、定時明暗主題切換。
+- **🖱 互動與智慧**：解鎖拖曳 + 邊緣吸附、全螢幕/鎖定螢幕自動隱藏、雙擊/中鍵快捷動作、快捷操作按鈕、檔案中轉站（拖檔案上島、可再拖出到其他應用）、錄影智慧勿擾、定時明暗主題切換。
 - **⚡ 效率工具與自動化**：蕃茄鐘、待辦、剪貼簿歷史、快速啟動器、日程提醒；會議靜音助手、螢幕錄製/截圖提示、檔案複製/下載進度上島；全域快速鍵與規則引擎。
 - **🛡 隱私安全**：無遙測、無廣告、無資料上報。除使用者手動開啟的線上歌詞/天氣外完全離線；所有設定與資料僅存於本機 `%APPDATA%\WinIsland`。
 
 ---
 
-## 📥 下載（最新穩定版 1.1.6）
+## 📥 下載（最新穩定版 1.1.7）
 
 | 平台 | 下載 | 說明 |
 | --- | --- | --- |
-| Windows x64 | [x64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-x64.exe) | 主流 64 位元電腦首選，單檔免安裝，直接執行 |
-| Windows ARM64 | [ARM64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-arm64.exe) | Surface Pro X / 驍龍機型等 ARM 裝置 |
-| Windows 通用 | [通用安裝包](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-Setup-1.1.6.exe) | Inno Setup 安裝精靈，x64 / ARM64 自動依架構安裝 |
+| Windows x64 | [x64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-x64.exe) | 主流 64 位元電腦首選，單檔免安裝，直接執行 |
+| Windows ARM64 | [ARM64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-arm64.exe) | Surface Pro X / 驍龍機型等 ARM 裝置 |
+| Windows 通用 | [通用安裝包](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-Setup-1.1.7.exe) | Inno Setup 安裝精靈，x64 / ARM64 自動依架構安裝 |
 
 歷史版本與完整更新日誌見 [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases)。
 
@@ -447,19 +447,19 @@ dotnet test  WinIsland.slnx -c Release
 - **🏝 Island API**: A local HTTP / WebSocket interface that lets any third-party software push information to the Dynamic Island in real time (like iOS third-party App Island integration). Supports images, animated progress, heartbeat renewal, light/dark themes, button actions and input fields; pushes never change the island's width or cover other widgets.
 - **✨ Event animations**: Bluetooth connect/disconnect, charging start/done, low battery, network restored, calendar/RSS/email reminders and more are shown on the island with elegant animations.
 - **✦ Appearance & motion**: 18 theme presets, custom accent color, liquid-glass acrylic, wallpaper color extraction, marquee, 4 motion skins (iOS spring etc.), 4 audio-wave styles (pulsing with the music); non-linear easing for expand/collapse at a smooth 60 fps; PerMonitorV2 high-DPI support.
-- **🖱 Interaction & intelligence**: unlock-to-drag with edge snapping, auto-hide on fullscreen/lock screen, double-click and middle-click quick actions, quick-action buttons, drag files onto the island, smart DND while screen-recording, scheduled light/dark theme switching.
+- **🖱 Interaction & intelligence**: unlock-to-drag with edge snapping, auto-hide on fullscreen/lock screen, double-click and middle-click quick actions, quick-action buttons, file transfer station (drag files onto the island and out to other apps), smart DND while screen-recording, scheduled light/dark theme switching.
 - **⚡ Productivity & automation**: Pomodoro timer, to-dos, clipboard history, quick launcher, schedule reminders; meeting mute assistant, screen-record/screenshot hints, file-copy/download progress on the island; global hotkeys and a rules engine.
 - **🛡 Privacy & security**: no telemetry, no ads, no data uploads. Fully offline except for user-enabled online lyrics/weather; all configuration and data stays local in `%APPDATA%\WinIsland`.
 
 ---
 
-## 📥 Download (latest stable 1.1.6)
+## 📥 Download (latest stable 1.1.7)
 
 | Platform | Download | Notes |
 | --- | --- | --- |
-| Windows x64 | [x64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-x64.exe) | For mainstream 64-bit PCs; single file, no install needed |
-| Windows ARM64 | [ARM64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-arm64.exe) | For Surface Pro X / Snapdragon ARM devices |
-| Windows Universal | [Universal installer](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-Setup-1.1.6.exe) | Inno Setup wizard; auto-installs x64 / ARM64 by architecture |
+| Windows x64 | [x64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-x64.exe) | For mainstream 64-bit PCs; single file, no install needed |
+| Windows ARM64 | [ARM64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-arm64.exe) | For Surface Pro X / Snapdragon ARM devices |
+| Windows Universal | [Universal installer](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-Setup-1.1.7.exe) | Inno Setup wizard; auto-installs x64 / ARM64 by architecture |
 
 All historical versions and the full changelog: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -656,19 +656,19 @@ Use Tray menu → Quit; closing the island window only hides it (tray-resident b
 - **🏝 API Island**: una interfaz HTTP/WebSocket local que permite a cualquier software de terceros enviar información al Dynamic Island en tiempo real (como la integración Island de apps de terceros en iOS). Admite imágenes, progreso animado, renovación por heartbeat, temas claro/oscuro, acciones de botones y campos de entrada; los envíos nunca cambian el ancho de la isla ni cubren otros widgets.
 - **✨ Animaciones de eventos**: conexión/desconexión de Bluetooth, inicio/fin de carga, batería baja, red restaurada, recordatorios de calendario/RSS/correo, etc., se muestran en la isla con animaciones elegantes.
 - **✦ Apariencia y movimiento**: 18 temas preestablecidos, color de acento personalizado, acrílico de vidrio líquido, extracción de color del fondo de pantalla, marquesina, 4 pieles de animación (muelle iOS, etc.), 4 estilos de onda de audio (que pulsan con la música); easing no lineal para expandir/contraer a 60 fps fluidos; soporte de alto DPI PerMonitorV2.
-- **🖱 Interacción e inteligencia**: desbloquear para arrastrar con ajuste a bordes, ocultar automáticamente en pantalla completa/pantalla de bloqueo, acciones rápidas de doble clic y clic central, botones de acción rápida, arrastrar archivos a la isla, No molestar inteligente durante la grabación de pantalla, cambio programado de tema claro/oscuro.
+- **🖱 Interacción e inteligencia**: desbloquear para arrastrar con ajuste a bordes, ocultar automáticamente en pantalla completa/pantalla de bloqueo, acciones rápidas de doble clic y clic central, botones de acción rápida, estación de transferencia de archivos (arrastrar archivos a la isla y arrastrarlos fuera a otras apps), No molestar inteligente durante la grabación de pantalla, cambio programado de tema claro/oscuro.
 - **⚡ Productividad y automatización**: temporizador Pomodoro, tareas pendientes, historial del portapapeles, lanzador rápido, recordatorios de agenda; asistente de silencio en reuniones, avisos de grabación/captura de pantalla, progreso de copia/descarga de archivos en la isla; atajos globales y motor de reglas.
 - **🛡 Privacidad y seguridad**: sin telemetría, sin anuncios, sin cargas de datos. Totalmente sin conexión excepto por las letras en línea y el clima habilitados por el usuario; toda la configuración y los datos permanecen locales en `%APPDATA%\WinIsland`.
 
 ---
 
-## 📥 Descargas (última estable 1.1.6)
+## 📥 Descargas (última estable 1.1.7)
 
 | Plataforma | Descarga | Notas |
 | --- | --- | --- |
-| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-x64.exe) | Para PCs de 64 bits convencionales; archivo único, sin instalación |
-| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
-| Windows Universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-Setup-1.1.6.exe) | Asistente Inno Setup; instala x64 / ARM64 según la arquitectura |
+| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-x64.exe) | Para PCs de 64 bits convencionales; archivo único, sin instalación |
+| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
+| Windows Universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-Setup-1.1.7.exe) | Asistente Inno Setup; instala x64 / ARM64 según la arquitectura |
 
 Todas las versiones históricas y el registro de cambios completo: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -865,19 +865,19 @@ Usa Menú de la bandeja → Salir; cerrar la ventana de la isla solo la oculta (
 - **🏝 API Island** : une interface HTTP / WebSocket locale qui permet à tout logiciel tiers de pousser des informations vers le Dynamic Island en temps réel (comme l'intégration Island des apps tierces sur iOS). Prend en charge les images, la progression animée, le renouvellement par heartbeat, les thèmes clair/sombre, les actions de boutons et les champs de saisie ; les envois ne modifient jamais la largeur de l'île et ne couvrent pas les autres widgets.
 - **✨ Animations d'événements** : connexion/déconnexion Bluetooth, début/fin de charge, batterie faible, réseau rétabli, rappels de calendrier/RSS/e-mail, etc., affichés sur l'île avec des animations élégantes.
 - **✦ Apparence et animation** : 18 thèmes prédéfinis, couleur d'accent personnalisée, acrylique verre liquide, extraction de couleur du fond d'écran, défilement défilant, 4 peaux d'animation (ressort iOS, etc.), 4 styles d'onde audio (palpitant au rythme de la musique) ; easing non linéaire pour déplier/replier à 60 fps fluides ; prise en charge haute DPI PerMonitorV2.
-- **🖱 Interaction et intelligence** : déverrouillage pour glisser avec magnétisme aux bords, masquage automatique en plein écran / sur l'écran de verrouillage, actions rapides double-clic et clic central, boutons d'action rapide, glisser des fichiers vers l'île, Ne pas déranger intelligent pendant l'enregistrement d'écran, bascule programmée du thème clair/sombre.
+- **🖱 Interaction et intelligence** : déverrouillage pour glisser avec magnétisme aux bords, masquage automatique en plein écran / sur l'écran de verrouillage, actions rapides double-clic et clic central, boutons d'action rapide, station de transfert de fichiers (glisser des fichiers vers l'île puis vers d'autres applications), Ne pas déranger intelligent pendant l'enregistrement d'écran, bascule programmée du thème clair/sombre.
 - **⚡ Productivité et automatisation** : minuteur Pomodoro, tâches, historique du presse-papiers, lanceur rapide, rappels d'agenda ; assistant de mise en sourdine en réunion, alertes d'enregistrement d'écran / de capture, progression de copie/téléchargement de fichiers sur l'île ; raccourcis globaux et moteur de règles.
 - **🛡 Confidentialité et sécurité** : aucune télémétrie, aucune publicité, aucune remontée de données. Entièrement hors ligne sauf paroles en ligne et météo activées manuellement ; toute la configuration et les données restent locales dans `%APPDATA%\WinIsland`.
 
 ---
 
-## 📥 Téléchargement (dernière version stable 1.1.6)
+## 📥 Téléchargement (dernière version stable 1.1.7)
 
 | Plateforme | Téléchargement | Notes |
 | --- | --- | --- |
-| Windows x64 | [Portable x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-x64.exe) | Le choix recommandé pour les PC 64 bits ; fichier unique, sans installation, exécution directe |
-| Windows ARM64 | [Portable ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-arm64.exe) | Pour Surface Pro X / appareils ARM Snapdragon |
-| Windows universel | [Installeur universel](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-Setup-1.1.6.exe) | Assistant Inno Setup ; installe x64 / ARM64 selon l'architecture |
+| Windows x64 | [Portable x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-x64.exe) | Le choix recommandé pour les PC 64 bits ; fichier unique, sans installation, exécution directe |
+| Windows ARM64 | [Portable ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-arm64.exe) | Pour Surface Pro X / appareils ARM Snapdragon |
+| Windows universel | [Installeur universel](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-Setup-1.1.7.exe) | Assistant Inno Setup ; installe x64 / ARM64 selon l'architecture |
 
 Toutes les versions historiques et le journal complet : [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1074,19 +1074,19 @@ Menu de la barre d'état → Quitter ; fermer la fenêtre de l'île ne fait que 
 - **🏝 واجهة Island**: واجهة HTTP / WebSocket محلية تتيح لأي برنامج خارجي دفع المعلومات إلى الديناميك آيلاند في الوقت الفعلي (مثل تكامل Island لتطبيقات iOS الخارجية). تدعم الصور والتقدّم المتحرك وتجديد heartbeat والسمات الفاتحة/الداكنة وأفعال الأزرار وحقول الإدخال؛ لا تغيّر عمليات الدفع عرض الجزيرة ولا تُغطّي الأدوات الأخرى.
 - **✨ حركات الأحداث**: اتصال/فصل البلوتوث، بدء/اكتمال الشحن، انخفاض البطارية، استعادة الشبكة، تذكيرات التقويم/RSS/البريد وغيرها تُعرض على الجزيرة بحركات أنيقة.
 - **✦ المظهر والحركة**: 18 سمة جاهزة، ولون تمييز مخصص، وزجاج سائل/أكريليك، واستخراج لون الخلفية، وشريط متحرك، و4 أساليب حركة (نابض iOS وغيرها)، و4 أنماط لموجة الصوت (تنبض مع إيقاع الموسيقى)؛ انسياب غير خطي للتمديد/الطيّ بسلاسة 60 إطارًا في الثانية؛ دعم دقة عالية PerMonitorV2.
-- **🖱 التفاعل والذكاء**: إلغاء القفل للسحب مع الالتصاق بالحواف، إخفاء تلقائي في ملء الشاشة/شاشة القفل، أفعال سريعة بنقرة مزدوجة/نقرة الوسط، أزرار أفعال سريعة، سحب الملفات إلى الجزيرة، «لا تُزعج» ذكي أثناء تسجيل الشاشة، تبديل مجدول للسمة الفاتحة/الداكنة.
+- **🖱 التفاعل والذكاء**: إلغاء القفل للسحب مع الالتصاق بالحواف، إخفاء تلقائي في ملء الشاشة/شاشة القفل، أفعال سريعة بنقرة مزدوجة/نقرة الوسط، أزرار أفعال سريعة، محطة نقل الملفات (سحب الملفات إلى الجزيرة وإخراجها إلى تطبيقات أخرى)، «لا تُزعج» ذكي أثناء تسجيل الشاشة، تبديل مجدول للسمة الفاتحة/الداكنة.
 - **⚡ الإنتاجية والأتمتة**: مؤقّت بومودورو، مهام، سجل الحافظة، مشغّل سريع، تذكيرات مواعيد؛ مساعد كتم الميكروفون في الاجتماعات، تنبيهات تسجيل/التقاط الشاشة، تقدّم نسخ/تنزيل الملفات على الجزيرة؛ اختصارات عامة ومحرك قواعد.
 - **🛡 الخصوصية والأمان**: لا تتبع، لا إعلانات، لا رفع بيانات. يعمل دون اتصال تمامًا ما عدا الكلمات عبر الإنترنت والطقس عند تفعيلهما يدويًا؛ جميع الإعدادات والبيانات محلية في `%APPDATA%\WinIsland`.
 
 ---
 
-## 📥 التحميل (آخر إصدار مستقر 1.1.6)
+## 📥 التحميل (آخر إصدار مستقر 1.1.7)
 
 | النظام | التحميل | ملاحظات |
 | --- | --- | --- |
-| Windows x64 | [نسخة محمولة x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-x64.exe) | الخيار الأول لأجهزة 64 بت الشائعة؛ ملف واحد بدون تثبيت، يعمل مباشرة |
-| Windows ARM64 | [نسخة محمولة ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-arm64.exe) | لأجهزة Surface Pro X / أجهزة ARM Snapdragon |
-| Windows شامل | [مثبّت شامل](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-Setup-1.1.6.exe) | معالج Inno Setup؛ يثبّت x64 / ARM64 حسب البنية |
+| Windows x64 | [نسخة محمولة x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-x64.exe) | الخيار الأول لأجهزة 64 بت الشائعة؛ ملف واحد بدون تثبيت، يعمل مباشرة |
+| Windows ARM64 | [نسخة محمولة ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-arm64.exe) | لأجهزة Surface Pro X / أجهزة ARM Snapdragon |
+| Windows شامل | [مثبّت شامل](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-Setup-1.1.7.exe) | معالج Inno Setup؛ يثبّت x64 / ARM64 حسب البنية |
 
 جميع الإصدارات السابقة وسجل التغييرات الكامل: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1283,19 +1283,19 @@ dotnet test  WinIsland.slnx -c Release
 - **🏝 API Island**: локальный HTTP / WebSocket-интерфейс, позволяющий любому стороннему ПО отправлять информацию на Dynamic Island в реальном времени (как интеграция Island сторонних приложений в iOS). Поддержка изображений, анимированного прогресса, продления по heartbeat, светлой/тёмной темы, действий кнопок и полей ввода; отправки никогда не меняют ширину острова и не перекрывают другие виджеты.
 - **✨ Анимации событий**: подключение/отключение Bluetooth, начало/завершение зарядки, низкий заряд, восстановление сети, напоминания календаря/RSS/почты и др. отображаются на острове с изящными анимациями.
 - **✦ Внешний вид и анимация**: 18 тем, настраиваемый акцентный цвет, «жидкое стекло»/акрил, извлечение цвета обоев, бегущая строка, 4 типа анимации (пружина iOS и др.), 4 стиля звуковой волны (пульсирует в такт музыке); нелинейное сглаживание разворачивания/сворачивания, плавные 60 fps; поддержка высокого DPI PerMonitorV2.
-- **🖱 Взаимодействие и интеллект**: разблокировка для перетаскивания с прилипанием к краям, автоскрытие в полноэкранном режиме и на экране блокировки, быстрые действия по двойному/среднему клику, кнопки быстрых действий, перетаскивание файлов на остров, умный режим «Не беспокоить» во время записи экрана, плановое переключение светлой/тёмной темы.
+- **🖱 Взаимодействие и интеллект**: разблокировка для перетаскивания с прилипанием к краям, автоскрытие в полноэкранном режиме и на экране блокировки, быстрые действия по двойному/среднему клику, кнопки быстрых действий, перевалочный пункт файлов (перетаскивание на остров и из него в другие приложения), умный режим «Не беспокоить» во время записи экрана, плановое переключение светлой/тёмной темы.
 - **⚡ Производительность и автоматизация**: таймер Pomodoro, задачи, история буфера обмена, быстрый запуск, напоминания расписания; помощник отключения микрофона на созвонах, подсказки записи экрана/скриншотов, прогресс копирования/загрузки файлов на острове; глобальные горячие клавиши и движок правил.
 - **🛡 Конфиденциальность и безопасность**: без телеметрии, без рекламы, без отправки данных. Полностью офлайн, кроме включённых вручную онлайн-текстов и погоды; все настройки и данные хранятся локально в `%APPDATA%\WinIsland`.
 
 ---
 
-## 📥 Скачать (последняя стабильная версия 1.1.6)
+## 📥 Скачать (последняя стабильная версия 1.1.7)
 
 | Платформа | Скачать | Примечания |
 | --- | --- | --- |
-| Windows x64 | [Портативная x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-x64.exe) | Рекомендуется для обычных 64-битных ПК; один файл, без установки, запуск сразу |
-| Windows ARM64 | [Портативная ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-arm64.exe) | Для Surface Pro X / устройств ARM Snapdragon |
-| Windows универсальная | [Универсальный установщик](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-Setup-1.1.6.exe) | Мастер Inno Setup; устанавливает x64 / ARM64 в зависимости от архитектуры |
+| Windows x64 | [Портативная x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-x64.exe) | Рекомендуется для обычных 64-битных ПК; один файл, без установки, запуск сразу |
+| Windows ARM64 | [Портативная ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-arm64.exe) | Для Surface Pro X / устройств ARM Snapdragon |
+| Windows универсальная | [Универсальный установщик](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-Setup-1.1.7.exe) | Мастер Inno Setup; устанавливает x64 / ARM64 в зависимости от архитектуры |
 
 Все предыдущие версии и полный журнал изменений: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1492,19 +1492,19 @@ dotnet test  WinIsland.slnx -c Release
 - **🏝 API Island**: uma interface HTTP / WebSocket local que permite a qualquer software de terceiros enviar informações para o Dynamic Island em tempo real (como a integração Island de apps de terceiros no iOS). Suporta imagens, progresso animado, renovação por heartbeat, temas claro/escuro, ações de botões e campos de entrada; os envios nunca mudam a largura da ilha nem cobrem outros widgets.
 - **✨ Animações de eventos**: conexão/desconexão Bluetooth, início/fim de carregamento, bateria fraca, rede restaurada, lembretes de calendário/RSS/e-mail etc. são exibidos na ilha com animações elegantes.
 - **✦ Aparência e movimento**: 18 temas predefinidos, cor de destaque personalizada, acrílico vidro líquido, extração de cor do papel de parede, letreiro, 4 tipos de animação (mola iOS etc.), 4 estilos de onda de áudio (pulsando com a música); easing não linear para expandir/recolher a 60 fps suaves; suporte a alto DPI PerMonitorV2.
-- **🖱 Interação e inteligência**: desbloquear para arrastar com ajuste às bordas, ocultar automaticamente em tela cheia/tela de bloqueio, ações rápidas de duplo clique e clique do meio, botões de ação rápida, arrastar arquivos para a ilha, Não perturbe inteligente durante gravação de tela, troca programada de tema claro/escuro.
+- **🖱 Interação e inteligência**: desbloquear para arrastar com ajuste às bordas, ocultar automaticamente em tela cheia/tela de bloqueio, ações rápidas de duplo clique e clique do meio, botões de ação rápida, estação de transferência de arquivos (arrastar arquivos para a ilha e arrastá-los para outros aplicativos), Não perturbe inteligente durante gravação de tela, troca programada de tema claro/escuro.
 - **⚡ Produtividade e automação**: timer Pomodoro, tarefas, histórico da área de transferência, iniciador rápido, lembretes de agenda; assistente de mudo em reuniões, avisos de gravação/captura de tela, progresso de cópia/download de arquivos na ilha; atalhos globais e mecanismo de regras.
 - **🛡 Privacidade e segurança**: sem telemetria, sem anúncios, sem envio de dados. Totalmente offline exceto pelas letras on-line e clima ativados manualmente; toda a configuração e os dados permanecem locais em `%APPDATA%\WinIsland`.
 
 ---
 
-## 📥 Download (última versão estável 1.1.6)
+## 📥 Download (última versão estável 1.1.7)
 
 | Plataforma | Download | Observações |
 | --- | --- | --- |
-| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-x64.exe) | Recomendado para PCs 64 bits comuns; arquivo único, sem instalação, execução direta |
-| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-1.1.6-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
-| Windows universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.6/WinIsland-Setup-1.1.6.exe) | Assistente Inno Setup; instala x64 / ARM64 conforme a arquitetura |
+| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-x64.exe) | Recomendado para PCs 64 bits comuns; arquivo único, sem instalação, execução direta |
+| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-1.1.7-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
+| Windows universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.7/WinIsland-Setup-1.1.7.exe) | Assistente Inno Setup; instala x64 / ARM64 conforme a arquitetura |
 
 Todas as versões anteriores e o changelog completo: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 

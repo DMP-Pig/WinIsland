@@ -515,6 +515,30 @@
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                 </StackPanel>
                             </DataTemplate>
+                            <DataTemplate x:Key="FileTransferItem">
+                                <Border Tag="FileTransfer" CornerRadius="8" Padding="7,3" Margin="0,0,8,0" VerticalAlignment="Center"
+                                        Background="{Binding PushCardBackground, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#221B1B26}"
+                                        BorderBrush="{Binding PushCardBorder, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#59FFFFFF}"
+                                        BorderThickness="1" Cursor="SizeAll"
+                                        ToolTip="{Binding DataContext.FileTransferToolTip, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        PreviewMouseLeftButtonDown="FileTransferItem_Down"
+                                        PreviewMouseMove="FileTransferItem_Move"
+                                        PreviewMouseLeftButtonUp="FileTransferItem_Up">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"
+                                                   Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                        <Grid MaxWidth="180" ClipToBounds="True">
+                                            <TextBlock Text="{Binding DataContext.FileTransferSummary, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" karaoke:Marquee.IsEnabled="{Binding MarqueeEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                       Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"/>
+                                        </Grid>
+                                        <Button Style="{StaticResource IconButton}" Padding="1,0" Margin="5,0,2,0" VerticalAlignment="Center" Click="FileTransferClear_Click"
+                                                ToolTip="{Binding DataContext.FileTransferRemoveTip, RelativeSource={RelativeSource AncestorType=Window}}">
+                                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="8"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
                             <DataTemplate x:Key="SongItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Border Width="40" Height="40" CornerRadius="12" Margin="0,0,10,0"
@@ -695,6 +719,9 @@
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Kind}" Value="Download">
                                                     <Setter Property="ContentTemplate" Value="{StaticResource DownloadItem}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="FileTransfer">
+                                                    <Setter Property="ContentTemplate" Value="{StaticResource FileTransferItem}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>

@@ -12,6 +12,22 @@
 
 ## 简体中文
 
+## WinIsland 1.1.7（正式版 / Stable）
+
+一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新内容
+
+- **文件中转站**：把任意文件直接拖到灵动岛上，立即生成一个可拖出的文件组件（仅保存路径引用、不复制文件实体）；再次用鼠标把它拖到资源管理器或其他软件即可完成搬运，临时传文件再也不用反复开窗
+
+- **媒体退出自动清理**：媒体应用退出且没有新的播放会话时，灵动岛立即清除残留的歌曲信息，不再显示过期曲目
+
+- **动画更丝滑**：灵动岛重定位与歌词自动滚动改用更柔和的缓动（重定位动画约 430ms、歌词滚动增量放缓），整体更连贯顺畅
+
+- **关于页显示版本号**：设置 → 关于 现在会显示完整版本号（如 WinIsland 1.1.7）
+
+- **稳定性与性能**：媒体会话状态检测增强（播放状态读取失败即视为媒体结束，不再残留）；位置动画增加防并发抖动处理；单文件自包含构建，体积更小
+
 ## WinIsland 1.1.6（正式版 / Stable）
 
 一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
@@ -342,6 +358,22 @@
 ---
 
 ## 繁體中文
+
+## WinIsland 1.1.7（正式版 / Stable）
+
+一款現代化、多功能的 Windows 靈動島元件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新內容
+
+- **檔案中轉站**：把任意檔案直接拖到靈動島上，立即生成一個可拖出的檔案元件（僅保存路徑參照、不複製檔案實體）；再用滑鼠拖到檔案總管或其他軟體即可完成搬運
+
+- **媒體退出自動清理**：媒體應用程式退出且沒有新的播放工作階段時，靈動島立即清除殘留的歌曲資訊，不再顯示過期曲目
+
+- **動畫更流暢**：靈動島重新定位與歌詞自動捲動改用更柔和的緩動（重新定位動畫約 430ms），整體更連貫順暢
+
+- **關於頁顯示版本號**：設定 → 關於 現在會顯示完整版本號（如 WinIsland 1.1.7）
+
+- **穩定性與效能**：媒體工作階段狀態偵測增強（播放狀態讀取失敗即視為媒體結束）；位置動畫增加防並發抖動處理；單檔自包含建置，體積更小
 
 ## WinIsland 1.1.6（正式版 / Stable）
 
@@ -674,6 +706,22 @@
 
 ## English
 
+## WinIsland 1.1.7 (Stable)
+
+A modern, multi-functional Dynamic Island widget for Windows.
+
+### Changelog
+
+- **File Transfer Station**: Drop any file directly onto the island and it instantly becomes a draggable file item (path reference only, no file copy). Drag it out to File Explorer or any other app to move it on the fly — no more opening folders back and forth
+
+- **Media exit cleanup**: When a media app quits and no new playback session exists, the island immediately clears the stale track info
+
+- **Smoother animations**: Repositioning and lyric auto-scroll use gentler easing (reposition ~430ms, slower scroll increment) for a more fluid feel
+
+- **Version on About page**: Settings → About now shows the full version (e.g. WinIsland 1.1.7)
+
+- **Stability & performance**: Enhanced media session state detection (unreadable playback state is treated as media ended); anti-concurrent-jitter protection for position animation; smaller single-file self-contained build
+
 ## WinIsland 1.1.6 (Stable)
 
 A modern, multi-functional Dynamic Island widget for Windows.
@@ -1004,6 +1052,22 @@ A modern, multi-functional Dynamic Island widget for Windows.
 ---
 
 ## Español
+
+## WinIsland 1.1.7 (Estable)
+
+Un widget Dynamic Island moderno y multifuncional para Windows.
+
+### Registro de cambios
+
+- **Estación de transferencia de archivos**: suelta cualquier archivo directamente sobre la isla y se convierte al instante en un elemento de archivo arrastrable (solo referencia de ruta, sin copiar el archivo). Arrástralo al Explorador de archivos o a cualquier otra aplicación para moverlo sobre la marcha
+
+- **Limpieza al salir del reproductor**: cuando una aplicación multimedia se cierra y no hay una nueva sesión de reproducción, la isla borra inmediatamente la información de la canción obsoleta
+
+- **Animaciones más fluidas**: el reposicionamiento y el desplazamiento automático de la letra usan una suavización más suave (reposicionamiento ~430 ms) para un movimiento más continuo
+
+- **Versión en la página Acerca de**: Configuración → Acerca de ahora muestra la versión completa (p. ej., WinIsland 1.1.7)
+
+- **Estabilidad y rendimiento**: detección mejorada del estado de la sesión multimedia; protección contra vibraciones concurrentes en la animación de posición; compilación autónoma de un solo archivo más pequeña
 
 ## WinIsland 1.1.6 (Estable)
 
@@ -1336,6 +1400,22 @@ Un widget Dynamic Island moderno y multifuncional para Windows.
 
 ## Français
 
+## WinIsland 1.1.7 (Stable)
+
+Un widget Dynamic Island moderne et multifonctionnel pour Windows.
+
+### Journal des modifications
+
+- **Station de transfert de fichiers** : déposez n'importe quel fichier directement sur l'île, il devient instantanément un élément de fichier déplaçable (référence de chemin uniquement, aucune copie). Faites-le glisser vers l'Explorateur ou toute autre application pour le déplacer à la volée
+
+- **Nettoyage à la fermeture du lecteur** : quand une application multimédia se ferme et qu'aucune nouvelle session de lecture n'existe, l'île efface immédiatement les anciennes informations de la chanson
+
+- **Animations plus fluides** : le repositionnement et le défilement automatique des paroles utilisent une courbe d'accélération plus douce (repositionnement ~430 ms) pour un mouvement plus continu
+
+- **Version sur la page À propos** : Paramètres → À propos affiche désormais la version complète (ex. WinIsland 1.1.7)
+
+- **Stabilité et performances** : détection améliorée de l'état de la session multimédia ; protection contre les vibrations concurrentes de l'animation de position ; build autonome en un seul fichier plus léger
+
 ## WinIsland 1.1.6 (Stable)
 
 Un widget Dynamic Island moderne et multifonctionnel pour Windows.
@@ -1666,6 +1746,22 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 ---
 
 ## العربية
+
+## WinIsland 1.1.7 (إصدار مستقر)
+
+أداة Dynamic Island حديثة ومتعددة الوظائف لنظام Windows.
+
+### سجل التغييرات
+
+- **محطة نقل الملفات**: اسحب أي ملف مباشرة إلى الجزيرة فيتحول فورًا إلى عنصر ملف قابل للسحب (إشارة إلى المسار فقط، دون نسخ الملف)؛ ثم اسحبه إلى مستكشف الملفات أو أي تطبيق آخر لنقله بسهولة
+
+- **تنظيف تلقائي عند خروج التطبيق**: عند إغلاق تطبيق الوسائط وعدم وجود جلسة تشغيل جديدة، تمسح الجزيرة فورًا معلومات الأغنية القديمة
+
+- **رسوم متحركة أكثر سلاسة**: إعادة التموضع والتمرير التلقائي للكلمات يستخدمان تليينًا أنعم (إعادة التموضع ~430 مللي ثانية) لحركة أكثر استمرارية
+
+- **إظهار الإصدار في صفحة حول**: الإعدادات ← حول يعرض الآن الإصدار الكامل (مثل WinIsland 1.1.7)
+
+- **الاستقرار والأداء**: تحسين اكتشاف حالة جلسة الوسائط (فشل قراءة حالة التشغيل يُعتبر نهاية الوسائط)؛ حماية من الاهتزاز المتزامن في حركة الموقع؛ ملف مستقل أصغر
 
 ## WinIsland 1.1.6 (إصدار مستقر)
 
@@ -1998,6 +2094,22 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 
 ## Русский
 
+## WinIsland 1.1.7 (Стабильный)
+
+Современный, многофункциональный виджет Dynamic Island для Windows.
+
+### Журнал изменений
+
+- **Перевалочный пункт файлов**: перетащите любой файл прямо на остров — он мгновенно превратится в перетаскиваемый элемент (только ссылка на путь, без копирования файла); затем перетащите его в проводник или любое другое приложение, чтобы быстро переместить
+
+- **Очистка при выходе из приложения**: когда медиаприложение закрывается и нет новой сессии воспроизведения, остров сразу очищает устаревшую информацию о треке
+
+- **Более плавные анимации**: перемещение и автопрокрутка текста песен используют более мягкое сглаживание (перемещение ~430 мс) для более непрерывного движения
+
+- **Версия на странице «О программе»**: Настройки → О программе теперь показывает полную версию (например, WinIsland 1.1.7)
+
+- **Стабильность и производительность**: улучшено определение состояния медиасессии (невозможность чтения состояния воспроизведения считается завершением медиа); защита от одновременных колебаний анимации положения; меньше автономный однофайловый сборка
+
 ## WinIsland 1.1.6 (Стабильный)
 
 Современный, многофункциональный виджет Dynamic Island для Windows.
@@ -2328,6 +2440,22 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 ---
 
 ## Português
+
+## WinIsland 1.1.7 (Estável)
+
+Um widget Dynamic Island moderno e multifuncional para Windows.
+
+### Registro de alterações
+
+- **Estação de transferência de arquivos**: solte qualquer arquivo diretamente na ilha e ele se torna instantaneamente um item de arquivo arrastável (somente referência de caminho, sem copiar o arquivo); arraste-o para o Explorador de Arquivos ou qualquer outro aplicativo para movê-lo rapidamente
+
+- **Limpeza ao sair do reprodutor**: quando um aplicativo de mídia fecha e não há nova sessão de reprodução, a ilha limpa imediatamente as informações antigas da música
+
+- **Animações mais suaves**: o reposicionamento e a rolagem automática da letra usam uma suavização mais suave (reposicionamento ~430 ms) para um movimento mais contínuo
+
+- **Versão na página Sobre**: Configurações → Sobre agora mostra a versão completa (ex.: WinIsland 1.1.7)
+
+- **Estabilidade e desempenho**: detecção aprimorada do estado da sessão de mídia (falha ao ler o estado de reprodução é tratada como fim da mídia); proteção contra vibração concorrente na animação de posição; build autônomo de arquivo único menor
 
 ## WinIsland 1.1.6 (Estável)
 

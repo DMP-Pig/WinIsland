@@ -65,7 +65,8 @@ public sealed class MediaCoordinator : IDisposable
             if (snapshot is null)
             {
                 await _smtc.PushAsync(useCachedTrack: true);
-                snapshot = _smtc.LastSnapshot;
+                // 无活跃会话时把快照视为 null：媒体应用退出后立即清除，不再保留旧曲目
+                snapshot = _smtc.HasActiveSession ? _smtc.LastSnapshot : null;
             }
 
             // 3) Window-title fallback（无媒体时每 5 秒扫一次，降低空闲 CPU）

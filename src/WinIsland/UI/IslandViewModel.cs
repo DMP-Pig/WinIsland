@@ -655,6 +655,70 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private IReadOnlyList<IslandComponent> _compactItems = Array.Empty<IslandComponent>();
     public IReadOnlyList<IslandComponent> CompactItems { get => _compactItems; private set => Set(ref _compactItems, value); }
 
+    // ── 文件中转站（拖文件上岛 → 组件显示 → 拖出到其他应用 / 资源管理器）────
+    /// <summary>中转站中的文件项：Name=显示的文件名，Path=原始完整路径（拖出时还原）。</summary>
+    public sealed record FileTransferItem(string Name, string Path);
+
+    private readonly List<FileTransferItem> _fileTransferItems = new();
+    /// <summary>当前中转文件列表（只保留路径引用，不复制文件）。</summary>
+    public IReadOnlyList<FileTransferItem> FileTransferItems => _fileTransferItems;
+
+    /// <summary>是否已有中转文件（驱动 FileTransfer 组件出现/消失）。</summary>
+    public bool HasFileTransfer => _fileTransferItems.Count > 0;
+
+    private string _fileTransferSummary = string.Empty;
+    /// <summary>组件显示文字：单文件为文件名，多文件为「首个文件名 +N」。</summary>
+    public string FileTransferSummary { get => _fileTransferSummary; private set => Set(ref _fileTransferSummary, value); }
+
+    private string _fileTransferToolTip = string.Empty;
+    /// <summary>悬停提示：列出全部中转文件完整路径。</summary>
+    public string FileTransferToolTip { get => _fileTransferToolTip; private set => Set(ref _fileTransferToolTip, value); }
+
+    /// <summary>「×」按钮提示。</summary>
+    public string FileTransferRemoveTip => Localization.Get("FileTransfer_Remove");
+
+    /// <summary>把拖入的文件加入中转站（去重、上限 20 个），并刷新组件顺序。</summary>
+    public void AddFilesToTransfer(IEnumerable<string> paths)
+    {
+        var added = false;
+        foreach (var p in paths)
+        {
+            if (string.IsNullOrWhiteSpace(p)) continue;
+            var full = System.IO.Path.GetFullPath(p);
+            if (_fileTransferItems.Any(f => string.Equals(f.Path, full, StringComparison.OrdinalIgnoreCase))) continue;
+            if (_fileTransferItems.Count >= 20) break;
+            _fileTransferItems.Add(new FileTransferItem(System.IO.Path.GetFileName(full), full));
+            added = true;
+        }
+        if (!added) return;
+        RefreshFileTransfer();
+        RebuildCompactItems();
+    }
+
+    /// <summary>清空中转站（组件随之消失）。</summary>
+    public void ClearFileTransfer()
+    {
+        if (_fileTransferItems.Count == 0) return;
+        _fileTransferItems.Clear();
+        RefreshFileTransfer();
+        RebuildCompactItems();
+    }
+
+    private void RefreshFileTransfer()
+    {
+        if (_fileTransferItems.Count == 0)
+        {
+            FileTransferSummary = string.Empty;
+            FileTransferToolTip = string.Empty;
+            return;
+        }
+        var first = _fileTransferItems[0].Name;
+        FileTransferSummary = _fileTransferItems.Count == 1
+            ? first
+            : $"{first} +{_fileTransferItems.Count - 1}";
+        FileTransferToolTip = string.Join("\n", _fileTransferItems.Select(f => f.Path));
+    }
+
     /// <summary>按 WidgetOrder 重建紧凑胶囊组件顺序（播放时含歌曲信息，闲置时去掉）。</summary>
     private void RebuildCompactItems()
     {
@@ -664,7 +728,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         // 读取顺序，并补齐缺失的已知组件（兼容旧配置里只有 Time,Weather 的情况）
         var keys = (_settings.Current.WidgetOrder ?? "Time,Weather,Song")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-        foreach (var known in new[] { "Time", "Weather", "Date", "Cpu", "Ram", "Gpu", "Mic", "Cam", "Net", "Battery", "Song", "Volume", "CapsLock", "ScreenCap", "Recording", "VolumeTemp", "Usage", "FileCopy", "Download", "Clipboard", "Todo", "Timer", "Schedule", "Holiday", "Meeting" })
+        foreach (var known in new[] { "Time", "Weather", "Date", "Cpu", "Ram", "Gpu", "Mic", "Cam", "Net", "Battery", "Song", "Volume", "CapsLock", "ScreenCap", "Recording", "VolumeTemp", "Usage", "FileCopy", "Download", "Clipboard", "Todo", "Timer", "Schedule", "Holiday", "Meeting", "FileTransfer" })
             if (!keys.Contains(known)) keys.Add(known);
 
         // 「使用中」合并胶囊：把勾选的 Mic/Cam/Meeting/Recording 合并为单个状态胶囊（默认关闭）
@@ -724,6 +788,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             else if (key == "Disk" && ShowIdleDisk) items.Add(I("Disk"));
             else if (key == "InputMethod" && ShowIdleInputMethod) items.Add(I("InputMethod"));
             else if (key == "QuickToggles" && ShowIdleQuickToggles) items.Add(I("QuickToggles"));
+            else if (key == "FileTransfer" && HasFileTransfer) items.Add(I("FileTransfer"));
         }
 
         // 内容未变化时不重建，避免每个快照（每秒）都重创建组件导致闪烁

@@ -35,6 +35,7 @@ public static class ComponentIcons
         ["VolumeTemp"] = "",
         ["Volume"] = "",
         ["Usage"] = "",
+        ["FileTransfer"] = "",
         ["FileCopy"] = "",
         ["Download"] = "",
     };
