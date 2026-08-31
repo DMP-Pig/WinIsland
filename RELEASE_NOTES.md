@@ -12,6 +12,19 @@
 
 ## 简体中文
 
+## WinIsland 1.1.8（正式版 / Stable）
+
+一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新内容
+
+- **动画更快更利落**：展开/收起从约 1.1 秒缩短至约 0.7 秒，弹簧更硬朗、回弹更干脆，不再软绵绵、慢吞吞
+
+- **全局动效提速**：组件尺寸过渡、内容错峰淡入、位置重定位（约 430ms → 320ms）、上岛推送、淡出隐藏等所有动画同步加快约 30%–35%，整体响应更快、更跟手
+
+- **动效皮肤统一提速**：iOS 弹簧 / 柔和 / 弹性 / 简洁渐隐四种动效皮肤基准时长同步缩短，保持各自风格但整体更利落
+
+
 ## WinIsland 1.1.7（正式版 / Stable）
 
 一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
@@ -358,6 +371,19 @@
 ---
 
 ## 繁體中文
+
+## WinIsland 1.1.8（正式版 / Stable）
+
+一款現代化、多功能的 Windows 靈動島元件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新內容
+
+- **動畫更快更俐落**：展開/收起從約 1.1 秒縮短至約 0.7 秒，彈簧更硬朗、回彈更乾脆，不再軟綿綿、慢吞吞
+
+- **全域動效提速**：元件尺寸過渡、內容錯峰淡入、位置重定位（約 430ms → 320ms）、上島推送、淡出隱藏等所有動畫同步加快約 30%–35%，整體反應更快、更跟手
+
+- **動效皮膚統一提速**：iOS 彈簧 / 柔和 / 彈性 / 簡潔漸隱四種動效皮膚基準時長同步縮短，保持各自風格但整體更俐落
+
 
 ## WinIsland 1.1.7（正式版 / Stable）
 
@@ -706,6 +732,19 @@
 
 ## English
 
+## WinIsland 1.1.8 (Stable)
+
+A modern, multi-functional Dynamic Island widget for Windows.
+
+### What's New
+
+- **Snappier, faster animations**: expand/collapse shortened from ~1.1s to ~0.7s; the spring is firmer with a crisper settle — no more sluggish, mushy motion
+
+- **Global motion speed-up**: component size transitions, staggered content fades, repositioning (~430ms → 320ms), island pushes, and fade-out hiding are all ~30%–35% faster — snappier and more responsive
+
+- **All animation skins accelerated**: iOS Spring / Soft / Elastic / Fade share the same reduced base durations, keeping their character but feeling snappier overall
+
+
 ## WinIsland 1.1.7 (Stable)
 
 A modern, multi-functional Dynamic Island widget for Windows.
@@ -1052,6 +1091,19 @@ A modern, multi-functional Dynamic Island widget for Windows.
 ---
 
 ## Español
+
+## WinIsland 1.1.8 (Estable)
+
+Un widget moderno y multifuncional de Dynamic Island para Windows.
+
+### Novedades
+
+- **Animaciones más rápidas y ágiles**: expandir/contraer se reduce de ~1,1 s a ~0,7 s; el resorte es más firme y con un asentamiento más nítido, sin movimiento lento ni blando
+
+- **Aceleración global del movimiento**: las transiciones de tamaño de componentes, fundidos escalonados, reposicionamiento (~430 ms → 320 ms), pulsaciones en la isla y desvanecimientos se aceleran ~30–35 %: más ágiles y receptivas
+
+- **Todos los estilos de animación acelerados**: iOS Spring / Soft / Elastic / Fade comparten las mismas duraciones base reducidas, manteniendo su carácter pero con una sensación más ágil
+
 
 ## WinIsland 1.1.7 (Estable)
 
@@ -1400,6 +1452,19 @@ Un widget Dynamic Island moderno y multifuncional para Windows.
 
 ## Français
 
+## WinIsland 1.1.8 (Stable)
+
+Un widget moderne et multifonctionnel de Dynamic Island pour Windows.
+
+### Nouveautés
+
+- **Animations plus rapides et plus nettes** : l'expansion/réduction passe d'environ 1,1 s à environ 0,7 s ; le ressort est plus ferme avec un arrêt plus net — fini le mouvement lent et mollasson
+
+- **Accélération globale du mouvement** : transitions de taille des composants, fondus décalés, repositionnement (~430 ms → 320 ms), notifications sur l'île et disparition en fondu sont ~30–35 % plus rapides — plus réactif
+
+- **Tous les styles d'animation accélérés** : iOS Spring / Soft / Elastic / Fade partagent les mêmes durées de base réduites, conservant leur caractère avec une sensation plus vive
+
+
 ## WinIsland 1.1.7 (Stable)
 
 Un widget Dynamic Island moderne et multifonctionnel pour Windows.
@@ -1746,6 +1811,19 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 ---
 
 ## العربية
+
+## WinIsland 1.1.8 (مستقر)
+
+أداة Dynamic Island عصرية ومتعددة الوظائف لنظام Windows.
+
+### المستجدات
+
+- **حركات أسرع وأكثر حسمًا**: توسيع/طي الأداة يقلّ من ~1.1 ثانية إلى ~0.7 ثانية؛ الربيع أصبح أكثر صلابة واستقرارًا أكثر وضوحًا — بلا حركة بطيئة أو مترهلة
+
+- **تسريع شامل للحركة**: انتقالات حجم المكوّنات، وتلاشي المحتوى المتدرج، وإعادة تحديد الموضع (~430 مللي ثانية ← 320 مللي ثانية)، ودفع المحتوى إلى الجزيرة، والإخفاء بالتلاشي — كلها أسرع بنحو 30–35%
+
+- **تسريع جميع أنماط الحركة**: أنماط iOS Spring / Soft / Elastic / Fade تشترك في مدد أساسية أقصر، مع الحفاظ على طابعها لكن بإحساس أسرع
+
 
 ## WinIsland 1.1.7 (إصدار مستقر)
 
@@ -2094,6 +2172,19 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 
 ## Русский
 
+## WinIsland 1.1.8 (Stable)
+
+Современный многофункциональный виджет Dynamic Island для Windows.
+
+### Что нового
+
+- **Быстрее и чётче**: разворачивание/сворачивание сокращено с ~1,1 с до ~0,7 с; пружина стала жёстче, отклик чётче — никакой вялости и плавности «каши»
+
+- **Ускорение всех анимаций**: переходы размеров компонентов, каскадное появление контента, перемещение (~430 мс → 320 мс), push-уведомления на остров и скрытие с затуханием ускорены примерно на 30–35 %
+
+- **Все скины анимации ускорены**: iOS Spring / Soft / Elastic / Fade используют одинаковые сокращённые базовые длительности, сохраняя свой характер, но ощущаются более отзывчивыми
+
+
 ## WinIsland 1.1.7 (Стабильный)
 
 Современный, многофункциональный виджет Dynamic Island для Windows.
@@ -2440,6 +2531,19 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 ---
 
 ## Português
+
+## WinIsland 1.1.8 (Estável)
+
+Um widget moderno e multifuncional de Dynamic Island para Windows.
+
+### Novidades
+
+- **Animações mais rápidas e ágeis**: expandir/contrair foi reduzido de ~1,1 s para ~0,7 s; a mola está mais firme com um assentamento mais nítido — sem movimento lento ou mole
+
+- **Aceleração global do movimento**: transições de tamanho dos componentes, fades escalonados de conteúdo, reposicionamento (~430 ms → 320 ms), pushes na ilha e ocultação por fade ficam ~30–35% mais rápidos
+
+- **Todos os estilos de animação acelerados**: iOS Spring / Soft / Elastic / Fade compartilham as mesmas durações básicas reduzidas, mantendo o seu caráter, mas com sensação mais ágil
+
 
 ## WinIsland 1.1.7 (Estável)
 

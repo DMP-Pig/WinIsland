@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -855,7 +855,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         EnsureWindowSizeFits(); // 先扩宽窗口，避免卡片动画期间超出窗口被裁剪
         var (styleEase, styleMs) = GetSizeAnimationStyle(expand: false);
         var lm = _settings.Current.LowPowerMode ? 0.6 : 1.0;
-        var dur = (int)Math.Clamp(520 * (styleMs / 680.0), 340, 720) * lm;
+        var dur = (int)Math.Clamp(360 * (styleMs / 680.0), 220, 460) * lm;
         var sb = new Storyboard();
         AddAnim(sb, Card, FrameworkElement.WidthProperty, CompactWidth, (int)dur, styleEase);
         AddAnim(sb, Card, FrameworkElement.HeightProperty, CompactHeight, (int)dur, styleEase);
@@ -873,8 +873,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         var (styleEase, styleMs) = GetSizeAnimationStyle(expand: true);
         var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
         var lm = _settings.Current.LowPowerMode ? 0.6 : 1.0;
-        var scaleDur = (int)(Math.Min(460, styleMs) * lm);
-        AddAnim(sb, CompactPushCard, UIElement.OpacityProperty, 1, (int)(320 * lm), smooth);
+        var scaleDur = (int)(Math.Min(340, styleMs) * lm);
+        AddAnim(sb, CompactPushCard, UIElement.OpacityProperty, 1, (int)(220 * lm), smooth);
         AddAnim(sb, CompactPushScale, ScaleTransform.ScaleXProperty, 1, scaleDur, styleEase);
         AddAnim(sb, CompactPushScale, ScaleTransform.ScaleYProperty, 1, scaleDur, styleEase);
         Timeline.SetDesiredFrameRate(sb, 60); // 稳定 60fps（120Hz 显示器上也按 60fps 渲染，减少开销不掉帧）
@@ -1381,7 +1381,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         if (!IsVisible) return;
         var sb = new Storyboard();
         // 非线性淡出：先快后慢（EaseIn），消失过程不匀速、不生硬
-        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(260))
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(210))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn },
         };
@@ -1495,16 +1495,16 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         AddAnim(sb, Card, FrameworkElement.HeightProperty, height, (int)(styleSizeMs * lm), styleEase);
 
         // 展开内容：错峰淡入 + 轻微缩放/位移（展开延迟 95ms，让尺寸先动、内容跟上）
-        var contentDelay = TimeSpan.FromMilliseconds((expand ? 120 : 0) * lm);
-        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, (int)((expand ? 520 : 350) * lm), smooth, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, (int)((expand ? 820 : 700) * lm), styleEase, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, (int)((expand ? 820 : 700) * lm), styleEase, contentDelay);
-        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, (int)((expand ? 820 : 700) * lm), smooth, contentDelay);
+        var contentDelay = TimeSpan.FromMilliseconds((expand ? 80 : 0) * lm);
+        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, (int)((expand ? 380 : 260) * lm), smooth, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, (int)((expand ? 600 : 500) * lm), styleEase, contentDelay);
+        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, (int)((expand ? 600 : 500) * lm), styleEase, contentDelay);
+        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, (int)((expand ? 600 : 500) * lm), smooth, contentDelay);
 
         // 胶囊行：展开后淡出（由大图区接管）；收起时立即恢复完全不透明，
         // 避免缩回瞬间胶囊内容还在淡入而出现"空内容"
         if (expand)
-            AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, 400, smooth, TimeSpan.FromMilliseconds(120));
+            AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, (int)(300 * lm), smooth, TimeSpan.FromMilliseconds(80));
         else
             PillRow.Opacity = 1;
 
@@ -1557,18 +1557,18 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         switch (_settings.Current.AnimationStyle)
         {
             case "Soft":
-                return (new SoftSpringEase(), expand ? 1180 : 1000);
+                return (new SoftSpringEase { Damping = 15, Stiffness = 220, Mass = 1 }, expand ? 760 : 660);
             case "Elastic":
                 return (new ElasticEase
                 {
                     Oscillations = 1,
                     Springiness = 6,
                     EasingMode = EasingMode.EaseOut,
-                }, expand ? 980 : 820);
+                }, expand ? 680 : 600);
             case "Fade":
-                return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? 720 : 600);
+                return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? 520 : 440);
             default: // Spring
-                return (new SpringEase { Damping = 12, Stiffness = 62, Mass = 1 }, expand ? 1100 : 940);
+                return (new SpringEase { Damping = 13, Stiffness = 200, Mass = 1 }, expand ? 700 : 600);
         }
     }
     private void AddAnim(Storyboard sb, DependencyObject target, DependencyProperty prop, double to, int ms, IEasingFunction easing, TimeSpan? beginTime = null)
@@ -1767,8 +1767,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         _positionStoryboard?.Stop(); // 连续重定位先停旧动画，避免并发抖动
         var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
         var sb = new Storyboard();
-        AddAnim(sb, this, Window.LeftProperty, left, 430, easing);
-        AddAnim(sb, this, Window.TopProperty, top, 430, easing);
+        AddAnim(sb, this, Window.LeftProperty, left, 320, easing);
+        AddAnim(sb, this, Window.TopProperty, top, 320, easing);
         sb.Completed += (_, _) => { if (ReferenceEquals(_positionStoryboard, sb)) _positionStoryboard = null; };
         Timeline.SetDesiredFrameRate(sb, 60);
         _positionStoryboard = sb;
