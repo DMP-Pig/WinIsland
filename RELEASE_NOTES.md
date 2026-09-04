@@ -12,6 +12,20 @@
 
 ## 简体中文
 
+## WinIsland 1.1.9（正式版 / Stable）
+
+一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新内容
+
+- **动画更丝滑连贯**：展开/收起与歌词自动滚动改为时间基准缓动（与帧率无关），在 60fps 与高刷新率（120Hz）显示器上表现一致，快速连续操作不再「动一下停一下」
+
+- **播放时 CPU 占用进一步降低**：进度插值上报频率由 10Hz 降为 5Hz，逐字卡拉OK由控件内部按墙钟 60fps 连续推进——观感不变，后台更省电
+
+- **专辑封面解码缓存**：同一封面只解码一次并复用（自动保留最近 24 张），消除媒体会话每秒上报带来的重复磁盘 IO 与内存抖动
+
+- **歌词滚动细化**：仅在展开且可见时滚动，目标已接近时直接落位，切句不再抖动、空转更少
+
 ## WinIsland 1.1.8（正式版 / Stable）
 
 一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
@@ -371,6 +385,20 @@
 ---
 
 ## 繁體中文
+
+## WinIsland 1.1.9（正式版 / Stable）
+
+一款現代化、多功能的 Windows 動態島元件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新內容
+
+- **動畫更絲滑連貫**：展開/收起與歌詞自動捲動改為時間基準緩動（與幀率無關），在 60fps 與高更新率（120Hz）螢幕上表現一致，快速連續操作不再「動一下停一下」
+
+- **播放時 CPU 佔用再降低**：進度插值上報頻率由 10Hz 降為 5Hz，逐字卡拉OK由控制項內部依牆鐘 60fps 連續推進——觀感不變，後台更省電
+
+- **專輯封面解碼快取**：同一封面只解碼一次並重複使用（自動保留最近 24 張），消除媒體會話每秒上報造成的重複磁碟 IO 與記憶體抖動
+
+- **歌詞捲動細化**：僅在展開且可見時捲動，目標已接近時直接定位，切句不再抖動、空轉更少
 
 ## WinIsland 1.1.8（正式版 / Stable）
 
@@ -732,6 +760,20 @@
 
 ## English
 
+## WinIsland 1.1.9 (Stable)
+
+A modern, multi-functional Dynamic Island widget for Windows.
+
+### What's New
+
+- **Silkier, more coherent animations**: expand/collapse and lyric auto-scroll now use time-based easing (frame-rate independent), identical on 60fps and high-refresh (120Hz) displays — rapid consecutive actions no longer stutter or jerk
+
+- **Even lower CPU while playing**: progress interpolation is reported at 5Hz while per-word karaoke advances continuously at 60fps from wall-clock inside the control — same visuals, less background power
+
+- **Album-art decoding cache**: each cover is decoded once and reused (the most recent 24 are auto-evicted), eliminating repeated disk I/O and memory churn from per-second media-session updates
+
+- **Lyric-scroll refinements**: scrolling only runs when expanded and visible, and snaps to the target when nearly reached — no jitter on fast line changes, less idle ticking
+
 ## WinIsland 1.1.8 (Stable)
 
 A modern, multi-functional Dynamic Island widget for Windows.
@@ -1091,6 +1133,20 @@ A modern, multi-functional Dynamic Island widget for Windows.
 ---
 
 ## Español
+
+## WinIsland 1.1.9 (Estable)
+
+Una moderna y multifuncional Dynamic Island para Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Novedades
+
+- **Animaciones más fluidas y coherentes**: expandir/contraer y el desplazamiento automático de la letra usan ahora una interpolación basada en el tiempo (independiente de la frecuencia de cuadros), idéntica en pantallas de 60fps y de alta frecuencia (120Hz) — las acciones rápidas consecutivas ya no se entrecortan
+
+- **Menor uso de CPU durante la reproducción**: la interpolación del progreso se notifica a 5Hz mientras el karaoke palabra por palabra avanza continuamente a 60fps mediante el reloj interno del control — misma apariencia, menos consumo en segundo plano
+
+- **Caché de decodificación de carátulas**: cada carátula se decodifica una sola vez y se reutiliza (las 24 más recientes se eliminan automáticamente), eliminando la E/S de disco repetida y la fluctuación de memoria de las actualizaciones por segundo de la sesión multimedia
+
+- **Mejoras en el desplazamiento de la letra**: solo se desplaza cuando está expandido y visible, y se asienta al alcanzar el objetivo — sin tirones al cambiar de línea, con menos repeticiones innecesarias
 
 ## WinIsland 1.1.8 (Estable)
 
@@ -1452,6 +1508,20 @@ Un widget Dynamic Island moderno y multifuncional para Windows.
 
 ## Français
 
+## WinIsland 1.1.9 (Stable)
+
+Une Dynamic Island moderne et polyvalente pour Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Nouveautés
+
+- **Animations plus fluides et cohérentes** : le déploiement/repli et le défilement automatique des paroles utilisent désormais une interpolation basée sur le temps (indépendante du nombre d'images), identique sur les écrans 60fps et haute fréquence (120Hz) — les actions rapides et successives ne saccadent plus
+
+- **CPU encore réduit pendant la lecture** : l'interpolation de la progression est signalée à 5Hz tandis que le karaoké mot à mot avance en continu à 60fps via l'horloge interne du contrôle — même rendu, moins d'énergie en arrière-plan
+
+- **Cache de décodage des pochettes** : chaque pochette est décodée une seule fois et réutilisée (les 24 plus récentes sont automatiquement évincées), éliminant les E/S disque répétées et les fluctuations de mémoire des mises à jour par seconde de la session multimédia
+
+- **Améliorations du défilement des paroles** : le défilement ne s'exécute que lorsque la carte est déployée et visible, avec un positionnement précis à l'approche de la cible — pas de saccades lors des changements de ligne rapides
+
 ## WinIsland 1.1.8 (Stable)
 
 Un widget moderne et multifonctionnel de Dynamic Island pour Windows.
@@ -1811,6 +1881,20 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 ---
 
 ## العربية
+
+## WinIsland 1.1.9 (مستقر)
+
+جزيرة ديناميكية حديثة ومتعددة الوظائف لنظام ويندوز. A modern, multi-functional Dynamic Island widget for Windows.
+
+### ما الجديد
+
+- **حركات أكثر سلاسة واتساقاً**: فتح/طي الجزيرة والتمرير التلقائي للكلمات يستخدمان الآن استيفاءً زمنياً (مستقلاً عن معدل الإطارات)، بنفس النتيجة على شاشات 60fps وعالية التحديث (120Hz) — لا مزيد من التوقف المتقطع عند تنفيذ إجراءات متتابعة سريعة
+
+- **خفض إضافي لاستهلاك المعالج أثناء التشغيل**: يتم إبلاغ استيفاء التقدم بمعدل 5Hz بينما يتقدم الكاريوكي حرفاً بحرف بشكل مستمر بمعدل 60fps عبر الساعة الداخلية للعنصر — نفس المظهر مع استهلاك أقل في الخلفية
+
+- **تخزين مؤقت لفك أغلفة الألبومات**: يُفكّ كل غلاف مرة واحدة ويُعاد استخدامه (يتم إخراج أحدث 24 تلقائياً)، مما يلغي عمليات القراءة المتكررة من القرص وتقلب الذاكرة الناتجة عن تحديثات جلسة الوسائط كل ثانية
+
+- **تحسينات تمرير الكلمات**: يتم التمرير فقط عند فتح الجزيرة وظهورها، مع تثبيت دقيق عند الاقتراب من الهدف — بلا اهتزاز عند تغيير الأسطر السريع
 
 ## WinIsland 1.1.8 (مستقر)
 
@@ -2172,6 +2256,20 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 
 ## Русский
 
+## WinIsland 1.1.9 (Stable)
+
+Современный многофункциональный Dynamic Island для Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Что нового
+
+- **Более плавные и согласованные анимации**: раскрытие/сворачивание и автоматическая прокрутка текста теперь используют временную интерполяцию (независимую от частоты кадров), одинаковую на 60fps и дисплеях с высокой частотой (120Гц) — быстрые последовательные действия больше не дёргаются
+
+- **Ещё ниже расход CPU при воспроизведении**: интерполяция прогресса отдаётся на 5Гц, а покадровый караоке продвигается непрерывно на 60fps по внутренним часам элемента — тот же вид, меньше энергии в фоне
+
+- **Кэш декодирования обложек**: каждая обложка декодируется один раз и переиспользуется (последние 24 автоматически вытесняются), устраняя повторные операции ввода-вывода и скачки памяти от посекундных обновлений медиа-сессии
+
+- **Улучшения прокрутки текста**: прокрутка выполняется только при раскрытой и видимой карточке, с точным позиционированием при приближении к цели — без дрожания при быстрой смене строк
+
 ## WinIsland 1.1.8 (Stable)
 
 Современный многофункциональный виджет Dynamic Island для Windows.
@@ -2531,6 +2629,20 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 ---
 
 ## Português
+
+## WinIsland 1.1.9 (Estável)
+
+Um Dynamic Island moderno e multifuncional para Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Novidades
+
+- **Animações mais suaves e coerentes**: expandir/recolher e a rolagem automática da letra agora usam interpolação baseada em tempo (independente da taxa de quadros), idêntica em telas de 60fps e de alta taxa (120Hz) — ações rápidas e consecutivas não engasgam mais
+
+- **Menos uso de CPU durante a reprodução**: a interpolação do progresso é reportada a 5Hz enquanto o karaokê palavra por palavra avança continuamente a 60fps pelo relógio interno do controle — mesma aparência, menos consumo em segundo plano
+
+- **Cache de decodificação de capas**: cada capa é decodificada uma única vez e reutilizada (as 24 mais recentes são removidas automaticamente), eliminando I/O repetido de disco e oscilação de memória das atualizações por segundo da sessão de mídia
+
+- **Melhorias na rolagem da letra**: rola apenas quando expandida e visível, com posicionamento preciso ao se aproximar do alvo — sem tremores em mudanças rápidas de linha
 
 ## WinIsland 1.1.8 (Estável)
 

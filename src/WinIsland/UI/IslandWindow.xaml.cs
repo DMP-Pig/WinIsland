@@ -1774,11 +1774,15 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         _positionStoryboard = sb;
         sb.Begin();
     }
+
     // ── 歌词自动滚动 ──────────────────────────────────────────
 
     private bool _lyricsScrollQueued;
     private readonly DispatcherTimer _lyricsScrollTimer;
     private double _lyricsScrollTarget;
+    private double _lyricsScrollFrom;      // 本次滚动起点偏移（时间基准缓动用）
+    private DateTime _lyricsScrollStartUtc; // 本次滚动起始墙钟
+    private const double LyricsScrollMs = 420; // 单次滚动时长（毫秒），60fps / 120Hz 下均一致
 
     private void QueueLyricsScroll(int index)
     {
@@ -1797,6 +1801,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private void ScrollLyricsTo(int index)
     {
         if (LyricsList.Items.Count == 0) return;
+        if (!_vm.IsExpanded || !IsVisible || !IsLoaded) { _lyricsScrollTimer.Stop(); return; } // 仅在展开且可见时滚动，避免空转
         index = Math.Clamp(index, 0, LyricsList.Items.Count - 1);
         var container = LyricsList.ItemContainerGenerator.ContainerFromIndex(index) as FrameworkElement;
         if (container is null) return;
@@ -1806,22 +1811,40 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         // 视口相对坐标 + 当前偏移 = 内容坐标；再减去半个视口/加上半个行高使当前句居中
         var target = viewer.VerticalOffset + relY - viewer.ViewportHeight / 2 + container.ActualHeight / 2;
         target = Math.Max(0, target);
-        _lyricsScrollTarget = target;
-        _lyricsScrollTimer.Start();
-    }
 
-    /// <summary>平滑滚动：每帧按比例逼近目标偏移（当前句居中）。</summary>
-    private void SmoothScrollStep()
-    {
-        var current = LyricsScroll.VerticalOffset;
-        var delta = _lyricsScrollTarget - current;
-        if (Math.Abs(delta) < 0.3)
+        // 目标与当前十分接近：直接落位，不再启动画（避免高频切句时抖动）
+        if (Math.Abs(target - viewer.VerticalOffset) < 0.5)
         {
-            LyricsScroll.ScrollToVerticalOffset(_lyricsScrollTarget);
             _lyricsScrollTimer.Stop();
             return;
         }
+        _lyricsScrollTarget = target;
+        _lyricsScrollFrom = viewer.VerticalOffset;
+        _lyricsScrollStartUtc = DateTime.UtcNow;
+        if (!_lyricsScrollTimer.IsEnabled) _lyricsScrollTimer.Start();
+    }
 
-        LyricsScroll.ScrollToVerticalOffset(current + delta * 0.18);
+    /// <summary>
+    /// 平滑滚动：时间基准三次缓出（与帧率无关，60fps / 120Hz 显示器表现一致、丝滑连贯）。
+    /// 快速连续切句时以最近一次目标重新起算，不会“一动一停”。
+    /// </summary>
+    private void SmoothScrollStep()
+    {
+        if (!_vm.IsExpanded || !IsVisible || !IsLoaded || LyricsList.Items.Count == 0)
+        {
+            _lyricsScrollTimer.Stop();
+            return;
+        }
+        var viewer = LyricsScroll;
+        var elapsed = (DateTime.UtcNow - _lyricsScrollStartUtc).TotalMilliseconds;
+        var t = Math.Clamp(elapsed / LyricsScrollMs, 0, 1);
+        var eased = 1 - Math.Pow(1 - t, 3); // 三次缓出：先快后慢、收尾柔和
+        var offset = _lyricsScrollFrom + (_lyricsScrollTarget - _lyricsScrollFrom) * eased;
+        viewer.ScrollToVerticalOffset(offset);
+        if (t >= 1)
+        {
+            viewer.ScrollToVerticalOffset(_lyricsScrollTarget); // 精确落位，消除累计误差
+            _lyricsScrollTimer.Stop();
+        }
     }
 }

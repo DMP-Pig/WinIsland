@@ -34,7 +34,7 @@ public class KaraokeTextBlock : TextBlock
         DependencyProperty.Register(nameof(Words), typeof(IReadOnlyList<TtmlWord>), typeof(KaraokeTextBlock),
             new FrameworkPropertyMetadata(null, OnRenderPropsChanged));
 
-    /// <summary>当前播放位置（秒，绝对时间，含歌词偏移；由 ViewModel 以 ≈10Hz 更新）。</summary>
+    /// <summary>当前播放位置（秒，绝对时间，含歌词偏移；由 ViewModel 以约 5Hz 更新，控件内部按墙钟 60fps 连续推进）。</summary>
     public static readonly DependencyProperty PositionSecondsProperty =
         DependencyProperty.Register(nameof(PositionSeconds), typeof(double), typeof(KaraokeTextBlock),
             new FrameworkPropertyMetadata(0.0, (d, e) => ((KaraokeTextBlock)d).OnPositionChanged((double)e.NewValue)));

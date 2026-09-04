@@ -129,8 +129,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         _coordinator.SessionsChanged += (_, _) => RefreshMediaSessions();
         RefreshMediaSessions();
         Localization.LanguageChanged += (_, _) => RaiseAllText();
-
-        _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+        _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) }; // 进度插值 5Hz：进度条按秒显示足够，逐字卡拉OK由控件内部按墙钟连续推进（60fps），降低播放时 CPU 占用
         _progressTimer.Tick += (_, _) => AdvanceProgress();
         // 不立即启动：有媒体快照时（OnSnapshotChanged）才启动，空闲/无媒体时停用，降低后台占用
 
@@ -407,6 +406,9 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public bool HasSourceDetail => !string.IsNullOrEmpty(_sourceDetail);
 
     private ImageSource? _artwork;
+    // 封面缓存：同一路径只解码一次并复用（SMTC/Cider 每秒上报同一封面，避免反复 IO + 内存抖动）
+    private readonly Dictionary<string, ImageSource> _artworkCache = new(StringComparer.OrdinalIgnoreCase);
+    private const int ArtworkCacheMax = 24; // 近期封面上限，超出淘汰最旧，防止无限增长
     public ImageSource? Artwork { get => _artwork; private set => Set(ref _artwork, value); }
 
     // ── Playback ───────────────────────────────────────────────
@@ -2022,7 +2024,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(VolumeText));
 
         if (snapshot.Track.ArtworkPath.Length > 0)
-            Artwork = LoadImage(snapshot.Track.ArtworkPath);
+            Artwork = GetArtwork(snapshot.Track.ArtworkPath);
         else
             Artwork = null;
 
@@ -2540,6 +2542,23 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     }
 
     // ── Helpers ────────────────────────────────────────────────
+    /// <summary>按路径取封面：优先命中缓存，未命中才解码一次并缓存（近似 LRU 淘汰）。</summary>
+    private ImageSource? GetArtwork(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return null;
+        if (_artworkCache.TryGetValue(path, out var cached)) return cached;
+        var img = LoadImage(path);
+        if (img is null) return null;
+        if (_artworkCache.Count >= ArtworkCacheMax)
+        {
+            // 淘汰最早插入的一项（Dictionary 保持插入序）
+            using var en = _artworkCache.Keys.GetEnumerator();
+            if (en.MoveNext()) _artworkCache.Remove(en.Current);
+        }
+        _artworkCache[path] = img;
+        return img;
+    }
+
     private static ImageSource? LoadImage(string path)
     {
         try

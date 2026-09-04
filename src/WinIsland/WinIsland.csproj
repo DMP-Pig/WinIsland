@@ -12,9 +12,9 @@
     <RootNamespace>WinIsland</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\winisland.ico</ApplicationIcon>
-    <Version>1.1.8</Version>
-    <AssemblyVersion>1.1.8.0</AssemblyVersion>
-    <FileVersion>1.1.8.0</FileVersion>
+    <Version>1.1.9</Version>
+    <AssemblyVersion>1.1.9.0</AssemblyVersion>
+    <FileVersion>1.1.9.0</FileVersion>
     <Authors>WinIsland</Authors>
     <Product>WinIsland</Product>
     <Description>macOS-style Dynamic Island for Windows - media controls, lyrics and more.</Description>
