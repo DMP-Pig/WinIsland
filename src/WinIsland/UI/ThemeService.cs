@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -174,8 +174,10 @@ public sealed class ThemeService
         AccentBrush = new SolidColorBrush(accent);
         AccentBorderBrush = new SolidColorBrush(Color.FromArgb(160, AccentColor.R, AccentColor.G, AccentColor.B));
 
-        // iOS 风格实心深色胶囊（不透明，避免透出桌面内容，视觉更干净）
-        CardBackground = new SolidColorBrush(Color.FromArgb(255, TintColor.R, TintColor.G, TintColor.B));
+        // iOS 风格液态玻璃胶囊：紧凑态更通透（88%），展开态由 GlassLayer 叠加变实（≈97%）
+        // 用户 Opacity 设置（0.3~1.0）整体缩放基础透明度，深色取色仍来自 TintColor
+        var compactAlpha = (byte)Math.Round(224 * Opacity);
+        CardBackground = new SolidColorBrush(Color.FromArgb(compactAlpha, TintColor.R, TintColor.G, TintColor.B));
 
         FreezeAll();
         ThemeChanged?.Invoke(this, EventArgs.Empty);

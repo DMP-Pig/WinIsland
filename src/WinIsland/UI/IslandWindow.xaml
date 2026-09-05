@@ -1,4 +1,4 @@
-﻿<Window x:Class="WinIsland.UI.IslandWindow"
+<Window x:Class="WinIsland.UI.IslandWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:conv="clr-namespace:WinIsland.UI.Converters"
@@ -178,6 +178,9 @@
             </Border.ContextMenu>
 
             <Grid>
+                <!-- 智能透明度分层（1.2.1）：紧凑态透明、展开态更实。GlassLayer 用主题底色叠加，
+                     展开时平滑升不透明度、收起时回落，配合封面取色（CoverTint）时自动归零不叠加。 -->
+                <Border x:Name="GlassLayer" IsHitTestVisible="False" Opacity="0"/>
                 <Grid x:Name="ContentGrid" Margin="10,6,10,6" VerticalAlignment="Center">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -484,12 +487,63 @@
                                 </StackPanel>
                             </DataTemplate>
                             <DataTemplate x:Key="VolumeTempItem">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0" Opacity="0">
+                                    <StackPanel.RenderTransform>
+                                        <TranslateTransform x:Name="VolumeTempTranslate" Y="6"/>
+                                    </StackPanel.RenderTransform>
+                                    <TextBlock Text="{Binding Icon}" FontFamily="{Binding Icon, Converter={StaticResource GlyphFont}}" FontSize="10" VerticalAlignment="Center" Margin="0,0,6,0"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                    <ProgressBar Width="58" Height="4" Maximum="1" VerticalAlignment="Center" Margin="0,0,6,0"
+                                                 Value="{Binding DataContext.VolumeTempPercent, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                        <ProgressBar.Template>
+                                            <ControlTemplate TargetType="ProgressBar">
+                                                <Grid>
+                                                    <Border CornerRadius="2" Background="{Binding SliderTrackBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#33FFFFFF}"/>
+                                                    <Border x:Name="PART_Indicator" CornerRadius="2" HorizontalAlignment="Left"
+                                                            Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"/>
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </ProgressBar.Template>
+                                    </ProgressBar>
                                     <TextBlock Text="{Binding DataContext.VolumeTempText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
                                 </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.22">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="6" To="0" Duration="0:0:0.22">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                    <DataTrigger Binding="{Binding DataContext.VolumeTempFading, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True">
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.26">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <CubicEase EasingMode="EaseIn"/>
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
+                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" To="6" Duration="0:0:0.26">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <CubicEase EasingMode="EaseIn"/>
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
                             </DataTemplate>
                             <DataTemplate x:Key="UsageItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
@@ -541,7 +595,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="SongItem">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Border Width="40" Height="40" CornerRadius="12" Margin="0,0,10,0"
+                                    <Border Tag="SongCover" Width="40" Height="40" CornerRadius="12" Margin="0,0,10,0"
                                             Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
                                         <Grid>
                                             <Image Source="{Binding DataContext.Artwork, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="UniformToFill"
@@ -910,15 +964,18 @@
                     </Border>
 
                     <!-- 大封面 + 标题/歌手/专辑 -->
-                    <Grid Visibility="{Binding ExpandedShowArtTitle, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                    <Grid x:Name="ArtTitleGrid" Visibility="{Binding ExpandedShowArtTitle, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Border x:Name="BigArt" Width="72" Height="72" CornerRadius="18" Cursor="Hand"
                                 BorderBrush="{Binding AccentBorderBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#336C5CE7}"
-                                BorderThickness="1"
+                                BorderThickness="1" RenderTransformOrigin="0.5,0.5"
                                 Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="BigArtScale" ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
                             <Grid>
                                 <Image Source="{Binding Artwork}" Stretch="UniformToFill"
                                        Visibility="{Binding Artwork, Converter={StaticResource NullToVis}}"/>
@@ -941,7 +998,7 @@
                     </Grid>
 
                     <!-- 进度条 -->
-                    <Grid Margin="0,10,0,0" Visibility="{Binding ExpandedShowProgress, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                    <Grid x:Name="ProgressGrid" Margin="0,10,0,0" Visibility="{Binding ExpandedShowProgress, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
@@ -959,7 +1016,7 @@
                     </Grid>
 
                     <!-- 控制行 -->
-                    <Grid Margin="0,6,0,0" Visibility="{Binding ExpandedShowControls, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                    <Grid x:Name="ControlsGrid" Margin="0,6,0,0" Visibility="{Binding ExpandedShowControls, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
@@ -1043,7 +1100,7 @@
                     </Button>
 
                     <!-- 歌词快捷操作：翻译开关 + 复制当前句 + 时间微调(#4) -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0"
+                    <StackPanel x:Name="LyricQuickOpsPanel" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0"
                                 Visibility="{Binding HasLyrics, Converter={StaticResource BoolToVis}}">
                         <Button Style="{StaticResource IconButton}" Padding="9,3" Margin="0,0,8,0" Click="LyricSourceSwitch_Click"
                                 Visibility="{Binding LyricSourcePickVisible, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Collapsed}"
@@ -1116,7 +1173,7 @@
                                Visibility="{Binding HasLyrics, Converter={StaticResource BoolToVisInvert}}"/>
 
                     <!-- 快捷操作按钮（展开卡片底部一排，可自定义） -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,2"
+                    <StackPanel x:Name="QuickActionsPanel" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,2"
                                 Visibility="{Binding HasQuickActions, Converter={StaticResource BoolToVis}}">
                         <ItemsControl ItemsSource="{Binding QuickActions}">
                             <ItemsControl.ItemsPanel>

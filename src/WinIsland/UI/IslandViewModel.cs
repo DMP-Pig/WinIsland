@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
@@ -675,9 +675,22 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public string ScreenshotStatusText { get => _screenshotStatusText; private set => Set(ref _screenshotStatusText, value); }
     private int _screenshotSecondsLeft;   // 截图指示剩余显示秒数（由 _widgetTimer 每秒递减）
     private string _recordingText = string.Empty;
+    private int _volumeTempGen;              // 音量指示代际计数：用于取消过期的淡出清理
     private string _volumeTempText = string.Empty;
     /// <summary>音量/静音临时上岛文本（调节音量后出现，几秒后自动消失）。</summary>
     public string VolumeTempText { get => _volumeTempText; private set => Set(ref _volumeTempText, value); }
+
+    private double _volumeTempPercent;
+    /// <summary>音量临时指示的进度条值（0..1，与 VolumeTempText 同步刷新）。</summary>
+    public double VolumeTempPercent { get => _volumeTempPercent; private set => Set(ref _volumeTempPercent, value); }
+
+    private bool _volumeTempFading;
+    /// <summary>音量指示消失前的淡出标志（True 时播放退场动画，随后从组件列表移除）。</summary>
+    public bool VolumeTempFading
+    {
+        get => _volumeTempFading;
+        private set { if (_volumeTempFading == value) return; _volumeTempFading = value; OnPropertyChanged(nameof(VolumeTempFading)); }
+    }
     private string _usageMergeText = string.Empty;
     /// <summary>「使用中」合并胶囊文本（麦克风/摄像头/会议/录屏合并为一个状态胶囊）。</summary>
     public string UsageMergeText { get => _usageMergeText; private set => Set(ref _usageMergeText, value); }
@@ -1493,7 +1506,7 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
                     case "Meeting": w += Math.Min(MeasureText(MeetingText, 11, 6) + 16, 160); break;
                     case "ScreenCap": w += MeasureText(ScreenshotStatusText, 11, 6) + 16; break;
                     case "Recording": w += Math.Min(MeasureText(RecordingText, 11, 6) + 16, 180); break;
-                    case "VolumeTemp": w += MeasureText(VolumeTempText, 11, 6) + 24; break;
+                    case "VolumeTemp": w += 10 + 6 + 58 + 6 + MeasureText(VolumeTempText, 11, 6) + 24; break;
                     case "Usage": w += Math.Min(MeasureText(UsageMergeText, 11, 6) + 16, 200); break;
                     case "FileCopy": w += Math.Min(MeasureText(FileCopyText, 11, 6) + 16, 220); break;
                     case "Download": w += Math.Min(MeasureText(DownloadText, 11, 6) + 16, 220); break;
@@ -1758,8 +1771,12 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public void ShowVolumeTemp(int percent, bool muted)
     {
         if (!_settings.Current.VolumeTempIndicatorEnabled) return;
+        _volumeTempGen++; // 取消上一次未完成的淡出清理
         VolumeTempText = muted ? Localization.Get("VolumeTemp_Muted") : $"{percent}%";
+        VolumeTempPercent = Math.Clamp(percent / 100.0, 0, 1);
         _volumeTempSecondsLeft = Math.Max(1, _settings.Current.VolumeTempIndicatorSeconds);
+        _volumeTempFading = false;
+        OnPropertyChanged(nameof(VolumeTempFading));
         RebuildCompactItems();
         UpdateVisibility(); // 无媒体且隐藏时也要能临时显示
     }
@@ -1782,15 +1799,26 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         catch { /* 音频服务不可用时忽略 */ }
     }
 
-    /// <summary>每秒递减音量指示剩余秒数，到 0 后清空（组件消失）。</summary>
+    /// <summary>每秒递减音量指示剩余秒数，到 0 后先播放淡出，再移除组件（退场丝滑）。</summary>
     private void UpdateVolumeTempCountdown()
     {
         if (_volumeTempSecondsLeft <= 0) return;
         if (--_volumeTempSecondsLeft <= 0)
         {
-            VolumeTempText = string.Empty;
-            RebuildCompactItems();
-            UpdateVisibility();
+            var gen = _volumeTempGen;
+            _volumeTempFading = true;
+            OnPropertyChanged(nameof(VolumeTempFading));
+            // 淡出动画约 260ms，结束后再真正移除组件，避免瞬时消失
+            _ = Task.Delay(320).ContinueWith(_ =>
+            {
+                if (gen != _volumeTempGen) return; // 期间音量又被调节过，取消本次清理
+                VolumeTempText = string.Empty;
+                VolumeTempPercent = 0;
+                _volumeTempFading = false;
+                OnPropertyChanged(nameof(VolumeTempFading));
+                RebuildCompactItems();
+                UpdateVisibility();
+            }, TaskScheduler.FromCurrentSynchronizationContext());
         }
     }
 

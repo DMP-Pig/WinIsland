@@ -23,6 +23,8 @@
 
 ## ✨ 功能亮点
 
+- **🌊 丝滑动效（1.2.1）**：展开/收起改为 iOS 阻尼弹簧 + 内容交错过渡；音量调节联动动画；紧凑/展开智能透明度分层；切歌封面交叉淡入；浅色/深色主题平滑切换；逐帧动画性能优化，CPU 占用更低。
+
 - **▶ 媒体播放控制**：原生接入 Windows 全局媒体会话（SMTC），兼容网易云、QQ音乐、Spotify、Apple Music、Groove、电影和电视等；额外专门支持 Cider 本地 API；无法接入时窗口标题兜底。专辑封面、进度拖拽 seek、播放/暂停/切歌一应俱全；多播放器同时打开时可一键切换控制来源。
 - **♪ 卡拉OK逐字歌词**：展开卡片同步滚动高亮、逐字点亮；本地 `.lrc` → AMLL TTML → 播放器歌词接口 → 可选在线歌词，四级来源；双语歌词、翻译开关、一键复制当前行；歌词时间可每首歌微调，独立歌词小窗可调透明度与锁定。
 - **▦ 可定制组件系统**：时间、天气、日期（含农历/节气）、CPU/GPU/内存/磁盘、网络速度、电量、输入法、快捷开关（WiFi/蓝牙/夜间/静音）等 30+ 组件；每组件可自定义图标，勾选与拖拽排序，单行/多行模式随时切换。
@@ -39,13 +41,13 @@
 
 ---
 
-## 📥 下载（最新稳定版 1.2.0）
+## 📥 下载（最新稳定版 1.2.1）
 
 | 平台 | 下载 | 说明 |
 | --- | --- | --- |
-| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
-| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备 |
-| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
+| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
+| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备 |
+| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-Setup-1.2.1.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
 
 历史版本与完整更新日志见 [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases)。
 
@@ -236,6 +238,8 @@ dotnet test  WinIsland.slnx -c Release
 
 ## ✨ 功能亮點
 
+- **🌊 絲滑動效（1.2.1）**：展開/收起改為 iOS 阻尼彈簧 + 內容交錯過渡；音量調節連動動畫；緊濟/展開智慧透明度分層；切歌封面交叉淡入；淺色/深色主題平滑切換；逐帧動畫效能最佳化。
+
 - **▶ 媒體播放控制**：原生接入 Windows 全域媒體工作階段（SMTC），相容網易雲、QQ音樂、Spotify、Apple Music、Groove、電影和電視等；額外專門支援 Cider 本機 API；無法接入時以視窗標題兜底。專輯封面、進度拖曳 seek、播放/暫停/切歌一應俱全；多播放器同時開啟時可一鍵切換控制來源。
 - **♪ 卡拉OK逐字歌詞**：展開卡片同步捲動高亮、逐字點亮；本機 `.lrc` → AMLL TTML → 播放器歌詞介面 → 可選線上歌詞，四級來源；雙語歌詞、翻譯開關、一鍵複製目前列；歌詞時間可逐首微調，獨立歌詞小窗可調透明度與鎖定。
 - **▦ 可自訂元件系統**：時間、天氣、日期（含農曆/節氣）、CPU/GPU/記憶體/磁碟、網路速度、電量、輸入法、快捷開關（WiFi/藍牙/夜間/靜音）等 30+ 元件；每個元件可自訂圖示，勾選與拖曳排序，單行/多行模式隨時切換。
@@ -252,13 +256,13 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
-## 📥 下載（最新穩定版 1.2.0）
+## 📥 下載（最新穩定版 1.2.1）
 
 | 平台 | 下載 | 說明 |
 | --- | --- | --- |
-| Windows x64 | [x64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | 主流 64 位元電腦首選，單檔免安裝，直接執行 |
-| Windows ARM64 | [ARM64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Surface Pro X / 驍龍機型等 ARM 裝置 |
-| Windows 通用 | [通用安裝包](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Inno Setup 安裝精靈，x64 / ARM64 自動依架構安裝 |
+| Windows x64 | [x64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-x64.exe) | 主流 64 位元電腦首選，單檔免安裝，直接執行 |
+| Windows ARM64 | [ARM64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-arm64.exe) | Surface Pro X / 驍龍機型等 ARM 裝置 |
+| Windows 通用 | [通用安裝包](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-Setup-1.2.1.exe) | Inno Setup 安裝精靈，x64 / ARM64 自動依架構安裝 |
 
 歷史版本與完整更新日誌見 [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases)。
 
@@ -449,6 +453,8 @@ dotnet test  WinIsland.slnx -c Release
 
 ## ✨ Highlights
 
+- **🌊 Buttery-smooth motion (1.2.1)**: iOS-style spring damping + staggered content transitions for expand/collapse; linked volume-change animation; smart opacity layering between compact and expanded; cross-fade cover transitions; smooth light/dark theme interpolation; per-frame animation performance optimizations.
+
 - **▶ Media playback control**: Native integration with Windows global media sessions (SMTC), compatible with NetEase Cloud Music, QQ Music, Spotify, Apple Music, Groove, Movies & TV and more; plus dedicated support for the Cider local API; falls back to window-title detection when unavailable. Album artwork, draggable seek bar, play/pause/next/previous — all included; when multiple players are open you can switch the control source with one click.
 - **♪ Karaoke word-by-word lyrics**: The expanded card scrolls with synchronized highlighting and word-by-word illumination; four-tier source priority: local `.lrc` → AMLL TTML → player lyrics API → optional online lyrics. Bilingual lyrics, translation toggle, one-click copy of the current line; per-song lyric time fine-tuning, and a standalone lyrics window with adjustable opacity and locking.
 - **▦ Customizable widget system**: 30+ widgets — time, weather, date (with lunar calendar/solar terms), CPU/GPU/RAM/disk, network speed, battery, input method, quick toggles (WiFi/Bluetooth/night mode/mute), etc. Each widget supports a custom icon, checkbox selection and drag-to-reorder, with one-line/multi-line modes.
@@ -465,13 +471,13 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
-## 📥 Download (latest stable 1.2.0)
+## 📥 Download (latest stable 1.2.1)
 
 | Platform | Download | Notes |
 | --- | --- | --- |
-| Windows x64 | [x64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | For mainstream 64-bit PCs; single file, no install needed |
-| Windows ARM64 | [ARM64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | For Surface Pro X / Snapdragon ARM devices |
-| Windows Universal | [Universal installer](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Inno Setup wizard; auto-installs x64 / ARM64 by architecture |
+| Windows x64 | [x64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-x64.exe) | For mainstream 64-bit PCs; single file, no install needed |
+| Windows ARM64 | [ARM64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-arm64.exe) | For Surface Pro X / Snapdragon ARM devices |
+| Windows Universal | [Universal installer](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-Setup-1.2.1.exe) | Inno Setup wizard; auto-installs x64 / ARM64 by architecture |
 
 All historical versions and the full changelog: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -662,6 +668,8 @@ Use Tray menu → Quit; closing the island window only hides it (tray-resident b
 
 ## ✨ Características destacadas
 
+- **🌊 Movimiento sedoso (1.2.1)**: resorte amortiguado estilo iOS + transiciones escalonadas al expandir/contraer; animación vinculada al volumen; capas de opacidad inteligentes; transición de portada; cambio de tema suave; optimización de la animación.
+
 - **▶ Control de reproducción multimedia**: integración nativa con las sesiones multimedia globales de Windows (SMTC), compatible con NetEase Cloud Music, QQ Music, Spotify, Apple Music, Groove, Películas y TV, etc.; además, soporte dedicado para la API local de Cider; si no está disponible, se usa la detección por título de ventana. Portada del álbum, barra de progreso arrastrable (seek), reproducir/pausar/anterior/siguiente, todo incluido; con varios reproductores abiertos puedes cambiar la fuente de control con un clic.
 - **♪ Letras karaoke palabra por palabra**: la tarjeta expandida se desplaza con resaltado sincronizado e iluminación palabra por palabra; prioridad de fuentes de cuatro niveles: `.lrc` local → AMLL TTML → API de letras del reproductor → letras en línea opcionales. Letras bilingües, interruptor de traducción, copiar la línea actual con un clic; ajuste fino del tiempo por canción y ventana de letras independiente con opacidad y bloqueo ajustables.
 - **▦ Sistema de widgets personalizable**: más de 30 widgets: hora, clima, fecha (con calendario lunar/términos solares), CPU/GPU/RAM/disco, velocidad de red, batería, método de entrada, accesos rápidos (WiFi/Bluetooth/modo nocturno/silencio), etc. Cada widget admite icono personalizado, selección con casillas y reordenación por arrastre, con modos de una línea/varias líneas.
@@ -678,13 +686,13 @@ Use Tray menu → Quit; closing the island window only hides it (tray-resident b
 
 ---
 
-## 📥 Descargas (última estable 1.2.0)
+## 📥 Descargas (última estable 1.2.1)
 
 | Plataforma | Descarga | Notas |
 | --- | --- | --- |
-| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | Para PCs de 64 bits convencionales; archivo único, sin instalación |
-| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
-| Windows Universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Asistente Inno Setup; instala x64 / ARM64 según la arquitectura |
+| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-x64.exe) | Para PCs de 64 bits convencionales; archivo único, sin instalación |
+| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
+| Windows Universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-Setup-1.2.1.exe) | Asistente Inno Setup; instala x64 / ARM64 según la arquitectura |
 
 Todas las versiones históricas y el registro de cambios completo: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -875,6 +883,8 @@ Usa Menú de la bandeja → Salir; cerrar la ventana de la isla solo la oculta (
 
 ## ✨ Points forts
 
+- **🌊 Mouvements fluides (1.2.1)** : ressort amorti façon iOS + transitions en cascade à l'ouverture/au repli ; animation liée au volume ; opacité intelligente en couches ; transition de couverture ; changement de thème en douceur ; optimisation des animations.
+
 - **▶ Contrôle de lecture multimédia** : intégration native des sessions multimédia globales de Windows (SMTC), compatible avec NetEase Cloud Music, QQ Music, Spotify, Apple Music, Groove, Films et TV, etc. ; plus une prise en charge dédiée de l'API locale de Cider ; en dernier recours, détection par titre de fenêtre. Pochette d'album, barre de progression déplaçable (seek), lecture/pause/précédent/suivant, tout est inclus ; avec plusieurs lecteurs ouverts, basculez la source de contrôle en un clic.
 - **♪ Paroles karaoké mot à mot** : la carte dépliée défile avec une mise en évidence synchronisée et un éclairage mot à mot ; priorité des sources à quatre niveaux : `.lrc` local → AMLL TTML → API de paroles du lecteur → paroles en ligne facultatives. Paroles bilingues, interrupteur de traduction, copie de la ligne courante en un clic ; réglage fin du minutage par chanson et fenêtre de paroles indépendante avec opacité et verrouillage réglables.
 - **▦ Système de widgets personnalisable** : plus de 30 widgets — heure, météo, date (avec calendrier lunaire/termes solaires), CPU/GPU/RAM/disque, vitesse réseau, batterie, méthode de saisie, bascules rapides (WiFi/Bluetooth/mode nuit/silencieux), etc. Chaque widget prend en charge une icône personnalisée, une sélection par cases à cocher et un réordonnancement par glisser-déposer, avec modes une ligne / plusieurs lignes.
@@ -891,13 +901,13 @@ Usa Menú de la bandeja → Salir; cerrar la ventana de la isla solo la oculta (
 
 ---
 
-## 📥 Téléchargement (dernière version stable 1.2.0)
+## 📥 Téléchargement (dernière version stable 1.2.1)
 
 | Plateforme | Téléchargement | Notes |
 | --- | --- | --- |
-| Windows x64 | [Portable x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | Le choix recommandé pour les PC 64 bits ; fichier unique, sans installation, exécution directe |
-| Windows ARM64 | [Portable ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Pour Surface Pro X / appareils ARM Snapdragon |
-| Windows universel | [Installeur universel](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Assistant Inno Setup ; installe x64 / ARM64 selon l'architecture |
+| Windows x64 | [Portable x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-x64.exe) | Le choix recommandé pour les PC 64 bits ; fichier unique, sans installation, exécution directe |
+| Windows ARM64 | [Portable ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-arm64.exe) | Pour Surface Pro X / appareils ARM Snapdragon |
+| Windows universel | [Installeur universel](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-Setup-1.2.1.exe) | Assistant Inno Setup ; installe x64 / ARM64 selon l'architecture |
 
 Toutes les versions historiques et le journal complet : [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1088,6 +1098,8 @@ Menu de la barre d'état → Quitter ; fermer la fenêtre de l'île ne fait que 
 
 ## ✨ أبرز المزايا
 
+- **🌊 حركة سلسة (1.2.1)**: زنبرك مخمّد بأسلوب iOS + انتقالات متدرّجة للطي/الفتح؛ حركة مرتبطة بمستوى الصوت؛ طبقات شفافية ذكية؛ انتقال الغلاف؛ تبديل ثيم سلس؛ تحسين أداء الحركة.
+
 - **▶ التحكم في تشغيل الوسائط**: تكامل أصلي مع جلسات الوسائط العامة في ويندوز (SMTC)، متوافق مع NetEase Cloud Music وQQ Music وSpotify وApple Music وGroove والأفلام والتلفزيون وغيرها؛ بالإضافة إلى دعم مخصص لواجهة Cider المحلية؛ وعند عدم التوفّر، كشف عبر عنوان النافذة كحل احتياطي. غلاف الألبوم، وشريط تقدّم قابل للسحب (seek)، وتشغيل/إيقاف/التالي/السابق — كل ذلك مُتضمّن؛ وعند فتح أكثر من مشغّل يمكن تبديل مصدر التحكم بنقرة واحدة.
 - **♪ كلمات كاريوكي كلمةً كلمة**: البطاقة الموسّعة تتمرّر مع إبراز متزامن وإضاءة كلمةً كلمة؛ أولوية المصادر بأربعة مستويات: `.lrc` المحلي ← AMLL TTML ← واجهة كلمات المشغّل ← الكلمات عبر الإنترنت اختياريًا. كلمات ثنائية اللغة، ومفتاح ترجمة، ونسخ السطر الحالي بنقرة واحدة؛ ضبط دقيق لتوقيت كل أغنية ونافذة كلمات مستقلة مع شفافية وقفل قابلين للضبط.
 - **▦ نظام أدوات قابل للتخصيص**: أكثر من 30 أداة — الوقت والطقس والتاريخ (مع التقويم القمري/المواسم) وCPU/GPU/الذاكرة/القرص وسرعة الشبكة والبطارية وطريقة الإدخال والمفاتيح السريعة (WiFi/البلوتوث/الوضع الليلي/كتم الصوت) وغيرها. تدعم كل أداة أيقونة مخصصة واختيارًا بخانات وترتيبًا بالسحب، مع وضعَي سطر واحد / عدة أسطر.
@@ -1104,13 +1116,13 @@ Menu de la barre d'état → Quitter ; fermer la fenêtre de l'île ne fait que 
 
 ---
 
-## 📥 التحميل (آخر إصدار مستقر 1.2.0)
+## 📥 التحميل (آخر إصدار مستقر 1.2.1)
 
 | النظام | التحميل | ملاحظات |
 | --- | --- | --- |
-| Windows x64 | [نسخة محمولة x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | الخيار الأول لأجهزة 64 بت الشائعة؛ ملف واحد بدون تثبيت، يعمل مباشرة |
-| Windows ARM64 | [نسخة محمولة ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | لأجهزة Surface Pro X / أجهزة ARM Snapdragon |
-| Windows شامل | [مثبّت شامل](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | معالج Inno Setup؛ يثبّت x64 / ARM64 حسب البنية |
+| Windows x64 | [نسخة محمولة x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-x64.exe) | الخيار الأول لأجهزة 64 بت الشائعة؛ ملف واحد بدون تثبيت، يعمل مباشرة |
+| Windows ARM64 | [نسخة محمولة ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-arm64.exe) | لأجهزة Surface Pro X / أجهزة ARM Snapdragon |
+| Windows شامل | [مثبّت شامل](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-Setup-1.2.1.exe) | معالج Inno Setup؛ يثبّت x64 / ARM64 حسب البنية |
 
 جميع الإصدارات السابقة وسجل التغييرات الكامل: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1301,6 +1313,8 @@ dotnet test  WinIsland.slnx -c Release
 
 ## ✨ Ключевые возможности
 
+- **🌊 Плавная анимация (1.2.1)**: пружинное демпфирование в стиле iOS + каскадные переходы при раскрытии/сворачивании; анимация громкости; умная прозрачность; переход обложки; плавная смена темы; оптимизация производительности.
+
 - **▶ Управление воспроизведением**: нативная интеграция с глобальными мультимедийными сессиями Windows (SMTC), совместимость с NetEase Cloud Music, QQ Music, Spotify, Apple Music, Groove, «Фильмы и ТВ» и др.; дополнительно поддержка локального API Cider; при недоступности — запасной вариант по заголовку окна. Обложка альбома, перетаскиваемая полоса seek, воспроизведение/пауза/следующий/предыдущий — всё включено; при нескольких открытых плеерах источник управления переключается в один клик.
 - **♪ Караоке-текст по словам**: развёрнутая карточка прокручивается с синхронной подсветкой и загоранием по словам; четырёхуровневый приоритет источников: локальный `.lrc` → AMLL TTML → API текстов плеера → необязательные онлайн-тексты. Двуязычные тексты, переключатель перевода, копирование текущей строки в один клик; точная подстройка тайминга для каждой песни и отдельное окно текста с регулируемой прозрачностью и блокировкой.
 - **▦ Настраиваемая система виджетов**: более 30 виджетов — время, погода, дата (с лунным календарём/сезонами), CPU/GPU/память/диск, скорость сети, батарея, метод ввода, быстрые переключатели (WiFi/Bluetooth/ночной режим/без звука) и др. Каждый виджет поддерживает свою иконку, выбор флажками и перетаскивание для сортировки, режимы в одну/несколько строк.
@@ -1317,13 +1331,13 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
-## 📥 Скачать (последняя стабильная версия 1.2.0)
+## 📥 Скачать (последняя стабильная версия 1.2.1)
 
 | Платформа | Скачать | Примечания |
 | --- | --- | --- |
-| Windows x64 | [Портативная x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | Рекомендуется для обычных 64-битных ПК; один файл, без установки, запуск сразу |
-| Windows ARM64 | [Портативная ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Для Surface Pro X / устройств ARM Snapdragon |
-| Windows универсальная | [Универсальный установщик](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Мастер Inno Setup; устанавливает x64 / ARM64 в зависимости от архитектуры |
+| Windows x64 | [Портативная x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-x64.exe) | Рекомендуется для обычных 64-битных ПК; один файл, без установки, запуск сразу |
+| Windows ARM64 | [Портативная ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-arm64.exe) | Для Surface Pro X / устройств ARM Snapdragon |
+| Windows универсальная | [Универсальный установщик](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-Setup-1.2.1.exe) | Мастер Inno Setup; устанавливает x64 / ARM64 в зависимости от архитектуры |
 
 Все предыдущие версии и полный журнал изменений: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1514,6 +1528,8 @@ dotnet test  WinIsland.slnx -c Release
 
 ## ✨ Destaques
 
+- **🌊 Movimento sedoso (1.2.1)**: mola amortecida estilo iOS + transições em cascata para expandir/recolher; animação vinculada ao volume; opacidade inteligente em camadas; transição de capa; troca de tema suave; otimização de animação.
+
 - **▶ Controle de reprodução de mídia**: integração nativa com as sessões de mídia globais do Windows (SMTC), compatível com NetEase Cloud Music, QQ Music, Spotify, Apple Music, Groove, Filmes e TV, etc.; além disso, suporte dedicado à API local do Cider; como último recurso, detecção por título de janela. Capa do álbum, barra de progresso arrastável (seek), reproduzir/pausar/anterior/próxima, tudo incluído; com vários players abertos, alterne a fonte de controle com um clique.
 - **♪ Letras karaokê palavra por palavra**: o cartão expandido rola com destaque sincronizado e iluminação palavra por palavra; prioridade de fontes em quatro níveis: `.lrc` local → AMLL TTML → API de letras do player → letras on-line opcionais. Letras bilíngues, botão de tradução, copiar a linha atual com um clique; ajuste fino de tempo por música e janela de letras independente com opacidade e bloqueio ajustáveis.
 - **▦ Sistema de widgets personalizável**: mais de 30 widgets — hora, clima, data (com calendário lunar/termos solares), CPU/GPU/RAM/disco, velocidade de rede, bateria, método de entrada, atalhos rápidos (WiFi/Bluetooth/modo noturno/silencioso), etc. Cada widget oferece ícone personalizado, seleção por caixas de marcação e reordenação por arrastar, com modos de uma linha/várias linhas.
@@ -1530,13 +1546,13 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
-## 📥 Download (última versão estável 1.2.0)
+## 📥 Download (última versão estável 1.2.1)
 
 | Plataforma | Download | Observações |
 | --- | --- | --- |
-| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | Recomendado para PCs 64 bits comuns; arquivo único, sem instalação, execução direta |
-| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
-| Windows universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Assistente Inno Setup; instala x64 / ARM64 conforme a arquitetura |
+| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-x64.exe) | Recomendado para PCs 64 bits comuns; arquivo único, sem instalação, execução direta |
+| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-1.2.1-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
+| Windows universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.1/WinIsland-Setup-1.2.1.exe) | Assistente Inno Setup; instala x64 / ARM64 conforme a arquitetura |
 
 Todas as versões anteriores e o changelog completo: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 

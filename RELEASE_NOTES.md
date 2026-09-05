@@ -12,6 +12,23 @@
 
 ## 简体中文
 
+## WinIsland 1.2.1（正式版 / Stable）
+
+一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新内容
+
+- **弹性阻尼 + 内容交错过渡**：展开/收起改为 iOS 阻尼弹簧（轻微过冲回弹），卡片内各区块依次错峰淡入/淡出，节奏非线性、不生硬，更贴近 iOS 灵动岛
+
+- **音量调节联动动画**：系统音量变化或拖动音量滑杆时，岛上短暂显示「图标 + 音量条 + 百分比」联动动画，几秒后自动淡出
+
+- **智能透明度分层**：紧凑态更通透、展开态更实，透明度随展开/收起平滑过渡；封面取色生效时自动避免叠加
+
+- **封面切换过渡**：切歌时专辑封面交叉淡入 + 轻微缩放，与封面取色背景呼吸互补，换曲衔接丝滑
+
+- **主题切换平滑过渡**：浅色/深色主题切换时背景与边框颜色平滑插值（约 0.3 秒），不再闪变
+
+- **动画性能优化**：波纹等逐帧渲染只更新当前可见的内容，媒体播放时 CPU 占用更低、动画更流畅
 ## WinIsland 1.2.0（正式版 / Stable）
 
 一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
@@ -395,6 +412,23 @@
 
 ## 繁體中文
 
+## WinIsland 1.2.1（正式版 / Stable）
+
+一款現代化、多功能的 Windows 動態島元件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新內容
+
+- **彈性阻尼 + 內容交錯過渡**：展開/收起改為 iOS 阻尼彈簧（輕微過衝回彈），卡片內各區塊依序錯峰淡入/淡出，節奏非線性、不生硬，更貼近 iOS 動態島
+
+- **音量調節連動動畫**：系統音量變化或拖動音量滑桿時，島上短暫顯示「圖示 + 音量條 + 百分比」連動動畫，幾秒後自動淡出
+
+- **智慧透明度分層**：緊湊態更通透、展開態更實，透明度隨展開/收起平滑過渡；封面取色生效時自動避免疊加
+
+- **封面切換過渡**：切歌時專輯封面交叉淡入 + 輕微縮放，與封面取色背景呼吸互補，換曲銜接流暢
+
+- **主題切換平滑過渡**：淺色/深色主題切換時背景與邊框顏色平滑插值（約 0.3 秒），不再閃變
+
+- **動畫效能最佳化**：波紋等逐幀渲染只更新目前可見的內容，媒體播放時 CPU 占用更低、動畫更流暢
 ## WinIsland 1.2.0（正式版 / Stable）
 
 一款現代化、多功能的 Windows 動態島元件。A modern, multi-functional Dynamic Island widget for Windows.
@@ -778,6 +812,23 @@
 
 ## English
 
+## WinIsland 1.2.1 (Stable)
+
+A modern, multi-functional Dynamic Island widget for Windows.
+
+### What's New
+
+- **Spring damping + staggered transitions**: expand/collapse now uses an iOS-style damped spring (with a subtle overshoot bounce), and the card's sections fade in/out one by one with a non-linear rhythm — closer to the iOS Dynamic Island
+
+- **Volume-change linked animation**: when the system volume changes or you drag the volume slider, the island briefly shows an animated "icon + volume bar + percentage" indicator that fades out on its own after a few seconds
+
+- **Smart opacity layering**: the compact state is more see-through and the expanded state more solid, transitioning smoothly; automatically avoids double-layering when cover tinting is active
+
+- **Cover-switch transition**: when the track changes, the album art cross-fades with a subtle zoom, complementing the breathing cover-tint background
+
+- **Smooth theme switching**: switching between light/dark themes now interpolates the card background and border colors over ~0.3s instead of flashing
+
+- **Animation performance**: per-frame effects (such as the wave) only update the currently visible panel, lowering CPU usage during playback for smoother animation
 ## WinIsland 1.2.0 (Stable)
 
 A modern, multi-functional Dynamic Island widget for Windows.
@@ -1161,6 +1212,23 @@ A modern, multi-functional Dynamic Island widget for Windows.
 
 ## Español
 
+## WinIsland 1.2.1 (Estable)
+
+Una moderna y multifuncional Dynamic Island para Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Novedades
+
+- **Amortiguación elástica + transiciones escalonadas**: expandir/contraer ahora usa un resorte amortiguado estilo iOS (con un pequeño rebote) y las secciones de la tarjeta entran/salen escalonadamente con un ritmo no lineal — más cerca de la Dynamic Island de iOS
+
+- **Animación vinculada al volumen**: cuando cambia el volumen del sistema o arrastras el control deslizante, la isla muestra brevemente una animación de "icono + barra de volumen + porcentaje" que se desvanece sola tras unos segundos
+
+- **Capas de opacidad inteligentes**: el estado compacto es más transparente y el expandido más sólido, con transición suave; evita la doble capa cuando el tinte de portada está activo
+
+- **Transición al cambiar de portada**: al cambiar de canción, la portada se funde con un zoom sutil, complementando el fondo de tinte respirante
+
+- **Cambio de tema suave**: al cambiar entre temas claro/oscuro, el fondo y el borde de la tarjeta interpolaran en ~0,3 s en lugar de parpadear
+
+- **Optimización de animación**: los efectos por fotograma (como la onda) solo actualizan el panel visible, reduciendo el uso de CPU durante la reproducción para una animación más fluida
 ## WinIsland 1.2.0 (Estable)
 
 Una moderna y multifuncional Dynamic Island para Windows. A modern, multi-functional Dynamic Island widget for Windows.
@@ -1544,6 +1612,23 @@ Un widget Dynamic Island moderno y multifuncional para Windows.
 
 ## Français
 
+## WinIsland 1.2.1 (Stable)
+
+Une Dynamic Island moderne et polyvalente pour Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Nouveautés
+
+- **Amortissement élastique + transitions échelonnées** : le déploiement/repli utilise désormais un ressort amorti façon iOS (avec un léger rebond) et les sections de la carte apparaissent/disparaissent en cascade avec un rythme non linéaire — plus proche de la Dynamic Island d'iOS
+
+- **Animation liée au volume** : lorsque le volume système change ou que vous faites glisser le curseur, l'île affiche brièvement une animation « icône + barre de volume + pourcentage » qui s'estompe d'elle-même après quelques secondes
+
+- **Opacité intelligente en couches** : l'état compact est plus transparent et l'état déployé plus opaque, avec une transition douce ; évite la double superposition lorsque la teinte de la pochette est active
+
+- **Transition de pochette** : au changement de chanson, la pochette se fond avec un léger zoom, complétant l'arrière-plan de teinte qui respire
+
+- **Changement de thème fluide** : passer du thème clair au sombre interpole maintenant les couleurs du fond et de la bordure de la carte en ~0,3 s au lieu de clignoter
+
+- **Optimisation de l'animation** : les effets par image (comme la vague) ne mettent à jour que le panneau visible, réduisant l'utilisation du CPU pendant la lecture pour une animation plus fluide
 ## WinIsland 1.2.0 (Stable)
 
 Une Dynamic Island moderne et polyvalente pour Windows. A modern, multi-functional Dynamic Island widget for Windows.
@@ -1927,6 +2012,23 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 
 ## العربية
 
+## WinIsland 1.2.1 (مستقر)
+
+جزيرة ديناميكية حديثة ومتعددة الوظائف لنظام ويندوز. A modern, multi-functional Dynamic Island widget for Windows.
+
+### ما الجديد
+
+- **تخميد نابض + انتقالات متتالية**: الفتح/الطي يستخدم الآن زنبركاً مخمداً بأسلوب iOS (مع ارتداد خفيف) وتظهر/تختفي أقسام البطاقة تباعاً بإيقاع غير خطي — أقرب إلى الجزيرة الديناميكية في iOS
+
+- **حركة مرتبطة بمستوى الصوت**: عندما يتغيّر مستوى صوت النظام أو تسحب شريط التمرير، تعرض الجزيرة لفترة وجيزة حركة «أيقونة + شريط صوت + نسبة مئوية» تتلاشى تلقائياً بعد ثوانٍ
+
+- **طبقات شفافية ذكية**: الحالة المضغوطة أكثر شفافية والحالة الموسعة أكثر صلابة، مع انتقال سلس؛ وتتجنب الطبقات المزدوجة عند تفعيل صبغة الغلاف
+
+- **انتقال الغلاف**: عند تغيير الأغنية، يتلاشى غلاف الألبوم مع تكبير خفيف، بما يكمل خلفية الصبغة المتنفسة
+
+- **تبديل ثيم سلس**: عند التبديل بين الثيم الفاتح والداكن، تتحول ألوان خلفية البطاقة وحدودها خلال ~0.3 ثانية بدلاً من الوميض
+
+- **تحسين أداء الحركة**: تأثيرات الإطارات (كموجة الصوت) تحدّث اللوحة الظاهرة فقط، ما يقلل استهلاك المعالج أثناء التشغيل لحركة أكثر سلاسة
 ## WinIsland 1.2.0 (مستقر)
 
 جزيرة ديناميكية حديثة ومتعددة الوظائف لنظام ويندوز. A modern, multi-functional Dynamic Island widget for Windows.
@@ -2310,6 +2412,23 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 
 ## Русский
 
+## WinIsland 1.2.1 (Stable)
+
+Современный многофункциональный Dynamic Island для Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Что нового
+
+- **Пружинное демпфирование + каскадные переходы**: раскрытие/сворачивание теперь использует пружину в стиле iOS (с лёгким отскоком), а секции карточки появляются/исчезают поочерёдно с нелинейным ритмом — ближе к Dynamic Island из iOS
+
+- **Связанная с громкостью анимация**: при изменении системной громкости или перетаскивании ползунка остров кратко показывает анимацию «иконка + полоса громкости + проценты», которая сама плавно исчезает через несколько секунд
+
+- **Умная прозрачность по слоям**: компактное состояние прозрачнее, развёрнутое — плотнее, с плавным переходом; автоматически избегает двойного наложения при активной подцветке обложки
+
+- **Переход смены обложки**: при смене трека обложка плавно проявляется с лёгким масштабированием, дополняя «дышащий» фон подцветки
+
+- **Плавное переключение темы**: при переключении светлой/тёмной темы цвет фона и рамки карточки интерполируется за ~0,3 с вместо мигания
+
+- **Оптимизация производительности**: покадровые эффекты (например, волна) обновляют только видимую панель, снижая нагрузку на ЦП во время воспроизведения для более плавной анимации
 ## WinIsland 1.2.0 (Stable)
 
 Современный многофункциональный Dynamic Island для Windows. A modern, multi-functional Dynamic Island widget for Windows.
@@ -2693,6 +2812,23 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 
 ## Português
 
+## WinIsland 1.2.1 (Estável)
+
+Um Dynamic Island moderno e multifuncional para Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Novidades
+
+- **Amortecimento elástico + transições escalonadas**: expandir/recolher agora usa uma mola amortecida no estilo iOS (com um leve repique) e as seções da parte interna entram/saem em cascata com ritmo não linear — mais próximo da Dynamic Island do iOS
+
+- **Animação vinculada ao volume**: quando o volume do sistema muda ou você arrasta o controle deslizante, a ilha mostra brevemente uma animação de "ícone + barra de volume + porcentagem" que se desvanece sozinha após alguns segundos
+
+- **Opacidade inteligente em camadas**: o estado compacto é mais transparente e o expandido mais sólido, com transição suave; evita sobreposição dupla quando a tonalidade da capa está ativa
+
+- **Transição ao trocar de capa**: ao trocar de música, a capa se funde com um leve zoom, complementando o fundo de tonalidade "respirante"
+
+- **Troca de tema suave**: ao alternar entre o tema claro e escuro, as cores de fundo e borda da parte interna interpolam em ~0,3 s em vez de piscar
+
+- **Otimização de animação**: efeitos por quadro (como a onda) atualizam apenas o painel visível, reduzindo o uso de CPU durante a reprodução para uma animação mais fluida
 ## WinIsland 1.2.0 (Estável)
 
 Um Dynamic Island moderno e multifuncional para Windows. A modern, multi-functional Dynamic Island widget for Windows.

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -168,6 +168,50 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private readonly List<TranslateTransform> _waveParticleTransformsExpanded = new();
     private readonly List<TranslateTransform> _waveParticleTransformsCompact = new();
     private Storyboard? _currentStoryboard;
+    private Storyboard? _glassAnimSb;               // 玻璃分层不透明度动画（可随时重开/停止）
+    /// <summary>展开态玻璃叠加目标不透明度：从基础 88% 叠加到 ≈97%（随用户 Opacity 缩放）。</summary>
+    private double GlassTargetOpacity
+    {
+        get
+        {
+            var op = Math.Clamp(_theme.Opacity, 0.3, 1.0);
+            var denom = 1.0 - 0.88 * op;
+            if (denom < 0.05) return 1.0;
+            return Math.Clamp(0.09 * op / denom, 0, 1);
+        }
+    }
+
+    /// <summary>展开内容交错过渡区块（自上而下）：上岛推送 / Hero / 封面标题 / 进度 / 控制 / 歌词快捷 / 歌词 / 快捷操作。
+    /// 1.2.1：展开时依次淡入上移、收起时反向淡出下移，仿 iOS 灵动岛错峰进出。</summary>
+    private (FrameworkElement El, TranslateTransform Tr)[] _cascadeBlocks = Array.Empty<(FrameworkElement, TranslateTransform)>();
+
+    /// <summary>为展开内容各区块挂接位移变换（供交错过渡动画使用）。</summary>
+    private static (FrameworkElement, TranslateTransform)[] BuildCascadeBlocks(params FrameworkElement?[] els)
+    {
+        var list = new List<(FrameworkElement, TranslateTransform)>(els.Length);
+        foreach (var el in els)
+        {
+            if (el is null) continue;
+            el.RenderTransformOrigin = new Point(0.5, 0.5);
+            if (el.RenderTransform is not TranslateTransform tr)
+            {
+                tr = new TranslateTransform();
+                el.RenderTransform = tr;
+            }
+            list.Add((el, tr));
+        }
+        return list.ToArray();
+    }
+
+    /// <summary>ReduceMotion / 兜底：直接设置所有交错区块的透明度与位移，跳过动画。</summary>
+    private void ApplyCascadeState(double opacity, double y)
+    {
+        foreach (var (el, tr) in _cascadeBlocks)
+        {
+            el.Opacity = opacity;
+            tr.Y = y;
+        }
+    }
     private Storyboard? _positionStoryboard;   // 位置动画独占：连续重定位先停旧动画
     private HwndSource? _hwndSource;
     private CoverFullScreenWindow? _coverFullWindow;   // #2 封面沉浸：全屏封面预览窗口
@@ -192,6 +236,10 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
         DataContext = vm;
         InitializeComponent();
+
+        // 展开内容交错过渡区块（功能 2）：为各区块挂载位移变换，供展开/收起错峰动画使用
+        _cascadeBlocks = BuildCascadeBlocks(ExpandedPushCard, HeroCard, ArtTitleGrid, ProgressGrid,
+            ControlsGrid, LyricQuickOpsPanel, LyricsScroll, QuickActionsPanel);
 
         // 收起延迟（鼠标移出展开态 700ms 后收起）
         _collapseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
@@ -280,6 +328,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     /// <summary>窗口关闭：退订外部事件并停止本窗口定时器 / 渲染循环，防止内存与 CPU 泄漏。</summary>
     private void OnWindowClosed(object? sender, EventArgs e)
     {
+        _glassAnimSb?.Stop();
         try
         {
             _vm.PropertyChanged -= OnVmPropertyChanged;
@@ -290,6 +339,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             _lyricsScrollTimer.Stop();
             CancelPendingClick();
             StopWaveRender();
+            SubscribeTintRendering(false); // 显式退订封面取色合成帧，防窗口销毁后事件泄漏
         }
         catch (Exception ex)
         {
@@ -774,8 +824,82 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         else Hide();
     }
 
+    /// <summary>刷新玻璃分层底色为当前主题底色（冻结缓存，避免每帧重建）。</summary>
+    private void ApplyGlassLayer()
+    {
+        if (GlassLayer is null) return;
+        var b = new SolidColorBrush(_theme.TintColor);
+        b.Freeze();
+        GlassLayer.Background = b;
+    }
+
+    /// <summary>智能透明度分层：展开时玻璃层平滑升不透明度（卡片更实），收起回落（更通透）；
+    /// 封面取色生效时玻璃归零，避免双重叠加。动画时长跟随当前动效皮肤，连贯不生硬。</summary>
+    private void AnimateGlass(bool expanded)
+    {
+        if (GlassLayer is null) return;
+        var tintActive = expanded && _settings.Current.CoverTintBackground && _vm.Artwork != null;
+        var target = tintActive ? 0 : (expanded ? GlassTargetOpacity : 0);
+        _glassAnimSb?.Stop();
+        _glassAnimSb = null;
+        if (_settings.Current.ReduceMotion)
+        {
+            GlassLayer.Opacity = target;
+            return;
+        }
+        var (styleEase, styleMs) = GetSizeAnimationStyle(expanded);
+        var dur = (int)Math.Clamp(styleMs * 0.72, 200, 900);
+        var sb = new Storyboard();
+        AddAnim(sb, GlassLayer, UIElement.OpacityProperty, target, dur, styleEase);
+        Timeline.SetDesiredFrameRate(sb, 60); // 稳定 60fps
+        _glassAnimSb = sb;
+        sb.Begin();
+    }
+
+    /// <summary>主题切换平滑过渡（1.2.1）：明暗/主题色变化时，卡片背景与边框做 EaseOut 颜色插值，
+    /// 避免深浅色切换闪变。封面取色生效时背景由取色渐变接管（已有呼吸动画），跳过背景只动画边框；
+    /// ReduceMotion / 未加载时直接切新主题。时长跟随当前动效皮肤，与其他动画节奏一致。</summary>
+    private void AnimateThemeColors(System.Windows.Media.Color? prevBg, System.Windows.Media.Color? prevBd)
+    {
+        try
+        {
+            var tintActive = _settings.Current.CoverTintBackground && _vm.IsExpanded && _vm.Artwork != null;
+            if (!IsLoaded || _settings.Current.ReduceMotion)
+            {
+                if (!tintActive) Card.Background = _theme.CardBackground;
+                Card.BorderBrush = _theme.CardBorder;
+                return;
+            }
+            var (ease, ms) = GetSizeAnimationStyle(_vm.IsExpanded);
+            var dur = TimeSpan.FromMilliseconds(Math.Clamp(ms * 0.34, 180, 460));
+            if (!tintActive && prevBg is System.Windows.Media.Color pb && _theme.CardBackground is SolidColorBrush nb)
+                AnimateSolidBrush(Card, Border.BackgroundProperty, pb, nb.Color, dur, ease);
+            if (prevBd is System.Windows.Media.Color pbd && _theme.CardBorder is SolidColorBrush nbd)
+                AnimateSolidBrush(Card, Border.BorderBrushProperty, pbd, nbd.Color, dur, ease);
+        }
+        catch
+        {
+            // 插值动画异常时直接应用新主题，绝不影响主流程
+            if (!(_settings.Current.CoverTintBackground && _vm.IsExpanded && _vm.Artwork != null))
+                Card.Background = _theme.CardBackground;
+            Card.BorderBrush = _theme.CardBorder;
+        }
+    }
+
+    /// <summary>把旧颜色安装到临时 brush 上并播放到新颜色的插值动画（HoldEnd 保色，对象由动画持有）。</summary>
+    private void AnimateSolidBrush(DependencyObject target, DependencyProperty prop, System.Windows.Media.Color from, System.Windows.Media.Color to, TimeSpan dur, IEasingFunction ease)
+    {
+        var brush = new SolidColorBrush(from);
+        target.SetValue(prop, brush);
+        var anim = new ColorAnimation(to, dur) { EasingFunction = ease };
+        brush.BeginAnimation(SolidColorBrush.ColorProperty, anim);
+    }
+
     private void ApplyTheme()
     {
+        // 主题切换平滑过渡（1.2.1）：先记录当前卡片背景/边框颜色，供插值动画使用
+        var prevBg = (Card.Background as SolidColorBrush)?.Color;
+        var prevBd = (Card.BorderBrush as SolidColorBrush)?.Color;
         ApplyMenuTheme();
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TextPrimary)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TextSecondary)));
@@ -789,7 +913,10 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         RaisePushThemeProps();
         ApplyAppearance();
         RefreshWave();
-        ApplyCoverTint();
+        ApplyCoverTint(forceRebuild: true); // 主题变化时强制重建取色渐变（基色随新主题）
+        AnimateThemeColors(prevBg, prevBd); // 背景/边框颜色插值过渡，深浅色切换不闪变
+        ApplyGlassLayer();
+        AnimateGlass(_vm.IsExpanded); // 主题/明暗切换后玻璃底色与不透明度同步刷新
     }
 
     /// <summary>展开卡片分区块的可见性随设置即时刷新。</summary>
@@ -952,6 +1079,10 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             case nameof(IslandViewModel.LyricIndex):
                 if (_vm.LyricIndex >= 0) QueueLyricsScroll(_vm.LyricIndex);
                 break;
+            case nameof(IslandViewModel.CompactItems):
+                // 组件列表变化（如音量指示出现/消失、临时状态胶囊增删）时平滑调整尺寸
+                if (!_vm.IsExpanded && _vm.IsVisible) AnimateCompactSize();
+                break;
             case nameof(IslandViewModel.CurrentLyricText):
                 // 当前歌词行变化时，若处于紧凑态则平滑调整宽度，避免长歌词被裁切/遮挡
                 if (!_vm.IsExpanded && _vm.IsVisible) AnimateCompactSize();
@@ -975,7 +1106,75 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
                 break;
             case nameof(IslandViewModel.Artwork):
                 ApplyCoverTint();
+                PlayCoverTransition(); // 切歌：封面交叉淡入 + 轻微缩放
                 break;
+        }
+    }
+
+    /// <summary>切歌时封面过渡：紧凑封面 / 展开大封面 / Hero 背景统一做「淡入 + 轻微缩放」，
+    /// 与 CoverTint 背景呼吸互补，换曲衔接丝滑不生硬。</summary>
+    private void PlayCoverTransition()
+    {
+        if (!IsLoaded) return;
+        if (_settings.Current.ReduceMotion) return; // 减少动态效果：跳过过渡
+        var smooth = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var (_, styleMs) = GetSizeAnimationStyle(expand: true);
+        var dur = (int)Math.Clamp(styleMs * 0.42, 180, 420);
+        var lm = _settings.Current.LowPowerMode ? 0.6 : 1.0;
+
+        // 展开态大封面：淡入 + 从 1.06 缩放回 1
+        if (BigArt is not null)
+        {
+            BigArt.BeginAnimation(UIElement.OpacityProperty, null);
+            BigArt.Opacity = 0.35;
+            var sbA = new Storyboard();
+            AddAnim(sbA, BigArt, UIElement.OpacityProperty, 1, (int)(dur * lm), smooth);
+            Timeline.SetDesiredFrameRate(sbA, 60);
+            sbA.Begin();
+        }
+        if (BigArtScale is not null)
+        {
+            BigArtScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            BigArtScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            BigArtScale.ScaleX = BigArtScale.ScaleY = 1.06;
+            var sbS = new Storyboard();
+            AddAnim(sbS, BigArtScale, ScaleTransform.ScaleXProperty, 1, (int)(dur * lm), smooth);
+            AddAnim(sbS, BigArtScale, ScaleTransform.ScaleYProperty, 1, (int)(dur * lm), smooth);
+            Timeline.SetDesiredFrameRate(sbS, 60);
+            sbS.Begin();
+        }
+        // 展开 Hero 大封面背景：淡入
+        if (HeroCard is not null)
+        {
+            HeroCard.BeginAnimation(UIElement.OpacityProperty, null);
+            HeroCard.Opacity = 0.35;
+            var sbH = new Storyboard();
+            AddAnim(sbH, HeroCard, UIElement.OpacityProperty, 1, (int)(dur * lm), smooth);
+            Timeline.SetDesiredFrameRate(sbH, 60);
+            sbH.Begin();
+        }
+        // 紧凑行歌曲封面（数据模板内，用 Tag 定位后淡入）
+        foreach (var b in FindVisualChildren<System.Windows.Controls.Border>(PillRow))
+        {
+            if (!ReferenceEquals(b.Tag, "SongCover")) continue;
+            b.BeginAnimation(UIElement.OpacityProperty, null);
+            b.Opacity = 0.35;
+            var sbC = new Storyboard();
+            AddAnim(sbC, b, UIElement.OpacityProperty, 1, (int)(dur * lm), smooth);
+            Timeline.SetDesiredFrameRate(sbC, 60);
+            sbC.Begin();
+        }
+    }
+
+    /// <summary>从可视树上收集指定类型子元素（浅层遍历，仅用于切歌时的封面定位）。</summary>
+    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject root) where T : DependencyObject
+    {
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T match) yield return match;
+            foreach (var nested in FindVisualChildren<T>(child)) yield return nested;
         }
     }
 
@@ -1048,23 +1247,22 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             var level = Math.Clamp(_vm.WaveLevel, 0, 1);
             var height = Math.Clamp(_settings.Current.WaveHeight, 0.25, 2.0);
             var alpha = 1.0 - Math.Exp(-dt * 22.0); // 帧率无关的指数平滑
+            // 1.2.1 性能优化：只更新当前可见的波纹集合（展开=大波纹、紧凑=小波纹），
+            // 隐藏面板每帧的 ScaleTransform 更新全部省掉，降低媒体播放时的 CPU 占用
+            var expanded = _vm.IsExpanded;
             switch (_settings.Current.WaveStyle)
             {
                 case "Spectrum":
-                    UpdateWaveSet(_waveSpectrumCompact, level, now, alpha, height, bias: 1);
-                    UpdateWaveSet(_waveSpectrumExpanded, level, now, alpha, height, bias: 1);
+                    UpdateWaveSet(expanded ? _waveSpectrumExpanded : _waveSpectrumCompact, level, now, alpha, height, bias: 1);
                     break;
                 case "Ring":
-                    UpdateRingVisual(_waveRingScaleCompact, level, now, alpha);
-                    UpdateRingVisual(_waveRingScaleExpanded, level, now, alpha);
+                    UpdateRingVisual(expanded ? _waveRingScaleExpanded : _waveRingScaleCompact, level, now, alpha);
                     break;
                 case "Particles":
-                    UpdateParticlesVisual(_waveParticleTransformsCompact, level, now, alpha, 5.0);
-                    UpdateParticlesVisual(_waveParticleTransformsExpanded, level, now, alpha, 8.0);
+                    UpdateParticlesVisual(expanded ? _waveParticleTransformsExpanded : _waveParticleTransformsCompact, level, now, alpha, expanded ? 8.0 : 5.0);
                     break;
                 default:
-                    UpdateWaveSet(_waveBarsCompact, level, now, alpha, height);
-                    UpdateWaveSet(_waveBarsExpanded, level, now, alpha, height);
+                    UpdateWaveSet(expanded ? _waveBarsExpanded : _waveBarsCompact, level, now, alpha, height);
                     break;
             }
         }
@@ -1234,7 +1432,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     /// <summary>展开背景随专辑封面取色：1x1 采样主色 + 主题底色线性渐变；展开后以 60fps 缓慢呼吸。
     /// 渐变 brush / GradientStop 缓存复用，渲染帧只更新首 stop 的 Alpha，避免每帧重建对象导致 GC 抖动。</summary>
-    private void ApplyCoverTint()
+    private void ApplyCoverTint(bool forceRebuild = false)
     {
         try
         {
@@ -1254,7 +1452,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             }
 
             // 封面主色变化（换曲）时重建渐变；同曲只复用并更新 Alpha（呼吸）
-            if (_tintBrush is null || _tintCoverColor != color)
+            if (_tintBrush is null || _tintCoverColor != color || forceRebuild) // 主题切换时强制重建（基色随新主题）
             {
                 _tintCoverColor = color;
                 var baseColor = (_theme.CardBackground as SolidColorBrush)?.Color
@@ -1270,6 +1468,10 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
                 _tintBrush.GradientStops.Add(_tintStop1);
             }
             Card.Background = _tintBrush;
+            // 封面取色生效时玻璃层归零，避免叠加
+            _glassAnimSb?.Stop();
+            _glassAnimSb = null;
+            GlassLayer.Opacity = 0;
             _tintPhaseUtc = DateTime.UtcNow;
             SubscribeTintRendering(true);
         }
@@ -1320,6 +1522,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         {
             Card.Background = _theme.CardBackground;
         }
+        // 无封面取色时重新启用玻璃分层（展开态更实、紧凑态通透）
+        if (GlassLayer is not null && (_vm.IsExpanded || !_settings.Current.CoverTintBackground))
+            AnimateGlass(_vm.IsExpanded);
     }
 
     /// <summary>把封面渲染到 1x1 位图采样主色（RGBA）。</summary>
@@ -1430,6 +1635,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     {
         // 胶囊行保持可见（动画淡出），展开内容覆盖全卡片（动画淡入），两者重叠交叉过渡，
         // 避免 Card 深色背景透过内容间隙产生"黑掉"现象
+        AnimateGlass(true); // 智能透明度：展开态更实
         ContentGrid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Star);
         ContentGrid.RowDefinitions[1].Height = GridLength.Auto;
         ContentGrid.VerticalAlignment = VerticalAlignment.Center;
@@ -1454,6 +1660,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private void Collapse()
     {
         // 先恢复胶囊行（紧凑行占满并垂直居中），再缩回紧凑尺寸
+        AnimateGlass(false); // 智能透明度：紧凑态更通透
         ContentGrid.RowDefinitions[0].Height = new GridLength(1, GridUnitType.Star);
         ContentGrid.RowDefinitions[1].Height = GridLength.Auto; // 展开行恢复自适应
         // 保持垂直居中：收回后组件上下对称（此前设为 Top 会导致贴顶、下方留白，展开收回后距离不同）
@@ -1464,22 +1671,24 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         ExpandedContent.BeginAnimation(UIElement.OpacityProperty, null);
         PillRow.Visibility = Visibility.Visible;
         PillRow.Opacity = 1;
-        ExpandedContent.Visibility = Visibility.Collapsed; // 立即隐藏展开内容，避免残留覆盖
+        // 展开内容保持可见以播放「自下而上」的交错淡出动画，动画结束后由 AnimateCard 回调隐藏
+        ExpandedContent.Visibility = Visibility.Visible;
+        ExpandedContent.Opacity = 1;
 
         AnimateCard(CompactWidth, CompactHeight, expand: false,
             onCompleted: () => { Card.Width = CompactWidth; Card.Height = CompactHeight; });
     }
 
     /// <summary>
-    /// 动画：卡片尺寸用 iOS 阻尼弹簧（先快后慢、轻微过冲回弹），
-    /// 展开内容错峰淡入缩放（延迟 50ms、更短时长），整体节奏非线性、不生硬。
+    /// 动画：卡片尺寸用 iOS 阻尼弹簧（先快后慢、轻微过冲回弹）；
+    /// 展开内容按区块自上而下交错淡入上移、收起时反向交错淡出下移（1.2.1），整体节奏非线性、不生硬。
     /// </summary>
     private void AnimateCard(double width, double height, bool expand, Action? onCompleted = null)
     {
         _currentStoryboard?.Stop();
         _currentStoryboard = null;
 
-        // 减少动态效果：关闭弹簧/错峰动画，直接瞬时切换（无障碍 / 省电）
+        // 减少动态效果：关闭弹簧/交错动画，直接瞬时切换（无障碍 / 省电）
         if (_settings.Current.ReduceMotion)
         {
             Card.Width = width;
@@ -1490,6 +1699,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             ExpandedContent.Opacity = expand ? 1 : 0;
             ExpandedScale.ScaleX = ExpandedScale.ScaleY = expand ? 1 : 0.98;
             ExpandedTranslate.Y = expand ? 0 : 10;
+            ApplyCascadeState(expand ? 1 : 0, expand ? 0 : 10);
             onCompleted?.Invoke();
             return;
         }
@@ -1504,19 +1714,45 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         AddAnim(sb, Card, FrameworkElement.WidthProperty, width, (int)(styleSizeMs * lm), styleEase);
         AddAnim(sb, Card, FrameworkElement.HeightProperty, height, (int)(styleSizeMs * lm), styleEase);
 
-        // 展开内容：错峰淡入 + 轻微缩放/位移（展开延迟 95ms，让尺寸先动、内容跟上）
-        var contentDelay = TimeSpan.FromMilliseconds((expand ? 80 : 0) * lm);
-        AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, expand ? 1 : 0, (int)((expand ? 380 : 260) * lm), smooth, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleXProperty, expand ? 1 : 0.98, (int)((expand ? 600 : 500) * lm), styleEase, contentDelay);
-        AddAnim(sb, ExpandedScale, ScaleTransform.ScaleYProperty, expand ? 1 : 0.98, (int)((expand ? 600 : 500) * lm), styleEase, contentDelay);
-        AddAnim(sb, ExpandedTranslate, TranslateTransform.YProperty, expand ? 0 : 10, (int)((expand ? 600 : 500) * lm), smooth, contentDelay);
+        // 展开内容交错过渡（1.2.1 功能 2）：
+        //  展开 —— 区块自上而下依次淡入 + 轻微上移（每区块延迟 70ms，错峰出现）
+        //  收起 —— 区块自下而上反向依次淡出 + 轻微下移，容器最后整体淡出
+        var blocks = _cascadeBlocks;
+        if (expand)
+        {
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                var (el, tr) = blocks[i];
+                el.Opacity = 0;   // 重置入场起点，保证每次展开都从空白开始错峰出现
+                tr.Y = 12;
+                var delay = TimeSpan.FromMilliseconds((90 + i * 70) * lm);
+                AddAnim(sb, el, UIElement.OpacityProperty, 1, (int)(340 * lm), smooth, delay);
+                AddAnim(sb, tr, TranslateTransform.YProperty, 0, (int)(420 * lm), smooth, delay);
+            }
+            // 容器淡入，覆盖整个交错过程（内容出现时整体更柔和）
+            AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, 1, (int)(460 * lm), smooth, TimeSpan.FromMilliseconds(90 * lm));
+        }
+        else
+        {
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                var (el, tr) = blocks[i];
+                // 收起：先收尾部区块，再收顶部区块（与展开顺序相反）
+                var delay = TimeSpan.FromMilliseconds((blocks.Length - 1 - i) * 55 * lm);
+                AddAnim(sb, el, UIElement.OpacityProperty, 0, (int)(180 * lm), smooth, delay);
+                AddAnim(sb, tr, TranslateTransform.YProperty, 14, (int)(220 * lm), smooth, delay);
+            }
+            // 容器在区块基本淡出后再整体淡出，避免内容残留
+            AddAnim(sb, ExpandedContent, UIElement.OpacityProperty, 0, (int)(240 * lm), smooth,
+                TimeSpan.FromMilliseconds((blocks.Length * 55 + 150) * lm));
+            // 胶囊行：已由 Collapse 恢复为完全不透明，作为淡出过程中的底层承接内容
+            PillRow.Opacity = 1;
+        }
 
         // 胶囊行：展开后淡出（由大图区接管）；收起时立即恢复完全不透明，
         // 避免缩回瞬间胶囊内容还在淡入而出现"空内容"
         if (expand)
             AddAnim(sb, PillRow, UIElement.OpacityProperty, 0, (int)(300 * lm), smooth, TimeSpan.FromMilliseconds(80));
-        else
-            PillRow.Opacity = 1;
 
         sb.Completed += (_, _) =>
         {
@@ -1544,6 +1780,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
                 {
                     PillRow.Visibility = Visibility.Visible;
                     PillRow.Opacity = 1;
+                    ExpandedContent.Visibility = Visibility.Collapsed;
+                    ExpandedContent.Opacity = 0;
                 }
                 onCompleted?.Invoke();
             }
@@ -1583,7 +1821,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             case "Fade":
                 return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? Ms(baseMs * 0.74) : Ms(baseMs * 0.64));
             default: // Spring
-                return (new SpringEase { Damping = 13, Stiffness = 200, Mass = 1 }, expand ? baseMs : Ms(baseMs * 0.86));
+                return (new SpringEase { Damping = 11, Stiffness = 220, Mass = 1 }, expand ? baseMs : Ms(baseMs * 0.86)); // 1.2.1：阻尼略降、刚度略升 -> 回弹更有弹性
         }
     }
     private void AddAnim(Storyboard sb, DependencyObject target, DependencyProperty prop, double to, int ms, IEasingFunction easing, TimeSpan? beginTime = null)
