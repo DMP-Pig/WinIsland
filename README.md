@@ -32,16 +32,20 @@
 - **🖱 交互与智能**：解锁拖动 + 边缘吸附、全屏/锁屏自动隐藏、双击/中键快捷动作、快捷操作按钮、文件中转站（拖文件上岛、可再拖出到其他应用）、录屏智能勿扰、定时明暗主题切换。
 - **⚡ 效率工具与自动化**：番茄钟、待办、剪贴板历史、快速启动器、日程提醒；会议静音助手、屏幕录制/截图提示、文件复制/下载进度上岛；全局快捷键与规则引擎。
 - **🛡 隐私安全**：无遥测、无广告、无数据上报。除用户手动开启的在线歌词/天气外完全离线；所有配置与数据仅存于本机 `%APPDATA%\WinIsland`。
+- **🔁 多歌词源一键切换**：在「自动 / 本地 LRC / AMLL TTML / Cider API / 在线歌词」之间一键循环切换，立即重新加载当前歌曲歌词
+- **🛡️ 崩溃自动恢复**：异常退出后下次启动自动提示已恢复，不再无响应、黑屏、状态丢失
+- **⏱️ 动画时长可调**：展开/收起动画时长滑杆（300–1400ms），自由调节快慢，适配个人喜好
+
 
 ---
 
-## 📥 下载（最新稳定版 1.1.9）
+## 📥 下载（最新稳定版 1.2.0）
 
 | 平台 | 下载 | 说明 |
 | --- | --- | --- |
-| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
-| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备 |
-| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-Setup-1.1.9.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
+| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
+| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备 |
+| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
 
 历史版本与完整更新日志见 [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases)。
 
@@ -241,16 +245,20 @@ dotnet test  WinIsland.slnx -c Release
 - **🖱 互動與智慧**：解鎖拖曳 + 邊緣吸附、全螢幕/鎖定螢幕自動隱藏、雙擊/中鍵快捷動作、快捷操作按鈕、檔案中轉站（拖檔案上島、可再拖出到其他應用）、錄影智慧勿擾、定時明暗主題切換。
 - **⚡ 效率工具與自動化**：蕃茄鐘、待辦、剪貼簿歷史、快速啟動器、日程提醒；會議靜音助手、螢幕錄製/截圖提示、檔案複製/下載進度上島；全域快速鍵與規則引擎。
 - **🛡 隱私安全**：無遙測、無廣告、無資料上報。除使用者手動開啟的線上歌詞/天氣外完全離線；所有設定與資料僅存於本機 `%APPDATA%\WinIsland`。
+- **🔁 多歌詞來源一鍵切換**：在「自動 / 本地 LRC / AMLL TTML / Cider API / 線上歌詞」之間一鍵循環切換，立即重新載入目前歌曲歌詞
+- **🛡️ 當機自動恢復**：異常結束後下次啟動自動提示已恢復，不再無回應、黑屏、狀態遺失
+- **⏱️ 動畫時長可調**：展開/收起動畫時長滑桿（300–1400ms），自由調整快慢，配合個人喜好
+
 
 ---
 
-## 📥 下載（最新穩定版 1.1.9）
+## 📥 下載（最新穩定版 1.2.0）
 
 | 平台 | 下載 | 說明 |
 | --- | --- | --- |
-| Windows x64 | [x64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-x64.exe) | 主流 64 位元電腦首選，單檔免安裝，直接執行 |
-| Windows ARM64 | [ARM64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-arm64.exe) | Surface Pro X / 驍龍機型等 ARM 裝置 |
-| Windows 通用 | [通用安裝包](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-Setup-1.1.9.exe) | Inno Setup 安裝精靈，x64 / ARM64 自動依架構安裝 |
+| Windows x64 | [x64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | 主流 64 位元電腦首選，單檔免安裝，直接執行 |
+| Windows ARM64 | [ARM64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Surface Pro X / 驍龍機型等 ARM 裝置 |
+| Windows 通用 | [通用安裝包](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Inno Setup 安裝精靈，x64 / ARM64 自動依架構安裝 |
 
 歷史版本與完整更新日誌見 [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases)。
 
@@ -450,16 +458,20 @@ dotnet test  WinIsland.slnx -c Release
 - **🖱 Interaction & intelligence**: unlock-to-drag with edge snapping, auto-hide on fullscreen/lock screen, double-click and middle-click quick actions, quick-action buttons, file transfer station (drag files onto the island and out to other apps), smart DND while screen-recording, scheduled light/dark theme switching.
 - **⚡ Productivity & automation**: Pomodoro timer, to-dos, clipboard history, quick launcher, schedule reminders; meeting mute assistant, screen-record/screenshot hints, file-copy/download progress on the island; global hotkeys and a rules engine.
 - **🛡 Privacy & security**: no telemetry, no ads, no data uploads. Fully offline except for user-enabled online lyrics/weather; all configuration and data stays local in `%APPDATA%\WinIsland`.
+- **🔁 One-tap lyric-source switching**: cycle instantly between Auto / Local LRC / AMLL TTML / Cider API / Online lyrics, and the current song's lyrics reload right away
+- **🛡️ Automatic crash recovery**: after an abnormal exit, the next launch auto-notifies recovery — no more hangs, black screens, or lost state
+- **⏱️ Adjustable animation duration**: a new expand/collapse animation-duration slider (300–1400ms) lets you fine-tune speed to your liking
+
 
 ---
 
-## 📥 Download (latest stable 1.1.9)
+## 📥 Download (latest stable 1.2.0)
 
 | Platform | Download | Notes |
 | --- | --- | --- |
-| Windows x64 | [x64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-x64.exe) | For mainstream 64-bit PCs; single file, no install needed |
-| Windows ARM64 | [ARM64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-arm64.exe) | For Surface Pro X / Snapdragon ARM devices |
-| Windows Universal | [Universal installer](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-Setup-1.1.9.exe) | Inno Setup wizard; auto-installs x64 / ARM64 by architecture |
+| Windows x64 | [x64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | For mainstream 64-bit PCs; single file, no install needed |
+| Windows ARM64 | [ARM64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | For Surface Pro X / Snapdragon ARM devices |
+| Windows Universal | [Universal installer](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Inno Setup wizard; auto-installs x64 / ARM64 by architecture |
 
 All historical versions and the full changelog: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -659,16 +671,20 @@ Use Tray menu → Quit; closing the island window only hides it (tray-resident b
 - **🖱 Interacción e inteligencia**: desbloquear para arrastrar con ajuste a bordes, ocultar automáticamente en pantalla completa/pantalla de bloqueo, acciones rápidas de doble clic y clic central, botones de acción rápida, estación de transferencia de archivos (arrastrar archivos a la isla y arrastrarlos fuera a otras apps), No molestar inteligente durante la grabación de pantalla, cambio programado de tema claro/oscuro.
 - **⚡ Productividad y automatización**: temporizador Pomodoro, tareas pendientes, historial del portapapeles, lanzador rápido, recordatorios de agenda; asistente de silencio en reuniones, avisos de grabación/captura de pantalla, progreso de copia/descarga de archivos en la isla; atajos globales y motor de reglas.
 - **🛡 Privacidad y seguridad**: sin telemetría, sin anuncios, sin cargas de datos. Totalmente sin conexión excepto por las letras en línea y el clima habilitados por el usuario; toda la configuración y los datos permanecen locales en `%APPDATA%\WinIsland`.
+- **🔁 Cambio de fuente de letras con un clic**: alterna al instante entre Automática / LRC local / AMLL TTML / API de Cider / Letras en línea, y las letras de la canción actual se recargan de inmediato
+- **🛡️ Recuperación automática tras fallos**: después de un cierre anómalo, el siguiente inicio avisa de la recuperación — sin bloqueos, pantallas negras ni estados perdidos
+- **⏱️ Duración de animación ajustable**: nuevo control deslizante de duración de expandir/contraer (300–1400ms)
+
 
 ---
 
-## 📥 Descargas (última estable 1.1.9)
+## 📥 Descargas (última estable 1.2.0)
 
 | Plataforma | Descarga | Notas |
 | --- | --- | --- |
-| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-x64.exe) | Para PCs de 64 bits convencionales; archivo único, sin instalación |
-| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
-| Windows Universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-Setup-1.1.9.exe) | Asistente Inno Setup; instala x64 / ARM64 según la arquitectura |
+| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | Para PCs de 64 bits convencionales; archivo único, sin instalación |
+| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
+| Windows Universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Asistente Inno Setup; instala x64 / ARM64 según la arquitectura |
 
 Todas las versiones históricas y el registro de cambios completo: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -868,16 +884,20 @@ Usa Menú de la bandeja → Salir; cerrar la ventana de la isla solo la oculta (
 - **🖱 Interaction et intelligence** : déverrouillage pour glisser avec magnétisme aux bords, masquage automatique en plein écran / sur l'écran de verrouillage, actions rapides double-clic et clic central, boutons d'action rapide, station de transfert de fichiers (glisser des fichiers vers l'île puis vers d'autres applications), Ne pas déranger intelligent pendant l'enregistrement d'écran, bascule programmée du thème clair/sombre.
 - **⚡ Productivité et automatisation** : minuteur Pomodoro, tâches, historique du presse-papiers, lanceur rapide, rappels d'agenda ; assistant de mise en sourdine en réunion, alertes d'enregistrement d'écran / de capture, progression de copie/téléchargement de fichiers sur l'île ; raccourcis globaux et moteur de règles.
 - **🛡 Confidentialité et sécurité** : aucune télémétrie, aucune publicité, aucune remontée de données. Entièrement hors ligne sauf paroles en ligne et météo activées manuellement ; toute la configuration et les données restent locales dans `%APPDATA%\WinIsland`.
+- **🔁 Changement de source des paroles en un clic** : basculez instantanément entre Auto / LRC local / AMLL TTML / API Cider / Paroles en ligne, et les paroles de la chanson en cours sont rechargées aussitôt
+- **🛡️ Récupération automatique après un plantage** : après une fermeture anormale, le prochain lancement notifie la récupération — plus de blocages, d'écran noir ni d'état perdu
+- **⏱️ Durée d'animation réglable** : nouveau curseur de durée de déploiement/repli (300–1400ms)
+
 
 ---
 
-## 📥 Téléchargement (dernière version stable 1.1.9)
+## 📥 Téléchargement (dernière version stable 1.2.0)
 
 | Plateforme | Téléchargement | Notes |
 | --- | --- | --- |
-| Windows x64 | [Portable x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-x64.exe) | Le choix recommandé pour les PC 64 bits ; fichier unique, sans installation, exécution directe |
-| Windows ARM64 | [Portable ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-arm64.exe) | Pour Surface Pro X / appareils ARM Snapdragon |
-| Windows universel | [Installeur universel](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-Setup-1.1.9.exe) | Assistant Inno Setup ; installe x64 / ARM64 selon l'architecture |
+| Windows x64 | [Portable x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | Le choix recommandé pour les PC 64 bits ; fichier unique, sans installation, exécution directe |
+| Windows ARM64 | [Portable ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Pour Surface Pro X / appareils ARM Snapdragon |
+| Windows universel | [Installeur universel](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Assistant Inno Setup ; installe x64 / ARM64 selon l'architecture |
 
 Toutes les versions historiques et le journal complet : [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1077,16 +1097,20 @@ Menu de la barre d'état → Quitter ; fermer la fenêtre de l'île ne fait que 
 - **🖱 التفاعل والذكاء**: إلغاء القفل للسحب مع الالتصاق بالحواف، إخفاء تلقائي في ملء الشاشة/شاشة القفل، أفعال سريعة بنقرة مزدوجة/نقرة الوسط، أزرار أفعال سريعة، محطة نقل الملفات (سحب الملفات إلى الجزيرة وإخراجها إلى تطبيقات أخرى)، «لا تُزعج» ذكي أثناء تسجيل الشاشة، تبديل مجدول للسمة الفاتحة/الداكنة.
 - **⚡ الإنتاجية والأتمتة**: مؤقّت بومودورو، مهام، سجل الحافظة، مشغّل سريع، تذكيرات مواعيد؛ مساعد كتم الميكروفون في الاجتماعات، تنبيهات تسجيل/التقاط الشاشة، تقدّم نسخ/تنزيل الملفات على الجزيرة؛ اختصارات عامة ومحرك قواعد.
 - **🛡 الخصوصية والأمان**: لا تتبع، لا إعلانات، لا رفع بيانات. يعمل دون اتصال تمامًا ما عدا الكلمات عبر الإنترنت والطقس عند تفعيلهما يدويًا؛ جميع الإعدادات والبيانات محلية في `%APPDATA%\WinIsland`.
+- **🔁 التبديل السريع لمصدر الكلمات بنقرة واحدة**: بدّل فوراً بين تلقائي / LRC محلي / AMLL TTML / واجهة Cider / الكلمات عبر الإنترنت، مع إعادة تحميل كلمات الأغنية الحالية مباشرة
+- **🛡️ الاسترداد التلقائي عند الأعطال**: بعد خروج غير طبيعي، يشير التشغيل التالي إلى الاسترداد — بلا تجمّد أو شاشة سوداء أو فقدان الحالة
+- **⏱️ مدة حركة قابلة للضبط**: شريط تمرير جديد لمدة حركة الفتح/الطي (300–1400ms)
+
 
 ---
 
-## 📥 التحميل (آخر إصدار مستقر 1.1.9)
+## 📥 التحميل (آخر إصدار مستقر 1.2.0)
 
 | النظام | التحميل | ملاحظات |
 | --- | --- | --- |
-| Windows x64 | [نسخة محمولة x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-x64.exe) | الخيار الأول لأجهزة 64 بت الشائعة؛ ملف واحد بدون تثبيت، يعمل مباشرة |
-| Windows ARM64 | [نسخة محمولة ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-arm64.exe) | لأجهزة Surface Pro X / أجهزة ARM Snapdragon |
-| Windows شامل | [مثبّت شامل](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-Setup-1.1.9.exe) | معالج Inno Setup؛ يثبّت x64 / ARM64 حسب البنية |
+| Windows x64 | [نسخة محمولة x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | الخيار الأول لأجهزة 64 بت الشائعة؛ ملف واحد بدون تثبيت، يعمل مباشرة |
+| Windows ARM64 | [نسخة محمولة ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | لأجهزة Surface Pro X / أجهزة ARM Snapdragon |
+| Windows شامل | [مثبّت شامل](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | معالج Inno Setup؛ يثبّت x64 / ARM64 حسب البنية |
 
 جميع الإصدارات السابقة وسجل التغييرات الكامل: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1286,16 +1310,20 @@ dotnet test  WinIsland.slnx -c Release
 - **🖱 Взаимодействие и интеллект**: разблокировка для перетаскивания с прилипанием к краям, автоскрытие в полноэкранном режиме и на экране блокировки, быстрые действия по двойному/среднему клику, кнопки быстрых действий, перевалочный пункт файлов (перетаскивание на остров и из него в другие приложения), умный режим «Не беспокоить» во время записи экрана, плановое переключение светлой/тёмной темы.
 - **⚡ Производительность и автоматизация**: таймер Pomodoro, задачи, история буфера обмена, быстрый запуск, напоминания расписания; помощник отключения микрофона на созвонах, подсказки записи экрана/скриншотов, прогресс копирования/загрузки файлов на острове; глобальные горячие клавиши и движок правил.
 - **🛡 Конфиденциальность и безопасность**: без телеметрии, без рекламы, без отправки данных. Полностью офлайн, кроме включённых вручную онлайн-текстов и погоды; все настройки и данные хранятся локально в `%APPDATA%\WinIsland`.
+- **🔁 Переключение источника текста одним нажатием**: мгновенно переключайтесь между «Авто / Локальный LRC / AMLL TTML / API Cider / Онлайн-тексты», текст текущей песни сразу перезагружается
+- **🛡️ Автовосстановление после сбоя**: после аварийного завершения следующий запуск уведомляет о восстановлении — без зависаний, чёрного экрана и потери состояния
+- **⏱️ Настраиваемая длительность анимации**: ползунок длительности раскрытия/сворачивания (300–1400мс)
+
 
 ---
 
-## 📥 Скачать (последняя стабильная версия 1.1.9)
+## 📥 Скачать (последняя стабильная версия 1.2.0)
 
 | Платформа | Скачать | Примечания |
 | --- | --- | --- |
-| Windows x64 | [Портативная x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-x64.exe) | Рекомендуется для обычных 64-битных ПК; один файл, без установки, запуск сразу |
-| Windows ARM64 | [Портативная ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-arm64.exe) | Для Surface Pro X / устройств ARM Snapdragon |
-| Windows универсальная | [Универсальный установщик](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-Setup-1.1.9.exe) | Мастер Inno Setup; устанавливает x64 / ARM64 в зависимости от архитектуры |
+| Windows x64 | [Портативная x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | Рекомендуется для обычных 64-битных ПК; один файл, без установки, запуск сразу |
+| Windows ARM64 | [Портативная ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Для Surface Pro X / устройств ARM Snapdragon |
+| Windows универсальная | [Универсальный установщик](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Мастер Inno Setup; устанавливает x64 / ARM64 в зависимости от архитектуры |
 
 Все предыдущие версии и полный журнал изменений: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1495,16 +1523,20 @@ dotnet test  WinIsland.slnx -c Release
 - **🖱 Interação e inteligência**: desbloquear para arrastar com ajuste às bordas, ocultar automaticamente em tela cheia/tela de bloqueio, ações rápidas de duplo clique e clique do meio, botões de ação rápida, estação de transferência de arquivos (arrastar arquivos para a ilha e arrastá-los para outros aplicativos), Não perturbe inteligente durante gravação de tela, troca programada de tema claro/escuro.
 - **⚡ Produtividade e automação**: timer Pomodoro, tarefas, histórico da área de transferência, iniciador rápido, lembretes de agenda; assistente de mudo em reuniões, avisos de gravação/captura de tela, progresso de cópia/download de arquivos na ilha; atalhos globais e mecanismo de regras.
 - **🛡 Privacidade e segurança**: sem telemetria, sem anúncios, sem envio de dados. Totalmente offline exceto pelas letras on-line e clima ativados manualmente; toda a configuração e os dados permanecem locais em `%APPDATA%\WinIsland`.
+- **🔁 Troca de fonte da letra com um clique**: alterne instantaneamente entre Automática / LRC local / AMLL TTML / API do Cider / Letras online, e a letra da música atual é recarregada imediatamente
+- **🛡️ Recuperação automática após falhas**: após um encerramento anormal, a próxima inicialização avisa a recuperação — sem travamentos, telas pretas ou estado perdido
+- **⏱️ Duração de animação ajustável**: novo controle deslizante de duração da animação de expandir/recolher (300–1400ms)
+
 
 ---
 
-## 📥 Download (última versão estável 1.1.9)
+## 📥 Download (última versão estável 1.2.0)
 
 | Plataforma | Download | Observações |
 | --- | --- | --- |
-| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-x64.exe) | Recomendado para PCs 64 bits comuns; arquivo único, sem instalação, execução direta |
-| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-1.1.9-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
-| Windows universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.1.9/WinIsland-Setup-1.1.9.exe) | Assistente Inno Setup; instala x64 / ARM64 conforme a arquitetura |
+| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-x64.exe) | Recomendado para PCs 64 bits comuns; arquivo único, sem instalação, execução direta |
+| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-1.2.0-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
+| Windows universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.0/WinIsland-Setup-1.2.0.exe) | Assistente Inno Setup; instala x64 / ARM64 conforme a arquitetura |
 
 Todas as versões anteriores e o changelog completo: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 

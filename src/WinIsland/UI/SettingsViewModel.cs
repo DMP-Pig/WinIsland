@@ -227,7 +227,14 @@ public sealed class SettingsViewModel : ObservableObject
             new EnumOption<string>("Ring", Localization.Get("Wave_StyleRing")),
             new EnumOption<string>("Particles", Localization.Get("Wave_StyleParticles")),
         };
-        AnimationStyleOptions = new[]
+        LyricsSourceOptions = new[]
+        {
+            new EnumOption<string>("Auto", Localization.Get("Lyrics_SrcAuto")),
+            new EnumOption<string>("Local", Localization.Get("Lyrics_SrcLocal")),
+            new EnumOption<string>("Amll", Localization.Get("Lyrics_SrcAmll")),
+            new EnumOption<string>("Cider", Localization.Get("Lyrics_SrcCider")),
+            new EnumOption<string>("Online", Localization.Get("Lyrics_SrcOnline")),
+        };        AnimationStyleOptions = new[]
         {
             new EnumOption<string>("Spring", Localization.Get("Appearance_AnimSpring")),
             new EnumOption<string>("Soft", Localization.Get("Appearance_AnimSoft")),
@@ -303,6 +310,7 @@ public sealed class SettingsViewModel : ObservableObject
     public IReadOnlyList<EnumOption<MonitorSelection>> MonitorOptions { get; }
     public IReadOnlyList<EnumOption<string>> ThemePresetOptions { get; } = Array.Empty<EnumOption<string>>();
     public IReadOnlyList<EnumOption<string>> AnimationStyleOptions { get; } = Array.Empty<EnumOption<string>>();
+    public IReadOnlyList<EnumOption<string>> LyricsSourceOptions { get; } = Array.Empty<EnumOption<string>>();
     public IReadOnlyList<EnumOption<string>> WaveStyleOptions { get; } = Array.Empty<EnumOption<string>>();
     public IReadOnlyList<string> PresetColors { get; }
     public IReadOnlyList<ComponentRow> Components => _components;
@@ -537,3 +545,4 @@ public sealed class SettingsViewModel : ObservableObject
         Localization.CurrentLanguage = Working.Language;
     }
 }
+

@@ -12,6 +12,15 @@
 
 ## 简体中文
 
+## WinIsland 1.2.0（正式版 / Stable）
+
+一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新内容
+
+- **多歌词源一键切换**：支持在「自动 / 本地 LRC / AMLL TTML / Cider API / 在线歌词」之间一键循环切换，并立即重新加载当前歌曲歌词
+- **崩溃自动恢复**：应用异常退出后，下次启动会提示已自动恢复，不再出现无响应、黑屏、状态丢失
+- **动画时长可调**：新增展开/收起动画时长滑杆（300–1400ms），可自由调节动画快慢，适配个人喜好
 ## WinIsland 1.1.9（正式版 / Stable）
 
 一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
@@ -386,6 +395,15 @@
 
 ## 繁體中文
 
+## WinIsland 1.2.0（正式版 / Stable）
+
+一款現代化、多功能的 Windows 動態島元件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新內容
+
+- **多歌詞來源一鍵切換**：支援在「自動 / 本地 LRC / AMLL TTML / Cider API / 線上歌詞」之間一鍵循環切換，並立即重新載入目前歌曲的歌詞
+- **當機自動恢復**：應用程式異常結束後，下次啟動會提示已自動恢復，不再出現無回應、黑屏、狀態遺失
+- **動畫時長可調**：新增展開/收起動畫時長滑桿（300–1400ms），可自由調整動畫快慢，配合個人喜好
 ## WinIsland 1.1.9（正式版 / Stable）
 
 一款現代化、多功能的 Windows 動態島元件。A modern, multi-functional Dynamic Island widget for Windows.
@@ -760,6 +778,15 @@
 
 ## English
 
+## WinIsland 1.2.0 (Stable)
+
+A modern, multi-functional Dynamic Island widget for Windows.
+
+### What's New
+
+- **One-tap lyric-source switching**: cycle instantly between Auto / Local LRC / AMLL TTML / Cider API / Online lyrics, and the current song's lyrics reload right away
+- **Automatic crash recovery**: after an abnormal exit, the next launch shows a recovery notice — no more hangs, black screens, or lost state
+- **Adjustable animation duration**: a new expand/collapse animation-duration slider (300–1400ms) lets you fine-tune animation speed to your liking
 ## WinIsland 1.1.9 (Stable)
 
 A modern, multi-functional Dynamic Island widget for Windows.
@@ -1134,6 +1161,15 @@ A modern, multi-functional Dynamic Island widget for Windows.
 
 ## Español
 
+## WinIsland 1.2.0 (Estable)
+
+Una moderna y multifuncional Dynamic Island para Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Novedades
+
+- **Cambio de fuente de letras con un clic**: alterna al instante entre Automática / LRC local / AMLL TTML / API de Cider / Letras en línea, y las letras de la canción actual se recargan de inmediato
+- **Recuperación automática tras fallos**: después de un cierre anómalo, el siguiente inicio muestra un aviso de recuperación — sin bloqueos, pantallas negras ni estados perdidos
+- **Duración de animación ajustable**: nuevo control deslizante de duración de expandir/contraer (300–1400ms) para ajustar la velocidad a tu gusto
 ## WinIsland 1.1.9 (Estable)
 
 Una moderna y multifuncional Dynamic Island para Windows. A modern, multi-functional Dynamic Island widget for Windows.
@@ -1508,6 +1544,15 @@ Un widget Dynamic Island moderno y multifuncional para Windows.
 
 ## Français
 
+## WinIsland 1.2.0 (Stable)
+
+Une Dynamic Island moderne et polyvalente pour Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Nouveautés
+
+- **Changement de source des paroles en un clic** : basculez instantanément entre Auto / LRC local / AMLL TTML / API Cider / Paroles en ligne, et les paroles de la chanson en cours sont rechargées aussitôt
+- **Récupération automatique après un plantage** : après une fermeture anormale, le prochain lancement affiche un avis de récupération — plus de blocages, d'écran noir ni d'état perdu
+- **Durée d'animation réglable** : un nouveau curseur de durée d'animation déploiement/repli (300–1400ms) permet d'ajuster la vitesse à vos préférences
 ## WinIsland 1.1.9 (Stable)
 
 Une Dynamic Island moderne et polyvalente pour Windows. A modern, multi-functional Dynamic Island widget for Windows.
@@ -1882,6 +1927,15 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 
 ## العربية
 
+## WinIsland 1.2.0 (مستقر)
+
+جزيرة ديناميكية حديثة ومتعددة الوظائف لنظام ويندوز. A modern, multi-functional Dynamic Island widget for Windows.
+
+### ما الجديد
+
+- **التبديل السريع لمصدر الكلمات بنقرة واحدة**: بدّل فوراً بين تلقائي / LRC محلي / AMLL TTML / واجهة Cider / الكلمات عبر الإنترنت، مع إعادة تحميل كلمات الأغنية الحالية مباشرة
+- **الاسترداد التلقائي عند الأعطال**: بعد خروج غير طبيعي، يعرض التشغيل التالي إشعار استرداد — لا مزيد من التجمّد أو الشاشة السوداء أو فقدان الحالة
+- **مدة حركة قابلة للضبط**: شريط تمرير جديد لمدة حركة الفتح/الطي (300–1400ms) يسمح بضبط السرعة حسب الذوق
 ## WinIsland 1.1.9 (مستقر)
 
 جزيرة ديناميكية حديثة ومتعددة الوظائف لنظام ويندوز. A modern, multi-functional Dynamic Island widget for Windows.
@@ -2256,6 +2310,15 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 
 ## Русский
 
+## WinIsland 1.2.0 (Stable)
+
+Современный многофункциональный Dynamic Island для Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Что нового
+
+- **Переключение источника текста одним нажатием**: мгновенно переключайтесь между «Авто / Локальный LRC / AMLL TTML / API Cider / Онлайн-тексты», и текст текущей песни сразу перезагружается
+- **Автоматическое восстановление после сбоя**: после аварийного завершения следующий запуск покажет уведомление о восстановлении — без зависаний, чёрного экрана и потери состояния
+- **Настраиваемая длительность анимации**: новый ползунок длительности анимации раскрытия/сворачивания (300–1400мс) позволяет подстроить скорость под себя
 ## WinIsland 1.1.9 (Stable)
 
 Современный многофункциональный Dynamic Island для Windows. A modern, multi-functional Dynamic Island widget for Windows.
@@ -2630,6 +2693,15 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 
 ## Português
 
+## WinIsland 1.2.0 (Estável)
+
+Um Dynamic Island moderno e multifuncional para Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Novidades
+
+- **Troca de fonte da letra com um clique**: alterne instantaneamente entre Automática / LRC local / AMLL TTML / API do Cider / Letras online, e a letra da música atual é recarregada imediatamente
+- **Recuperação automática após falhas**: após um encerramento anormal, a próxima inicialização mostra um aviso de recuperação — sem travamentos, telas pretas ou estado perdido
+- **Duração de animação ajustável**: novo controle deslizante de duração da animação de expandir/recolher (300–1400ms) para ajustar a velocidade ao seu gosto
 ## WinIsland 1.1.9 (Estável)
 
 Um Dynamic Island moderno e multifuncional para Windows. A modern, multi-functional Dynamic Island widget for Windows.

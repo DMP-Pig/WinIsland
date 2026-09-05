@@ -93,6 +93,19 @@ public static class Localization
         ["Lyrics_StandaloneWindow"] = "启用独立歌词小窗",
         ["Lyrics_Karaoke"] = "逐字高亮（卡拉OK效果）",
         ["Lyrics_CopyrightNote"] = "在线歌词使用非官方接口，仅供个人学习，请尊重版权。",
+        ["Lyrics_SourcePick"] = "在灵动岛歌词区显示来源切换按钮（一键切换：自动 → 本地 → AMLL → Cider → 在线）",
+        ["Lyrics_PreferredSource"] = "首选歌词来源（未命中时自动按优先级降级使用其他来源）",
+        ["Lyrics_SourceButton"] = "歌词",
+        ["Lyrics_SourceHint"] = "切换歌词来源",
+        ["Lyrics_SrcAuto"] = "自动",
+        ["Lyrics_SrcLocal"] = "本地",
+        ["Lyrics_SrcAmll"] = "AMLL",
+        ["Lyrics_SrcCider"] = "Cider",
+        ["Lyrics_SrcOnline"] = "在线",
+        ["Appearance_AnimDuration"] = "展开/收起动画时长",
+        ["Appearance_AnimDurationHint"] = "动画时长（毫秒）：越小越快、越大越丝滑。拖动后立即生效。",
+        ["Crash_RecoveredTitle"] = "已从异常退出中恢复",
+        ["Crash_RecoveredBody"] = "上次 WinIsland 异常退出，已自动恢复灵动岛位置与播放信息。",
         ["Cider_Enabled"] = "启用 Cider 本地 API",
         ["Cider_Port"] = "端口（0 = 自动检测，默认 10767）",
         ["Cider_Token"] = "API Token（可留空）",
@@ -561,6 +574,19 @@ public static class Localization
         ["Lyrics_StandaloneWindow"] = "Enable standalone lyrics window",
         ["Lyrics_Karaoke"] = "Word-by-word karaoke highlight",
         ["Lyrics_CopyrightNote"] = "Online lyrics use unofficial APIs; personal use only. Respect copyright.",
+        ["Lyrics_SourcePick"] = "Show a source-switch button in the island lyrics area (cycle: Auto → Local → AMLL → Cider → Online)",
+        ["Lyrics_PreferredSource"] = "Preferred lyrics source (falls back to auto priority when unavailable)",
+        ["Lyrics_SourceButton"] = "Lyrics",
+        ["Lyrics_SourceHint"] = "Switch lyrics source",
+        ["Lyrics_SrcAuto"] = "Auto",
+        ["Lyrics_SrcLocal"] = "Local",
+        ["Lyrics_SrcAmll"] = "AMLL",
+        ["Lyrics_SrcCider"] = "Cider",
+        ["Lyrics_SrcOnline"] = "Online",
+        ["Appearance_AnimDuration"] = "Expand / collapse animation duration",
+        ["Appearance_AnimDurationHint"] = "Animation length (ms): smaller = faster, larger = smoother. Applies immediately.",
+        ["Crash_RecoveredTitle"] = "Recovered from an abnormal exit",
+        ["Crash_RecoveredBody"] = "WinIsland exited unexpectedly last time; island position and playback info were restored.",
         ["Cider_Enabled"] = "Enable Cider local API",
         ["Cider_Port"] = "Port (0 = auto-detect, default 10767)",
         ["Cider_Token"] = "API token (optional)",
@@ -954,6 +980,7 @@ public static class Localization
         return table.TryGetValue(key, out var v) ? v : key;
     }
 }
+
 
 
 

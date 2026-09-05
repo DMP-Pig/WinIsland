@@ -122,6 +122,7 @@ public sealed class AppSettings
     public List<string> CallNotifyApps { get; set; } = new() { "Weixin", "WeChat", "QQ" };
     // -- 动效与性能（33 动效皮肤 / 37 低功耗模式）--
     public string AnimationStyle { get; set; } = "Spring";   // Spring | Soft | Elastic | Fade（动效皮肤）
+    public int IslandAnimationDuration { get; set; } = 700;  // 展开/收起动画时长（毫秒，300~1400，越大越丝滑）
     public bool LowPowerMode { get; set; } = false;          // 低功耗模式：空闲降帧渲染波纹、简化动画
 
     // -- 全局快捷键（自定义组合键，格式如 Ctrl+Alt+I；35 全局快捷键大全）--
@@ -170,6 +171,8 @@ public sealed class AppSettings
     public string LyricsFolder { get; set; } = string.Empty; // extra .lrc folder; empty = auto (Music)
     public bool StandaloneLyricsWindow { get; set; } = false;
     public bool KaraokeHighlight { get; set; } = true;
+    public string LyricsPreferredSource { get; set; } = "Auto";  // 首选歌词来源：Auto | Local | Amll | Cider | Online（一键切换，未命中自动回退 Auto 优先级）
+    public bool LyricsSourcePick { get; set; } = false;          // 在灵动岛歌词区显示来源切换按钮（一键切换歌词来源）
     public bool BilingualLyrics { get; set; } = true;   // 双语歌词：自动合并相邻时间戳的翻译行（可关闭）
     public Dictionary<string, double> LyricTimeOffsets { get; set; } = new();  // #4 歌词时间微调：每首歌的时间偏移（秒）
     public double LyricsWindowOpacity { get; set; } = 0.85;   // #5 独立歌词小窗不透明度（0.3~1.0）
@@ -458,4 +461,6 @@ public sealed class SettingsService
         }
     }
 }
+
+
 

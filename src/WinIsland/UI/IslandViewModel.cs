@@ -546,6 +546,56 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     public string LyricOffsetDownHint => Localization.Get("Lyric_OffsetDownHint");
     /// <summary>#4 歌词延后 0.5s 按钮提示。</summary>
     public string LyricOffsetUpHint => Localization.Get("Lyric_OffsetUpHint");
+    // ── 多歌词源一键切换（1.2.0）──
+    /// <summary>歌词来源切换按钮文本（如「歌词：自动」）。</summary>
+    public string LyricsSourceButtonText => Localization.Get("Lyrics_SourceButton") + "：" + CurrentLyricsSourceDisplay;
+    /// <summary>当前首选歌词来源（设置里的值）。</summary>
+    public string CurrentLyricsSource => _settings.Current.LyricsPreferredSource ?? "Auto";
+    /// <summary>当前首选歌词来源的显示名。</summary>
+    public string CurrentLyricsSourceDisplay => CurrentLyricsSource.ToUpperInvariant() switch
+    {
+        "LOCAL" => Localization.Get("Lyrics_SrcLocal"),
+        "AMLL" => Localization.Get("Lyrics_SrcAmll"),
+        "CIDER" => Localization.Get("Lyrics_SrcCider"),
+        "ONLINE" => Localization.Get("Lyrics_SrcOnline"),
+        _ => Localization.Get("Lyrics_SrcAuto"),
+    };
+    /// <summary>来源切换按钮提示。</summary>
+    public string LyricsSourceButtonHint => Localization.Get("Lyrics_SourceHint");
+
+    /// <summary>循环切换歌词来源：自动 → 本地 → AMLL → Cider → 在线 → 自动；立即重新加载当前歌曲歌词。</summary>
+    public async void CycleLyricsSource()
+    {
+        try
+        {
+            var order = new[] { "Auto", "Local", "Amll", "Cider", "Online" };
+            var cur = CurrentLyricsSource;
+            var next = order[0];
+            for (var i = 0; i < order.Length; i++)
+            {
+                if (string.Equals(order[i], cur, StringComparison.OrdinalIgnoreCase))
+                {
+                    next = order[(i + 1) % order.Length];
+                    break;
+                }
+            }
+
+            var snapshot = _snapshot;
+            await Task.Run(() => _lyricsService.SetPreferredSource(next));
+            OnPropertyChanged(nameof(LyricsSourceButtonText));
+            OnPropertyChanged(nameof(CurrentLyricsSourceDisplay));
+            AppLogger.Info($"Lyrics source switched to {next}");
+            if (snapshot is not null)
+            {
+                _lyricsKey = string.Empty; // 强制重新加载歌词
+                await LoadLyricsAsync(snapshot);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"CycleLyricsSource failed: {ex.Message}");
+        }
+    }
 
     /// <summary>紧凑态逐字卡拉OK已点亮字符数。</summary>
     private double _compactHighlightFraction;
@@ -2690,3 +2740,4 @@ public sealed class MediaSessionItem : ObservableObject
         _isCurrent = isCurrent;
     }
 }
+

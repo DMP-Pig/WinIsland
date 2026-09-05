@@ -644,6 +644,11 @@
                             <TextBlock x:Name="LblAnimationStyle" Style="{StaticResource Label}"/>
                             <ComboBox ItemsSource="{Binding AnimationStyleOptions}" SelectedValuePath="Value"
                                       DisplayMemberPath="Display" SelectedValue="{Binding Working.AnimationStyle}"/>
+                            <TextBlock x:Name="LblAnimDuration" Style="{StaticResource Label}"/>
+                            <Slider Minimum="300" Maximum="1400" Value="{Binding Working.IslandAnimationDuration}" Width="300" HorizontalAlignment="Left"
+                                    IsSnapToTickEnabled="True" TickFrequency="50"/>
+                            <TextBlock x:Name="TxtAnimDurationHint" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,2,0,0" MaxWidth="480" HorizontalAlignment="Left"/>
 
                             <TextBlock x:Name="LblAccent" Style="{StaticResource Label}" Text="主题色"/>
                             <WrapPanel x:Name="ColorSwatches">
@@ -918,7 +923,12 @@
                 <TabItem x:Name="TabLyrics" Header="歌词">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10,6">
-                        <CheckBox x:Name="ChkAmllTtml" IsChecked="{Binding Working.AmllTtmlEnabled}" Margin="0,0,0,6"/>
+                        <CheckBox x:Name="ChkLyricsSourcePick" IsChecked="{Binding Working.LyricsSourcePick}" Margin="0,0,0,6"/>
+                        <TextBlock x:Name="LblLyricsPreferredSource" Style="{StaticResource Label}" Margin="0,2,0,2"/>
+                        <ComboBox ItemsSource="{Binding LyricsSourceOptions}" SelectedValuePath="Value"
+                                  DisplayMemberPath="Display" SelectedValue="{Binding Working.LyricsPreferredSource}"
+                                  Width="260" HorizontalAlignment="Left"/>
+                        <CheckBox x:Name="ChkAmllTtml" IsChecked="{Binding Working.AmllTtmlEnabled}" Margin="0,10,0,6"/>
                         <CheckBox x:Name="ChkOnlineLyrics" Content="在线歌词（网易云，非官方接口，默认开启）" IsChecked="{Binding Working.OnlineLyricsEnabled}"/>
                         <TextBlock x:Name="TxtLyricsNote" Text="在线歌词使用非官方接口，仅供个人学习，请尊重版权。" FontSize="11" Foreground="#E6A055" TextWrapping="Wrap" Margin="0,2,0,8"/>
                         <TextBlock x:Name="LblLyricsFolder" Style="{StaticResource Label}" Text="歌词文件夹（留空自动搜索）"/>
@@ -1264,3 +1274,5 @@
         </Grid>
     </Border>
 </Window>
+
+

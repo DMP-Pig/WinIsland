@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -386,6 +386,8 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     /// <summary>多媒体来源选择器可见性（#3：有媒体且多个会话并存时显示）。</summary>
     public bool MediaSessionPickerVisible => _vm.HasMedia && _vm.HasMultipleSessions;
+    /// <summary>歌词来源一键切换按钮可见性（设置中开启「歌词来源切换」后显示，便于快速换源）。</summary>
+    public bool LyricSourcePickVisible => _settings.Current.LyricsSourcePick;
 
     // ── 单行模式：紧凑态所有组件一行显示 ──
     public bool SingleLineMode => _settings.Current.SingleLineMode;
@@ -669,6 +671,13 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         e.Handled = true;
     }
 
+    /// <summary>歌词来源一键切换（多歌词源）：点击循环 Auto → 本地 → AMLL → Cider → 在线，并立即重载歌词。</summary>
+    private void LyricSourceSwitch_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.CycleLyricsSource();
+        e.Handled = true;
+    }
+
     /// <summary>复制当前歌词句到剪贴板。</summary>
     private void CopyCurrentLyric_Click(object sender, RoutedEventArgs e)
     {
@@ -797,6 +806,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowButtons)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowInput)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MediaSessionPickerVisible)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LyricSourcePickVisible)));
     }
 
     /// <summary>按设置调整窗口与卡片尺寸（紧凑/展开）。仅当窗口尺寸真正变化时才重定位，
@@ -1554,21 +1564,26 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     /// </summary>
     private (IEasingFunction Easing, int SizeMs) GetSizeAnimationStyle(bool expand)
     {
+        // 1.2.0：动画时长可由用户微调（300~1400ms，默认 700ms）。
+        // 各风格保留相对差异：Spring 全时长 / Soft 略慢 / Elastic 略快 / Fade 最短；
+        // 收起时长约为展开的 0.86 倍，让回收更快一点更利落。
+        var baseMs = Math.Clamp(_settings.Current.IslandAnimationDuration, 300, 1400);
+        static int Ms(double v) => (int)Math.Round(v);
         switch (_settings.Current.AnimationStyle)
         {
             case "Soft":
-                return (new SoftSpringEase { Damping = 15, Stiffness = 220, Mass = 1 }, expand ? 760 : 660);
+                return (new SoftSpringEase { Damping = 15, Stiffness = 220, Mass = 1 }, expand ? Ms(baseMs * 1.08) : Ms(baseMs * 0.94));
             case "Elastic":
                 return (new ElasticEase
                 {
                     Oscillations = 1,
                     Springiness = 6,
                     EasingMode = EasingMode.EaseOut,
-                }, expand ? 680 : 600);
+                }, expand ? Ms(baseMs * 0.97) : Ms(baseMs * 0.84));
             case "Fade":
-                return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? 520 : 440);
+                return (new CubicEase { EasingMode = EasingMode.EaseOut }, expand ? Ms(baseMs * 0.74) : Ms(baseMs * 0.64));
             default: // Spring
-                return (new SpringEase { Damping = 13, Stiffness = 200, Mass = 1 }, expand ? 700 : 600);
+                return (new SpringEase { Damping = 13, Stiffness = 200, Mass = 1 }, expand ? baseMs : Ms(baseMs * 0.86));
         }
     }
     private void AddAnim(Storyboard sb, DependencyObject target, DependencyProperty prop, double to, int ms, IEasingFunction easing, TimeSpan? beginTime = null)
@@ -1848,3 +1863,4 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         }
     }
 }
+

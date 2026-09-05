@@ -72,6 +72,7 @@ public partial class App : Application
         DispatcherUnhandledException += (_, args) =>
         {
             AppLogger.Error("Unhandled dispatcher exception", args.Exception);
+            WriteCrashMarker(); // 崩溃自动恢复（1.2.0）：下次启动提示已恢复
             args.Handled = true;
         };
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
@@ -165,6 +166,7 @@ public partial class App : Application
 
         _vm = new IslandViewModel(_coordinator, _settings, _lyrics,
             _wave, _keyboard, _clipboard, _todo, _schedule, _pomodoro);
+        TryShowCrashRecoveryCard(); // 崩溃自动恢复（1.2.0）：上次异常退出 → 提示已恢复
         // 番茄钟到点提醒
         _vm.PomodoroCompletedRequested += phase =>
             Dispatcher.BeginInvoke(() => _vm?.ShowEventCard("pomodoro:done",
@@ -778,9 +780,40 @@ public partial class App : Application
         return t.Length <= 45 ? t : t.Substring(0, 42) + "…";
     }
 
+    // ── 崩溃自动恢复（1.2.0）──
+    private void WriteCrashMarker()
+    {
+        try
+        {
+            AppPaths.EnsureDirectories();
+            File.WriteAllText(AppPaths.CrashMarkerFile,
+                "{\"crashedAt\":\"" + DateTime.UtcNow.ToString("o") + "\"}");
+        }
+        catch { /* 标记写入失败不影响主流程 */ }
+    }
+
+    /// <summary>启动时检测崩溃标记：有则提示「已恢复」并清理；岛位/播放信息由设置持久化自动恢复。</summary>
+    private void TryShowCrashRecoveryCard()
+    {
+        try
+        {
+            if (!File.Exists(AppPaths.CrashMarkerFile)) return;
+            File.Delete(AppPaths.CrashMarkerFile);
+            Dispatcher.BeginInvoke(() =>
+                _vm?.ShowEventCard("crash:recovered", Localization.Get("Crash_RecoveredTitle"),
+                    Localization.Get("Crash_RecoveredBody"), "\uE7BA", "warning", 8));
+            AppLogger.Info("Crash recovery marker found; showing recovery card");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn($"TryShowCrashRecoveryCard failed: {ex.Message}");
+        }
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
         AppLogger.Info("WinIsland exiting.");
+        try { if (File.Exists(AppPaths.CrashMarkerFile)) File.Delete(AppPaths.CrashMarkerFile); } catch { /* 正常退出清理崩溃标记 */ }
         try
         {
             SaveMiniPlayerPosition();
@@ -819,5 +852,6 @@ public partial class App : Application
         base.OnExit(e);
     }
 }
+
 
 

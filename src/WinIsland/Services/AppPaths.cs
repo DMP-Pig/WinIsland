@@ -29,6 +29,9 @@ public static class AppPaths
 
     public static string LyricsDir => Path.Combine(AppDataDir, "Lyrics");
 
+    /// <summary>崩溃自动恢复标记文件：异常退出时写入，下次启动检测到后提示「已恢复」。</summary>
+    public static string CrashMarkerFile => Path.Combine(AppDataDir, "crash-recovery.json");
+
     public static string ExePath { get; } = Environment.ProcessPath ?? string.Empty;
 
     public static void EnsureDirectories()
@@ -39,4 +42,5 @@ public static class AppPaths
         Directory.CreateDirectory(LyricsDir);
     }
 }
+
 

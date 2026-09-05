@@ -487,6 +487,8 @@ public partial class SettingsWindow : Window
         ChkUseSystemVolume.Content = Localization.Get("Media_UseSystemVolume");
         LblAudioOutput.Text = Localization.Get("Media_AudioOutput");
         TxtAudioOutputNote.Text = Localization.Get("Media_AudioOutputNote");
+        ChkLyricsSourcePick.Content = Localization.Get("Lyrics_SourcePick");
+        LblLyricsPreferredSource.Text = Localization.Get("Lyrics_PreferredSource");
         ChkAmllTtml.Content = Localization.Get("Lyrics_AmllToggle");
         ChkOnlineLyrics.Content = Localization.Get("Lyrics_Online");
         ChkStandaloneLyrics.Content = Localization.Get("Lyrics_StandaloneWindow");
@@ -528,6 +530,8 @@ public partial class SettingsWindow : Window
         LblThemeTint.Text = Localization.Get("Appearance_ThemeTint");
         TxtThemeTintNote.Text = Localization.Get("Appearance_ThemeTintNote");
         LblAnimationStyle.Text = Localization.Get("Appearance_AnimStyle");
+        LblAnimDuration.Text = Localization.Get("Appearance_AnimDuration");
+        TxtAnimDurationHint.Text = Localization.Get("Appearance_AnimDurationHint");
         LblFontFamily.Text = Localization.Get("Appearance_FontFamily");
         LblFontScale.Text = Localization.Get("Appearance_FontScale");
         LblCornerRadius.Text = Localization.Get("Appearance_CornerRadius");
@@ -919,4 +923,5 @@ internal static class NativeUser32
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     internal static extern bool SetForegroundWindow(IntPtr hWnd);
 }
+
 

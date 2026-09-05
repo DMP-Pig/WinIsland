@@ -58,6 +58,72 @@ public sealed class LyricsService
     {
         var track = snapshot.Track;
 
+        // 多歌词源一键切换（1.2.0）：用户可指定首选来源；首选源未命中时按 Auto 优先级降级，
+        // 保证「选了 Cider 但切歌到网易云」这类场景依然有歌词可用。
+        var preferred = _settings.Current.LyricsPreferredSource;
+        if (!string.IsNullOrEmpty(preferred) && !string.Equals(preferred, "Auto", StringComparison.OrdinalIgnoreCase))
+        {
+            var picked = await LoadPreferredAsync(snapshot, preferred, ct);
+            if (!picked.IsEmpty) return picked;
+        }
+
+        return await LoadAutoAsync(snapshot, ct);
+    }
+
+    /// <summary>只从用户指定的单一来源取词；该来源未命中返回 Empty（随后自动回退 Auto 优先级）。</summary>
+    private async Task<LyricsResult> LoadPreferredAsync(MediaSnapshot snapshot, string preferred, CancellationToken ct)
+    {
+        var track = snapshot.Track;
+        switch (preferred.ToUpperInvariant())
+        {
+            case "LOCAL":
+            {
+                var localPath = FindLocalLrc(track);
+                if (localPath is null) return LyricsResult.Empty;
+                try
+                {
+                    var text = await File.ReadAllTextAsync(localPath, ct);
+                    var doc = LrcParser.Parse(text);
+                    return doc.IsEmpty ? LyricsResult.Empty : new LyricsResult(doc, LyricsSourceKind.LocalFile, localPath);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Warn($"Failed to read local LRC {localPath}: {ex.Message}");
+                    return LyricsResult.Empty;
+                }
+            }
+            case "AMLL":
+            {
+                if (!_settings.Current.AmllTtmlEnabled) return LyricsResult.Empty;
+                var amll = await _amll.FetchAsync(track.Title, track.Artist, track.Album, ct);
+                return amll.Lrc.IsEmpty ? LyricsResult.Empty : new LyricsResult(amll.Lrc, LyricsSourceKind.AmllTtml, "AMLL TTML", amll.Ttml);
+            }
+            case "CIDER":
+            {
+                if (snapshot.Source != MediaSourceKind.Cider || _cider is null) return LyricsResult.Empty;
+                var lrc = await _cider.GetLyricsAsync();
+                if (string.IsNullOrWhiteSpace(lrc)) return LyricsResult.Empty;
+                var doc = LrcParser.Parse(lrc);
+                return doc.IsEmpty ? LyricsResult.Empty : new LyricsResult(doc, LyricsSourceKind.Cider, "Cider API");
+            }
+            case "ONLINE":
+            {
+                if (!_settings.Current.OnlineLyricsEnabled) return LyricsResult.Empty;
+                var lrc = await _online.FetchLrcAsync(track.Title, track.Artist, ct);
+                if (string.IsNullOrWhiteSpace(lrc)) return LyricsResult.Empty;
+                var doc = LrcParser.Parse(lrc);
+                return doc.IsEmpty ? LyricsResult.Empty : new LyricsResult(doc, LyricsSourceKind.Online, "Netease");
+            }
+            default:
+                return LyricsResult.Empty;
+        }
+    }
+
+    /// <summary>自动优先级：本地 .lrc → AMLL TTML → Cider API → 在线（仅开启时）。</summary>
+    private async Task<LyricsResult> LoadAutoAsync(MediaSnapshot snapshot, CancellationToken ct)
+    {
+        var track = snapshot.Track;
+
         // 1) Local .lrc files.
         var localPath = FindLocalLrc(track);
         if (localPath is not null)
@@ -165,6 +231,12 @@ public sealed class LyricsService
     }
 
     /// <summary>清空歌词缓存（例如在线歌词开关变化后强制重新获取）。</summary>
+    /// <summary>设置首选歌词来源（Auto | Local | Amll | Cider | Online）并清空缓存，下次加载立即生效。</summary>
+    public void SetPreferredSource(string source)
+    {
+        _settings.Update(s => s.LyricsPreferredSource = source);
+        ClearCache();
+    }
     public void ClearCache()
     {
         lock (_cacheLock) _cache.Clear();
@@ -185,3 +257,4 @@ public sealed class LyricsService
         return sb.ToString();
     }
 }
+
