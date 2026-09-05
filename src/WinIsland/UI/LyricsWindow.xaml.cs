@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
@@ -9,10 +10,14 @@ namespace WinIsland.UI;
 
 /// <summary>可选独立悬浮歌词小窗。
 /// #5 增强：支持不透明度调节与锁定（锁定后不可拖动且 WS_EX_TRANSPARENT 鼠标穿透，不挡操作）。</summary>
-public partial class LyricsWindow : Window
+public partial class LyricsWindow : Window, INotifyPropertyChanged
 {
     private readonly IslandViewModel _vm;
     private readonly SettingsService _settings;
+    public double LyricsFontSize => Math.Clamp(_settings.Current.LyricFontSize, 9, 28);
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void Raise(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
@@ -43,6 +48,7 @@ public partial class LyricsWindow : Window
         try
         {
             Opacity = Math.Clamp(_settings.Current.LyricsWindowOpacity, 0.3, 1.0);
+            Raise(nameof(LyricsFontSize));
             ApplyWindowStyles();
         }
         catch (Exception ex)

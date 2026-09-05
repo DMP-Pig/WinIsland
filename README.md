@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 **🌐 选择语言 / Select Language**
 
@@ -10,6 +10,8 @@
 
 ---
 
+- **🎤 歌词样式可调（1.2.3）**：普通歌词/当前行字号、行间距、卡拉OK推进速度、高亮色与基础色均可自定义，设置页即时生效，独立歌词小窗同步跟随。
+- **📋 通知历史（1.2.3）**：展开灵动岛后在底部查看历史通知，点击可重新弹出，可设置保留条数并一键清空。
 - **🔔 推送与通知优化（1.2.2）**：未展开时上岛/消息提醒单行显示（图标 + 标题 + 单行摘要），超长自动省略不再撑宽灵动岛；长通知时自动调节岛宽，右侧组件与文字完整显示，不被边缘裁切。
 ## 简体中文
 
@@ -23,6 +25,8 @@
 ---
 
 ## ✨ 功能亮点
+- **🎤 歌词样式可调（1.2.3）**：普通歌词/当前行字号、行间距、卡拉OK推进速度、高亮色与基础色均可自定义，设置页即时生效，独立歌词小窗同步跟随。
+- **📋 通知历史（1.2.3）**：展开灵动岛后在底部查看历史通知，点击可重新弹出，可设置保留条数并一键清空。
 
 - **🌊 丝滑动效（1.2.1）**：展开/收起改为 iOS 阻尼弹簧 + 内容交错过渡；音量调节联动动画；紧凑/展开智能透明度分层；切歌封面交叉淡入；浅色/深色主题平滑切换；逐帧动画性能优化，CPU 占用更低。
 
@@ -42,13 +46,13 @@
 
 ---
 
-## 📥 下载（最新稳定版 1.2.2）
+## 📥 下载（最新稳定版 1.2.3）
 
 | 平台 | 下载 | 说明 |
 | --- | --- | --- |
-| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
-| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备 |
-| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-Setup-1.2.2.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
+| Windows x64 | [x64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-x64.exe) | 主流 64 位电脑首选，单文件免安装，直接运行 |
+| Windows ARM64 | [ARM64 便携版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-arm64.exe) | Surface Pro X / 骁龙机型等 ARM 设备 |
+| Windows 通用 | [通用安装包](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-Setup-1.2.3.exe) | Inno Setup 安装向导，x64 / ARM64 自动按架构安装 |
 
 历史版本与完整更新日志见 [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases)。
 
@@ -226,6 +230,8 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
+- **🎤 歌詞樣式可調（1.2.3）**：普通歌詞/目前行字號、行距、卡拉OK推進速度、高亮色與基礎色皆可自訂，設定頁即時生效，獨立歌詞小窗同步跟隨。
+- **📋 通知歷史（1.2.3）**：展開動態島後在底部檢視歷史通知，點擊可重新彈出，可設定保留筆數並一鍵清空。
 - **🔔 推播與通知最佳化（1.2.2）**：未展開時上島/訊息提醒單行顯示（圖示 + 標題 + 單行摘要），過長自動省略不再撐寬動態島；長通知時自動調整島寬，右側元件與文字完整顯示，不被邊緣裁切。
 ## 繁體中文
 
@@ -239,6 +245,8 @@ dotnet test  WinIsland.slnx -c Release
 ---
 
 ## ✨ 功能亮點
+- **🎤 歌詞樣式可調（1.2.3）**：普通歌詞/目前行字號、行距、卡拉OK推進速度、高亮色與基礎色皆可自訂，設定頁即時生效，獨立歌詞小窗同步跟隨。
+- **📋 通知歷史（1.2.3）**：展開動態島後在底部檢視歷史通知，點擊可重新彈出，可設定保留筆數並一鍵清空。
 
 - **🌊 絲滑動效（1.2.1）**：展開/收起改為 iOS 阻尼彈簧 + 內容交錯過渡；音量調節連動動畫；緊濟/展開智慧透明度分層；切歌封面交叉淡入；淺色/深色主題平滑切換；逐帧動畫效能最佳化。
 
@@ -258,13 +266,13 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
-## 📥 下載（最新穩定版 1.2.2）
+## 📥 下載（最新穩定版 1.2.3）
 
 | 平台 | 下載 | 說明 |
 | --- | --- | --- |
-| Windows x64 | [x64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-x64.exe) | 主流 64 位元電腦首選，單檔免安裝，直接執行 |
-| Windows ARM64 | [ARM64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-arm64.exe) | Surface Pro X / 驍龍機型等 ARM 裝置 |
-| Windows 通用 | [通用安裝包](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-Setup-1.2.2.exe) | Inno Setup 安裝精靈，x64 / ARM64 自動依架構安裝 |
+| Windows x64 | [x64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-x64.exe) | 主流 64 位元電腦首選，單檔免安裝，直接執行 |
+| Windows ARM64 | [ARM64 攜帶版](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-arm64.exe) | Surface Pro X / 驍龍機型等 ARM 裝置 |
+| Windows 通用 | [通用安裝包](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-Setup-1.2.3.exe) | Inno Setup 安裝精靈，x64 / ARM64 自動依架構安裝 |
 
 歷史版本與完整更新日誌見 [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases)。
 
@@ -442,6 +450,8 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
+- **🎤 Adjustable lyric style (1.2.3)**: customize normal/current-line font size, line spacing, karaoke advance speed, and highlight/base colors; changes apply instantly and the standalone lyrics window follows.
+- **📋 Notification history (1.2.3)**: review recent notifications at the bottom of the expanded island, click to replay, configure the max count, and clear with one click.
 - **🔔 Push & notification polish (1.2.2)**: collapsed alerts show a single line (icon + title + one-line summary) and truncate when long, so they no longer widen the island; the island auto-widens for long notifications so right-side widgets and text stay fully visible.
 ## English
 
@@ -455,6 +465,8 @@ dotnet test  WinIsland.slnx -c Release
 ---
 
 ## ✨ Highlights
+- **🎤 Adjustable lyric style (1.2.3)**: customize normal/current-line font size, line spacing, karaoke advance speed, and highlight/base colors; changes apply instantly and the standalone lyrics window follows.
+- **📋 Notification history (1.2.3)**: review recent notifications at the bottom of the expanded island, click to replay, configure the max count, and clear with one click.
 
 - **🌊 Buttery-smooth motion (1.2.1)**: iOS-style spring damping + staggered content transitions for expand/collapse; linked volume-change animation; smart opacity layering between compact and expanded; cross-fade cover transitions; smooth light/dark theme interpolation; per-frame animation performance optimizations.
 
@@ -474,13 +486,13 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
-## 📥 Download (latest stable 1.2.2)
+## 📥 Download (latest stable 1.2.3)
 
 | Platform | Download | Notes |
 | --- | --- | --- |
-| Windows x64 | [x64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-x64.exe) | For mainstream 64-bit PCs; single file, no install needed |
-| Windows ARM64 | [ARM64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-arm64.exe) | For Surface Pro X / Snapdragon ARM devices |
-| Windows Universal | [Universal installer](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-Setup-1.2.2.exe) | Inno Setup wizard; auto-installs x64 / ARM64 by architecture |
+| Windows x64 | [x64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-x64.exe) | For mainstream 64-bit PCs; single file, no install needed |
+| Windows ARM64 | [ARM64 portable](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-arm64.exe) | For Surface Pro X / Snapdragon ARM devices |
+| Windows Universal | [Universal installer](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-Setup-1.2.3.exe) | Inno Setup wizard; auto-installs x64 / ARM64 by architecture |
 
 All historical versions and the full changelog: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -658,6 +670,8 @@ Use Tray menu → Quit; closing the island window only hides it (tray-resident b
 
 ---
 
+- **🎤 Estilo de letras ajustable (1.2.3)**: personaliza el tamaño de fuente de las líneas normales/actual, el interlineado, la velocidad del karaoke y los colores de resaltado/base; los cambios se aplican al instante y la ventana de letras independiente los sigue.
+- **📋 Historial de notificaciones (1.2.3)**: revisa las notificaciones recientes en la parte inferior de la isla expandida, haz clic para reproducirlas, configura el límite y límpialo con un clic.
 - **🔔 Mejoras en notificaciones (1.2.2)**: las alertas plegadas muestran una sola línea (icono + título + resumen de una línea) y se truncan si son largas, sin ensanchar la isla; la isla se ensancha automáticamente para que los widgets de la derecha y el texto se vean completos.
 ## Español
 
@@ -671,6 +685,8 @@ Use Tray menu → Quit; closing the island window only hides it (tray-resident b
 ---
 
 ## ✨ Características destacadas
+- **🎤 Estilo de letras ajustable (1.2.3)**: personaliza el tamaño de fuente de las líneas normales/actual, el interlineado, la velocidad del karaoke y los colores de resaltado/base; los cambios se aplican al instante y la ventana de letras independiente los sigue.
+- **📋 Historial de notificaciones (1.2.3)**: revisa las notificaciones recientes en la parte inferior de la isla expandida, haz clic para reproducirlas, configura el límite y límpialo con un clic.
 
 - **🌊 Movimiento sedoso (1.2.1)**: resorte amortiguado estilo iOS + transiciones escalonadas al expandir/contraer; animación vinculada al volumen; capas de opacidad inteligentes; transición de portada; cambio de tema suave; optimización de la animación.
 
@@ -690,13 +706,13 @@ Use Tray menu → Quit; closing the island window only hides it (tray-resident b
 
 ---
 
-## 📥 Descargas (última estable 1.2.2)
+## 📥 Descargas (última estable 1.2.3)
 
 | Plataforma | Descarga | Notas |
 | --- | --- | --- |
-| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-x64.exe) | Para PCs de 64 bits convencionales; archivo único, sin instalación |
-| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
-| Windows Universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-Setup-1.2.2.exe) | Asistente Inno Setup; instala x64 / ARM64 según la arquitectura |
+| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-x64.exe) | Para PCs de 64 bits convencionales; archivo único, sin instalación |
+| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
+| Windows Universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-Setup-1.2.3.exe) | Asistente Inno Setup; instala x64 / ARM64 según la arquitectura |
 
 Todas las versiones históricas y el registro de cambios completo: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -874,6 +890,8 @@ Usa Menú de la bandeja → Salir; cerrar la ventana de la isla solo la oculta (
 
 ---
 
+- **🎤 Style des paroles réglable (1.2.3)** : personnalisez la taille de police des lignes normales/actuelle, l’interligne, la vitesse du karaoké et les couleurs de surbrillance/base ; les changements s’appliquent instantanément et la fenêtre de paroles indépendante suit.
+- **📋 Historique des notifications (1.2.3)** : consultez les notifications récentes en bas de l’île déployée, cliquez pour les rejouer, configurez le nombre maximum et effacez en un clic.
 - **🔔 Notifications optimisées (1.2.2)** : les alertes repliées affichent une seule ligne (icône + titre + résumé sur une ligne) et sont tronquées si longues, sans élargir l'île ; l'île s'élargit automatiquement pour que les widgets à droite et le texte restent entièrement visibles.
 ## Français
 
@@ -887,6 +905,8 @@ Usa Menú de la bandeja → Salir; cerrar la ventana de la isla solo la oculta (
 ---
 
 ## ✨ Points forts
+- **🎤 Style des paroles réglable (1.2.3)** : personnalisez la taille de police des lignes normales/actuelle, l’interligne, la vitesse du karaoké et les couleurs de surbrillance/base ; les changements s’appliquent instantanément et la fenêtre de paroles indépendante suit.
+- **📋 Historique des notifications (1.2.3)** : consultez les notifications récentes en bas de l’île déployée, cliquez pour les rejouer, configurez le nombre maximum et effacez en un clic.
 
 - **🌊 Mouvements fluides (1.2.1)** : ressort amorti façon iOS + transitions en cascade à l'ouverture/au repli ; animation liée au volume ; opacité intelligente en couches ; transition de couverture ; changement de thème en douceur ; optimisation des animations.
 
@@ -906,13 +926,13 @@ Usa Menú de la bandeja → Salir; cerrar la ventana de la isla solo la oculta (
 
 ---
 
-## 📥 Téléchargement (dernière version stable 1.2.2)
+## 📥 Téléchargement (dernière version stable 1.2.3)
 
 | Plateforme | Téléchargement | Notes |
 | --- | --- | --- |
-| Windows x64 | [Portable x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-x64.exe) | Le choix recommandé pour les PC 64 bits ; fichier unique, sans installation, exécution directe |
-| Windows ARM64 | [Portable ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-arm64.exe) | Pour Surface Pro X / appareils ARM Snapdragon |
-| Windows universel | [Installeur universel](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-Setup-1.2.2.exe) | Assistant Inno Setup ; installe x64 / ARM64 selon l'architecture |
+| Windows x64 | [Portable x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-x64.exe) | Le choix recommandé pour les PC 64 bits ; fichier unique, sans installation, exécution directe |
+| Windows ARM64 | [Portable ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-arm64.exe) | Pour Surface Pro X / appareils ARM Snapdragon |
+| Windows universel | [Installeur universel](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-Setup-1.2.3.exe) | Assistant Inno Setup ; installe x64 / ARM64 selon l'architecture |
 
 Toutes les versions historiques et le journal complet : [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1090,6 +1110,8 @@ Menu de la barre d'état → Quitter ; fermer la fenêtre de l'île ne fait que 
 
 ---
 
+- **🎤 ضبط نمط الكلمات (1.2.3)**: خصّص حجم خط الكلمات العادية/الحالية وتباعد الأسطر وسرعة الكاريوكي وألوان التمييز/الأساس؛ تُطبَّق التغييرات فورًا وتتبعها نافذة الكلمات المستقلة.
+- **📋 سجل الإشعارات (1.2.3)**: اعرض الإشعارات الأخيرة أسفل الجزيرة الموسّعة، وانقر لإعادة عرضها، وحدّد الحد الأقصى وامسح بنقرة واحدة.
 - **🔔 تحسين الإشعارات والتنبيهات (1.2.2)**: تعرض التنبيهات المطوية سطرًا واحدًا (أيقونة + عنوان + ملخص سطر واحد) وتُقتطع عند الطول، فلا توسّع الجزيرة؛ وتتوسع الجزيرة تلقائيًا لعرض أدوات الجانب الأيمن والنص كاملًا.
 ## العربية
 
@@ -1103,6 +1125,8 @@ Menu de la barre d'état → Quitter ; fermer la fenêtre de l'île ne fait que 
 ---
 
 ## ✨ أبرز المزايا
+- **🎤 ضبط نمط الكلمات (1.2.3)**: خصّص حجم خط الكلمات العادية/الحالية وتباعد الأسطر وسرعة الكاريوكي وألوان التمييز/الأساس؛ تُطبَّق التغييرات فورًا وتتبعها نافذة الكلمات المستقلة.
+- **📋 سجل الإشعارات (1.2.3)**: اعرض الإشعارات الأخيرة أسفل الجزيرة الموسّعة، وانقر لإعادة عرضها، وحدّد الحد الأقصى وامسح بنقرة واحدة.
 
 - **🌊 حركة سلسة (1.2.1)**: زنبرك مخمّد بأسلوب iOS + انتقالات متدرّجة للطي/الفتح؛ حركة مرتبطة بمستوى الصوت؛ طبقات شفافية ذكية؛ انتقال الغلاف؛ تبديل ثيم سلس؛ تحسين أداء الحركة.
 
@@ -1122,13 +1146,13 @@ Menu de la barre d'état → Quitter ; fermer la fenêtre de l'île ne fait que 
 
 ---
 
-## 📥 التحميل (آخر إصدار مستقر 1.2.2)
+## 📥 التحميل (آخر إصدار مستقر 1.2.3)
 
 | النظام | التحميل | ملاحظات |
 | --- | --- | --- |
-| Windows x64 | [نسخة محمولة x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-x64.exe) | الخيار الأول لأجهزة 64 بت الشائعة؛ ملف واحد بدون تثبيت، يعمل مباشرة |
-| Windows ARM64 | [نسخة محمولة ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-arm64.exe) | لأجهزة Surface Pro X / أجهزة ARM Snapdragon |
-| Windows شامل | [مثبّت شامل](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-Setup-1.2.2.exe) | معالج Inno Setup؛ يثبّت x64 / ARM64 حسب البنية |
+| Windows x64 | [نسخة محمولة x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-x64.exe) | الخيار الأول لأجهزة 64 بت الشائعة؛ ملف واحد بدون تثبيت، يعمل مباشرة |
+| Windows ARM64 | [نسخة محمولة ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-arm64.exe) | لأجهزة Surface Pro X / أجهزة ARM Snapdragon |
+| Windows شامل | [مثبّت شامل](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-Setup-1.2.3.exe) | معالج Inno Setup؛ يثبّت x64 / ARM64 حسب البنية |
 
 جميع الإصدارات السابقة وسجل التغييرات الكامل: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1306,6 +1330,8 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
+- **🎤 Настраиваемый стиль текста (1.2.3)**: настройте размер шрифта обычных/текущих строк, межстрочный интервал, скорость караоке и цвета подсветки/основы; изменения применяются мгновенно, отдельное окно текста синхронизируется.
+- **📋 История уведомлений (1.2.3)**: просматривайте последние уведомления внизу развёрнутого острова, нажмите, чтобы воспроизвести снова, задайте лимит и очистите одним кликом.
 - **🔔 Улучшение уведомлений (1.2.2)**: свёрнутые оповещения показываются одной строкой (иконка + заголовок + однострочное резюме) и обрезаются при длине, не расширяя остров; остров автоматически расширяется, чтобы виджеты справа и текст были полностью видны.
 ## Русский
 
@@ -1319,6 +1345,8 @@ dotnet test  WinIsland.slnx -c Release
 ---
 
 ## ✨ Ключевые возможности
+- **🎤 Настраиваемый стиль текста (1.2.3)**: настройте размер шрифта обычных/текущих строк, межстрочный интервал, скорость караоке и цвета подсветки/основы; изменения применяются мгновенно, отдельное окно текста синхронизируется.
+- **📋 История уведомлений (1.2.3)**: просматривайте последние уведомления внизу развёрнутого острова, нажмите, чтобы воспроизвести снова, задайте лимит и очистите одним кликом.
 
 - **🌊 Плавная анимация (1.2.1)**: пружинное демпфирование в стиле iOS + каскадные переходы при раскрытии/сворачивании; анимация громкости; умная прозрачность; переход обложки; плавная смена темы; оптимизация производительности.
 
@@ -1338,13 +1366,13 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
-## 📥 Скачать (последняя стабильная версия 1.2.2)
+## 📥 Скачать (последняя стабильная версия 1.2.3)
 
 | Платформа | Скачать | Примечания |
 | --- | --- | --- |
-| Windows x64 | [Портативная x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-x64.exe) | Рекомендуется для обычных 64-битных ПК; один файл, без установки, запуск сразу |
-| Windows ARM64 | [Портативная ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-arm64.exe) | Для Surface Pro X / устройств ARM Snapdragon |
-| Windows универсальная | [Универсальный установщик](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-Setup-1.2.2.exe) | Мастер Inno Setup; устанавливает x64 / ARM64 в зависимости от архитектуры |
+| Windows x64 | [Портативная x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-x64.exe) | Рекомендуется для обычных 64-битных ПК; один файл, без установки, запуск сразу |
+| Windows ARM64 | [Портативная ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-arm64.exe) | Для Surface Pro X / устройств ARM Snapdragon |
+| Windows универсальная | [Универсальный установщик](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-Setup-1.2.3.exe) | Мастер Inno Setup; устанавливает x64 / ARM64 в зависимости от архитектуры |
 
 Все предыдущие версии и полный журнал изменений: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 
@@ -1522,6 +1550,8 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
+- **🎤 Estilo de letra ajustável (1.2.3)**: personalize o tamanho da fonte das linhas normais/atual, o espaçamento, a velocidade do karaokê e as cores de destaque/base; as mudanças se aplicam na hora e a janela de letras independente acompanha.
+- **📋 Histórico de notificações (1.2.3)**: veja as notificações recentes na parte inferior da ilha expandida, clique para reproduzi-las, defina o limite e limpe com um clique.
 - **🔔 Notificações aprimoradas (1.2.2)**: alertas recolhidos mostram uma única linha (ícone + título + resumo em uma linha) e são truncados quando longos, sem alargar a ilha; a ilha se alarga automaticamente para que os widgets à direita e o texto fiquem totalmente visíveis.
 ## Português
 
@@ -1535,6 +1565,8 @@ dotnet test  WinIsland.slnx -c Release
 ---
 
 ## ✨ Destaques
+- **🎤 Estilo de letra ajustável (1.2.3)**: personalize o tamanho da fonte das linhas normais/atual, o espaçamento, a velocidade do karaokê e as cores de destaque/base; as mudanças se aplicam na hora e a janela de letras independente acompanha.
+- **📋 Histórico de notificações (1.2.3)**: veja as notificações recentes na parte inferior da ilha expandida, clique para reproduzi-las, defina o limite e limpe com um clique.
 
 - **🌊 Movimento sedoso (1.2.1)**: mola amortecida estilo iOS + transições em cascata para expandir/recolher; animação vinculada ao volume; opacidade inteligente em camadas; transição de capa; troca de tema suave; otimização de animação.
 
@@ -1554,13 +1586,13 @@ dotnet test  WinIsland.slnx -c Release
 
 ---
 
-## 📥 Download (última versão estável 1.2.2)
+## 📥 Download (última versão estável 1.2.3)
 
 | Plataforma | Download | Observações |
 | --- | --- | --- |
-| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-x64.exe) | Recomendado para PCs 64 bits comuns; arquivo único, sem instalação, execução direta |
-| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-1.2.2-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
-| Windows universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.2/WinIsland-Setup-1.2.2.exe) | Assistente Inno Setup; instala x64 / ARM64 conforme a arquitetura |
+| Windows x64 | [Portátil x64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-x64.exe) | Recomendado para PCs 64 bits comuns; arquivo único, sem instalação, execução direta |
+| Windows ARM64 | [Portátil ARM64](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-1.2.3-win-arm64.exe) | Para Surface Pro X / dispositivos ARM Snapdragon |
+| Windows universal | [Instalador universal](https://github.com/DMP-Pig/WinIsland/releases/download/1.2.3/WinIsland-Setup-1.2.3.exe) | Assistente Inno Setup; instala x64 / ARM64 conforme a arquitetura |
 
 Todas as versões anteriores e o changelog completo: [GitHub Releases](https://github.com/DMP-Pig/WinIsland/releases).
 

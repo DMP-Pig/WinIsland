@@ -51,6 +51,10 @@ public class KaraokeTextBlock : TextBlock
     public static readonly DependencyProperty IsPlayingProperty =
         DependencyProperty.Register(nameof(IsPlaying), typeof(bool), typeof(KaraokeTextBlock),
             new FrameworkPropertyMetadata(false, OnRenderPropsChanged));
+    /// <summary>卡拉OK推进速度倍率（1.0 = 标准，0.5~2.0；仅影响播放中的推进速度）。</summary>
+    public static readonly DependencyProperty KaraokeSpeedProperty =
+        DependencyProperty.Register(nameof(KaraokeSpeed), typeof(double), typeof(KaraokeTextBlock),
+            new FrameworkPropertyMetadata(1.0, OnRenderPropsChanged));
 
     private readonly DispatcherTimer _animTimer;
     private double _currentFraction;   // 当前已点亮比例（0..1，整行均分模式平滑推进）
@@ -125,6 +129,13 @@ public class KaraokeTextBlock : TextBlock
     {
         get => (bool)GetValue(IsPlayingProperty);
         set => SetValue(IsPlayingProperty, value);
+    }
+
+    /// <summary>卡拉OK推进速度倍率（1.0 = 标准）。</summary>
+    public double KaraokeSpeed
+    {
+        get => (double)GetValue(KaraokeSpeedProperty);
+        set => SetValue(KaraokeSpeedProperty, value);
     }
 
     private void OnPositionChanged(double pos)
@@ -229,7 +240,7 @@ public class KaraokeTextBlock : TextBlock
             if (IsPlaying)
             {
                 // 两次 ViewModel 位置更新之间按墙钟连续推进 → 60fps 丝滑，不“一动一停”
-                var pos = _posBase + (DateTime.UtcNow - _posBaseTimeUtc).TotalSeconds;
+                var pos = _posBase + (DateTime.UtcNow - _posBaseTimeUtc).TotalSeconds * KaraokeSpeed;
                 RenderWords(pos);
                 // 该行已全部点亮/尚未开始：静态即可，停止动画（避免列表里多行同时空转）
                 if (!NeedsAnimation(pos)) _animTimer.Stop();

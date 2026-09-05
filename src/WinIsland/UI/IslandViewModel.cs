@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
@@ -70,6 +70,10 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
     private readonly ObservableCollection<MediaSessionItem> _mediaSessions = new();
     private MediaSessionItem? _selectedMediaSession;
     private bool _suppressSessionSwitch;
+
+    // ── 通知历史（展开卡片底部列表，#10；由 ShowEventCard 记录，可点击重新弹出） ──
+    private readonly ObservableCollection<EventHistoryItem> _notificationHistory = new();
+    public ObservableCollection<EventHistoryItem> NotificationHistory => _notificationHistory;
 
     public IslandViewModel(MediaCoordinator coordinator, SettingsService settings, LyricsService lyricsService,
         AudioWaveService? wave = null, KeyboardIndicatorMonitor? keyboard = null,
@@ -1642,6 +1646,28 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
         // 勿扰模式：灵动岛事件卡片不展示（白名单仍展示由上层决定，这里只做总开关）
         if (DoNotDisturb.IsActive(_settings.Current)) return;
         var dur = Math.Max(2, durationSeconds);
+
+        // 通知历史：记录系统事件供展开卡片底部回看（受设置开关/条数上限控制）
+        try
+        {
+            if (_settings.Current.NotificationHistoryEnabled && !string.IsNullOrWhiteSpace(title))
+            {
+                _notificationHistory.Insert(0, new EventHistoryItem
+                {
+                    Id = "sys:" + id,
+                    Title = title,
+                    Subtitle = subtitle,
+                    Body = body ?? string.Empty,
+                    Icon = icon,
+                    Type = type,
+                    TimeUtc = DateTime.Now,
+                    TimeText = DateTime.Now.ToString("HH:mm"),
+                });
+                var max = Math.Max(1, _settings.Current.NotificationHistoryMax);
+                while (_notificationHistory.Count > max) _notificationHistory.RemoveAt(_notificationHistory.Count - 1);
+            }
+        }
+        catch (Exception ex) { AppLogger.Warn($"Record notification history failed: {ex.Message}"); }
         PushIsland(new IslandPush
         {
             Id = "sys:" + id,
@@ -1654,6 +1680,20 @@ public sealed class IslandViewModel : ObservableObject, IDisposable
             DurationSeconds = dur,
             ExpiresAt = DateTime.UtcNow.AddSeconds(dur),
         });
+    }
+
+    /// <summary>点击通知历史条目：以事件卡片形式重新弹出（去除记录时附加的 sys: 前缀）。</summary>
+    public void ReplayNotification(EventHistoryItem item)
+    {
+        if (item is null) return;
+        var baseId = item.Id.StartsWith("sys:", StringComparison.Ordinal) ? item.Id[4..] : item.Id;
+        ShowEventCard(baseId, item.Title, item.Subtitle, item.Icon, item.Type, 6, item.Body);
+    }
+
+    /// <summary>清空通知历史（设置页按钮/右键菜单）。</summary>
+    public void ClearNotificationHistory()
+    {
+        _notificationHistory.Clear();
     }
 
     /// <summary>上岛 API 收到推送：加入/更新推送队列（同 id 覆盖、保留原过期时间），并按优先级刷新显示。</summary>
@@ -2772,3 +2812,15 @@ public sealed class MediaSessionItem : ObservableObject
     }
 }
 
+/// <summary>通知历史记录项（展开卡片底部列表显示，点击可重新弹出）。</summary>
+public sealed class EventHistoryItem
+{
+    public string Id { get; init; } = "";
+    public string Title { get; init; } = "";
+    public string? Subtitle { get; init; }
+    public string Body { get; init; } = "";
+    public string Icon { get; init; } = "";
+    public string Type { get; init; } = "info";
+    public DateTime TimeUtc { get; init; }
+    public string TimeText { get; init; } = "";
+}

@@ -602,7 +602,7 @@ public partial class App : Application
         if (_settings is null) return;
         var vm = new SettingsViewModel(_settings, _mediaApps);
         var win = new SettingsWindow(vm, _settings, _cider,
-            _todo, _schedule, _clipboard, _pomodoro, _updater);
+            _todo, _schedule, _clipboard, _pomodoro, _updater, _vm);
         win.ShowDialog();
     }
 

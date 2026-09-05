@@ -947,6 +947,21 @@
                         <Slider Minimum="0.3" Maximum="1" Value="{Binding Working.LyricsWindowOpacity}" Width="300" HorizontalAlignment="Left"
                                 IsSnapToTickEnabled="True" TickFrequency="0.05"/>
                         <CheckBox x:Name="ChkLyricsLocked" Content="锁定歌词小窗（锁定后鼠标穿透，不挡操作）" IsChecked="{Binding Working.LyricsWindowLocked}" Margin="0,8,0,0"/>
+                        <TextBlock x:Name="LblLyricsStyleTitle" Style="{StaticResource Label}" FontWeight="SemiBold" Margin="0,14,0,0" Text="歌词样式"/>
+                        <TextBlock x:Name="LblLyricsBaseSize" Style="{StaticResource Label}" Text="普通歌词字号"/>
+                        <Slider Minimum="9" Maximum="28" Value="{Binding Working.LyricFontSize}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="1"/>
+                        <TextBlock x:Name="LblLyricsCurrentSize" Style="{StaticResource Label}" Text="当前行字号"/>
+                        <Slider Minimum="12" Maximum="36" Value="{Binding Working.LyricCurrentFontSize}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="1"/>
+                        <TextBlock x:Name="LblLyricsLineSpacing" Style="{StaticResource Label}" Text="行间距"/>
+                        <Slider Minimum="0.8" Maximum="2.0" Value="{Binding Working.LyricLineSpacing}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="0.1"/>
+                        <TextBlock x:Name="LblLyricsKaraokeSpeed" Style="{StaticResource Label}" Text="卡拉OK速度"/>
+                        <Slider Minimum="0.5" Maximum="2.0" Value="{Binding Working.KaraokeSpeed}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="0.1"/>
+                        <TextBlock x:Name="LblLyricsHighlightColor" Style="{StaticResource Label}" Text="高亮颜色"/>
+                        <TextBox Width="160" HorizontalAlignment="Left" Text="{Binding Working.LyricHighlightColor, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock x:Name="LblLyricsBaseColor" Style="{StaticResource Label}" Text="基础颜色"/>
+                        <TextBox Width="160" HorizontalAlignment="Left" Text="{Binding Working.LyricBaseColor, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock x:Name="TxtLyricsColorNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0" MaxWidth="520"/>
+
                     </StackPanel>
 </ScrollViewer>
                 </TabItem>
@@ -1211,6 +1226,12 @@
                                 IsSnapToTickEnabled="True" TickFrequency="1"/>
                         <TextBlock x:Name="TxtMailNote" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,6,0,0" MaxWidth="520"/>
+                        <TextBlock x:Name="LblHistoryTitle" Style="{StaticResource Label}" Margin="0,16,0,0" Text="通知历史"/>
+                        <CheckBox x:Name="ChkHistoryEnabled" IsChecked="{Binding Working.NotificationHistoryEnabled}"/>
+                        <TextBlock x:Name="LblHistoryMax" Style="{StaticResource Label}" Text="最多保留条数"/>
+                        <Slider Minimum="1" Maximum="100" Value="{Binding Working.NotificationHistoryMax}" Width="300" HorizontalAlignment="Left" IsSnapToTickEnabled="True" TickFrequency="1"/>
+                        <Button x:Name="BtnClearHistory" Padding="10,5" HorizontalAlignment="Left" Margin="0,6,0,0" Content="立即清空历史" Click="ClearHistory_Click"/>
+
                     </StackPanel>
                     </ScrollViewer>
                 </TabItem>

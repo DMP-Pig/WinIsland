@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -176,6 +177,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _compactRestoreTimer;
     private readonly EventHandler _onThemeChanged;      // 具名处理器：窗口关闭时可退订，防泄漏
     private readonly EventHandler<AppSettings> _onSettingsChanged;
+    private NotifyCollectionChangedEventHandler? _historyChangedHandler;
     private bool _waveRendering;                  // 波纹渲染中（已挂接合成帧事件）
     private DispatcherTimer? _waveTimer;                  // 低功耗模式：波纹降帧定时器（~30fps）
     private double _lastWaveTime;                 // 上一帧时间（秒），用于帧率无关平滑
@@ -341,6 +343,10 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         _vm.PropertyChanged += OnVmPropertyChanged;
         _theme.ThemeChanged += _onThemeChanged;
         _settings.Changed += _onSettingsChanged;
+        _historyChangedHandler = (_, _) => RefreshNotificationHistoryProps();
+        _vm.NotificationHistory.CollectionChanged += _historyChangedHandler;
+        Localization.LanguageChanged += OnLanguageChanged;
+        RefreshNotificationHistoryProps();
 
         Loaded += OnLoaded;
         DpiChanged += (_, _) => Reposition();
@@ -356,6 +362,9 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             _vm.PropertyChanged -= OnVmPropertyChanged;
             _theme.ThemeChanged -= _onThemeChanged;
             _settings.Changed -= _onSettingsChanged;
+            if (_historyChangedHandler is not null)
+                _vm.NotificationHistory.CollectionChanged -= _historyChangedHandler;
+            Localization.LanguageChanged -= OnLanguageChanged;
             _collapseTimer.Stop();
             _compactRestoreTimer.Stop();
             _lyricsScrollTimer.Stop();
@@ -381,6 +390,56 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     public Brush ButtonHoverBrush => _theme.ButtonHoverBrush;
     public Brush SliderTrackBrush => _theme.SliderTrackBrush;
     public Brush SliderThumbBrush => _theme.SliderThumbBrush;
+
+    // Lyric style passthrough (1.2.3): adjustable lyric font size, current-line size,
+    // line spacing, karaoke speed and highlight/base colors.
+    public double LyricBaseFontSize => Math.Max(9, _settings.Current.LyricFontSize);
+    public double LyricCurrentFontSize => Math.Max(12, Math.Max(LyricBaseFontSize + 3, _settings.Current.LyricCurrentFontSize));
+    public double LyricLineHeight
+    {
+        get
+        {
+            var s = Math.Clamp(_settings.Current.LyricLineSpacing, 0.5, 2.5);
+            return Math.Max(16, LyricBaseFontSize * 1.55 * s);
+        }
+    }
+    public Thickness LyricLineMargin
+    {
+        get
+        {
+            var s = Math.Clamp(_settings.Current.LyricLineSpacing, 0.5, 2.5);
+            return new Thickness(0, 2.5 * s, 0, 2.5 * s);
+        }
+    }
+    public double LyricKaraokeSpeed => Math.Clamp(_settings.Current.KaraokeSpeed, 0.2, 3.0);
+
+    private static System.Windows.Media.Color BrushColor(Brush b) => (b as SolidColorBrush)?.Color ?? System.Windows.Media.Colors.White;
+    private static Brush FreezeBrush(System.Windows.Media.Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
+    private static System.Windows.Media.Color ParseHexColor(string? hex, System.Windows.Media.Color fallback)
+    {
+        if (!string.IsNullOrWhiteSpace(hex))
+        {
+            try { return (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex.Trim()); }
+            catch { /* invalid hex -> fallback */ }
+        }
+        return fallback;
+    }
+    public Brush ExpandedLyricBaseBrush => FreezeBrush(ParseHexColor(_settings.Current.LyricBaseColor, BrushColor(_theme.TextSecondary)));
+    public Brush ExpandedLyricHighlightBrush => FreezeBrush(ParseHexColor(_settings.Current.LyricHighlightColor, BrushColor(_theme.TextPrimary)));
+    public Brush CompactLyricBaseBrush
+    {
+        get
+        {
+            var c = BrushColor(_theme.TextSecondary);
+            return FreezeBrush(System.Windows.Media.Color.FromArgb(96, c.R, c.G, c.B));
+        }
+    }
+    public Brush CompactLyricHighlightBrush => FreezeBrush(BrushColor(_theme.TextPrimary));
+
+    public bool NotificationHistoryVisible => _settings.Current.NotificationHistoryEnabled && _vm.NotificationHistory.Count > 0;
+    public string NotificationHistoryTitle => Localization.Get("Notifications_History");
+    public string NotificationHistoryClearText => Localization.Get("Notifications_HistoryClear");
+
 
     // ── 上岛推送卡片主题（#17：第三方可指定 dark / light，auto 跟随应用明暗）──
     /// <summary>推送卡片是否按深色渲染（auto 跟随应用主题）。</summary>
@@ -956,6 +1015,16 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PushShowInput)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MediaSessionPickerVisible)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LyricSourcePickVisible)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LyricBaseFontSize)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LyricCurrentFontSize)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LyricLineHeight)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LyricLineMargin)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LyricKaraokeSpeed)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedLyricBaseBrush)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedLyricHighlightBrush)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CompactLyricBaseBrush)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CompactLyricHighlightBrush)));
+        RefreshNotificationHistoryProps();
     }
 
     /// <summary>按设置调整窗口与卡片尺寸（紧凑/展开）。仅当窗口尺寸真正变化时才重定位，
@@ -996,6 +1065,83 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
 
     /// <summary>应用外观参数：圆角 / 字体 / 字号缩放。字号缩放作用于整张卡片（LayoutTransform），
     /// 逻辑尺寸同步除以缩放比，最终视觉尺寸与设置一致、不溢出不裁剪。</summary>
+    /// <summary>Rebuilds the LyricLineText style from user settings (font sizes, spacing, colors).
+    /// WPF cannot bind DoubleAnimation.To, so the current-line grow/shrink storyboard is built in code.</summary>
+    private void UpdateLyricLineStyle()
+    {
+        try
+        {
+            if (LyricsList is null) return;
+            var baseSize = LyricBaseFontSize;
+            var currentSize = LyricCurrentFontSize;
+            var lineHeight = LyricLineHeight;
+            var margin = LyricLineMargin;
+            var baseBrush = ExpandedLyricBaseBrush;
+            var highlightBrush = ExpandedLyricHighlightBrush;
+
+            var style = new Style(typeof(TextBlock));
+            style.Setters.Add(new Setter(TextBlock.FontSizeProperty, baseSize));
+            style.Setters.Add(new Setter(TextBlock.ForegroundProperty, baseBrush));
+            style.Setters.Add(new Setter(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis));
+            style.Setters.Add(new Setter(TextBlock.TextWrappingProperty, TextWrapping.Wrap));
+            style.Setters.Add(new Setter(TextBlock.MarginProperty, margin));
+            style.Setters.Add(new Setter(TextBlock.LineHeightProperty, lineHeight));
+            style.Setters.Add(new Setter(TextBlock.LineStackingStrategyProperty, LineStackingStrategy.BlockLineHeight));
+            style.Setters.Add(new Setter(TextBlock.OpacityProperty, 0.28));
+
+            var inSb = new Storyboard();
+            var grow = new DoubleAnimation { To = currentSize, Duration = TimeSpan.FromMilliseconds(220), EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+            Storyboard.SetTargetProperty(grow, new PropertyPath(TextBlock.FontSizeProperty));
+            inSb.Children.Add(grow);
+            var fadeIn = new DoubleAnimation { To = 1.0, Duration = TimeSpan.FromMilliseconds(220), EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+            Storyboard.SetTargetProperty(fadeIn, new PropertyPath(TextBlock.OpacityProperty));
+            inSb.Children.Add(fadeIn);
+
+            var outSb = new Storyboard();
+            var shrink = new DoubleAnimation { To = baseSize, Duration = TimeSpan.FromMilliseconds(220), EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+            Storyboard.SetTargetProperty(shrink, new PropertyPath(TextBlock.FontSizeProperty));
+            outSb.Children.Add(shrink);
+            var fadeOut = new DoubleAnimation { To = 0.28, Duration = TimeSpan.FromMilliseconds(220), EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+            Storyboard.SetTargetProperty(fadeOut, new PropertyPath(TextBlock.OpacityProperty));
+            outSb.Children.Add(fadeOut);
+
+            var trigger = new DataTrigger
+            {
+                Binding = new System.Windows.Data.Binding(nameof(LyricLineViewModel.IsCurrent)) { Mode = BindingMode.OneWay },
+                Value = true,
+            };
+            trigger.EnterActions.Add(new BeginStoryboard { Storyboard = inSb });
+            trigger.ExitActions.Add(new BeginStoryboard { Storyboard = outSb });
+            trigger.Setters.Add(new Setter(TextBlock.FontWeightProperty, FontWeights.Bold));
+            trigger.Setters.Add(new Setter(TextBlock.ForegroundProperty, highlightBrush));
+            style.Triggers.Add(trigger);
+
+            Resources["LyricLineText"] = style;
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("UpdateLyricLineStyle failed", ex);
+        }
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e) => RefreshNotificationHistoryProps();
+
+    private void RefreshNotificationHistoryProps()
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NotificationHistoryVisible)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NotificationHistoryTitle)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NotificationHistoryClearText)));
+    }
+
+    private void NotificationHistory_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is EventHistoryItem item)
+            _vm.ReplayNotification(item);
+    }
+
+    private void ClearNotificationHistory_Click(object sender, RoutedEventArgs e)
+        => _vm.ClearNotificationHistory();
+
     private void ApplyAppearance()
     {
         try { System.Windows.Documents.TextElement.SetFontFamily(Card, new System.Windows.Media.FontFamily(_settings.Current.FontFamily)); } catch { /* 非法字体名忽略 */ }
@@ -1003,6 +1149,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
         // 字体缩放 = 1 时清空 LayoutTransform（走普通布局路径，动画期间布局更轻、更快）；
         // 只有用户设置缩放时才使用 ScaleTransform，避免无谓的变换开销。
         Card.LayoutTransform = Math.Abs(FontScale - 1.0) < 0.001 ? null : new ScaleTransform(FontScale, FontScale);
+        UpdateLyricLineStyle();
         ApplySize();
     }
 

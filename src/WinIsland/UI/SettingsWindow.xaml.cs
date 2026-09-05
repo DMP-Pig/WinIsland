@@ -34,6 +34,7 @@ public partial class SettingsWindow : Window
     private readonly ClipboardHistoryService? _clipboard;
     private readonly PomodoroService? _pomodoro;
     private readonly UpdaterService? _updater;
+    private readonly IslandViewModel? _island;
     private string _lastAppliedJson;
     private bool _sizeSlidersInitialized; // 初始化期间不触发"手动调整关闭自动"
     private bool _audioOutputLoading;     // 音频输出下拉初始化期间不触发切换
@@ -43,7 +44,8 @@ public partial class SettingsWindow : Window
         ScheduleService? schedule = null,
         ClipboardHistoryService? clipboard = null,
         PomodoroService? pomodoro = null,
-        UpdaterService? updater = null)
+        UpdaterService? updater = null,
+        IslandViewModel? island = null)
     {
         _vm = vm;
         _service = service;
@@ -53,6 +55,7 @@ public partial class SettingsWindow : Window
         _clipboard = clipboard;
         _pomodoro = pomodoro;
         _updater = updater;
+        _island = island;
         DataContext = vm;
         InitializeComponent();
 
@@ -494,6 +497,14 @@ public partial class SettingsWindow : Window
         ChkStandaloneLyrics.Content = Localization.Get("Lyrics_StandaloneWindow");
         LblLyricsOpacity.Text = Localization.Get("Lyrics_Opacity");
         ChkLyricsLocked.Content = Localization.Get("Lyrics_Locked");
+        LblLyricsStyleTitle.Text = Localization.Get("Lyrics_StyleTitle");
+        LblLyricsBaseSize.Text = Localization.Get("Lyrics_BaseSize");
+        LblLyricsCurrentSize.Text = Localization.Get("Lyrics_CurrentSize");
+        LblLyricsLineSpacing.Text = Localization.Get("Lyrics_LineSpacing");
+        LblLyricsKaraokeSpeed.Text = Localization.Get("Lyrics_KaraokeSpeed");
+        LblLyricsHighlightColor.Text = Localization.Get("Lyrics_HighlightColor");
+        LblLyricsBaseColor.Text = Localization.Get("Lyrics_BaseColor");
+        TxtLyricsColorNote.Text = Localization.Get("Lyrics_ColorNote");
         ChkBilingual.Content = Localization.Get("MediaInfo_Bilingual");
         ChkCiderEnabled.Content = Localization.Get("Cider_Enabled");
         ChkBluetoothNotify.Content = Localization.Get("Notifications_Bluetooth");
@@ -599,6 +610,10 @@ public partial class SettingsWindow : Window
         LblMailPass.Text = Localization.Get("Mail_Pass");
         LblMailInterval.Text = Localization.Get("Mail_Interval");
         TxtMailNote.Text = Localization.Get("Mail_Note");
+        LblHistoryTitle.Text = Localization.Get("History_Title");
+        ChkHistoryEnabled.Content = Localization.Get("History_Enabled");
+        LblHistoryMax.Text = Localization.Get("History_Max");
+        BtnClearHistory.Content = Localization.Get("History_ClearNow");
 
 
         LblProdClipboard.Text = Localization.Get("Prod_Clipboard");
@@ -749,6 +764,9 @@ public partial class SettingsWindow : Window
             AccentBox.Text = color;
         }
     }
+
+    private void ClearHistory_Click(object sender, RoutedEventArgs e)
+        => _island?.ClearNotificationHistory();
 
     private void BrowseLyrics_Click(object sender, RoutedEventArgs e)
     {

@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using System.IO;
@@ -177,6 +177,13 @@ public sealed class AppSettings
     public Dictionary<string, double> LyricTimeOffsets { get; set; } = new();  // #4 歌词时间微调：每首歌的时间偏移（秒）
     public double LyricsWindowOpacity { get; set; } = 0.85;   // #5 独立歌词小窗不透明度（0.3~1.0）
     public bool LyricsWindowLocked { get; set; } = false;     // #5 锁定歌词小窗（锁定后不可拖动且鼠标穿透）
+    // ── #5 歌词样式调节（灵动岛歌词区 + 独立歌词小窗）──
+    public double LyricFontSize { get; set; } = 13;           // 普通歌词行字号（9~28）
+    public double LyricCurrentFontSize { get; set; } = 20;    // 当前句歌词字号（12~36）
+    public double LyricLineSpacing { get; set; } = 1.0;       // 歌词行间距倍率（0.8~2.0）
+    public string LyricHighlightColor { get; set; } = "";     // 卡拉OK高亮色（#RRGGBB，留空跟随主题）
+    public string LyricBaseColor { get; set; } = "";          // 普通歌词颜色（#RRGGBB，留空跟随主题）
+    public double KaraokeSpeed { get; set; } = 1.0;           // 卡拉OK推进速度（0.5~2.0）
 
 
     // ── Volume ─────────────────────────────────────────────────
@@ -219,6 +226,9 @@ public sealed class AppSettings
     public int NotificationTimeoutSeconds { get; set; } = 6;      // 横幅显示时长
     public string NotificationPosition { get; set; } = "TopRight"; // TopRight = 右上角
     public bool NotifyFoldEnabled { get; set; } = true;           // 通知折叠：同来源同标题只保留一条并累加数量
+    // ── #10 通知历史（展开卡片底部列表，可点击重新弹出）──
+    public bool NotificationHistoryEnabled { get; set; } = true; // 记录通知历史
+    public int NotificationHistoryMax { get; set; } = 20;        // 通知历史条数上限（1~100）
 
     // ── 上岛 API（其他软件推送信息到灵动岛）──
     public bool IslandApiEnabled { get; set; } = true;           // 启用本地上岛 API

@@ -96,13 +96,15 @@
         </Style>
 
         <!-- 逐句卡拉OK歌词：非当前句淡化，当前句大号醒目（20px），字号/透明度平滑过渡 -->
+        <!-- 展开歌词每行样式：字号/行距/行高绑定窗口属性（设置页可调），当前句动画放大+高亮 -->
+        <!-- 注意：此样式由 IslandWindow.xaml.cs 的 UpdateLyricLineStyle() 按用户设置动态重建并覆盖；XAML 默认值仅在启动瞬间兜底 -->
         <Style x:Key="LyricLineText" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Foreground" Value="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+            <Setter Property="FontSize" Value="{Binding LyricBaseFontSize, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=13}"/>
+            <Setter Property="Foreground" Value="{Binding ExpandedLyricBaseBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
-            <Setter Property="Margin" Value="0,7"/>
-            <Setter Property="LineHeight" Value="24"/>
+            <Setter Property="Margin" Value="{Binding LyricLineMargin, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=&quot;0,7&quot;}"/>
+            <Setter Property="LineHeight" Value="{Binding LyricLineHeight, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=24}"/>
             <Setter Property="Opacity" Value="0.28"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsCurrent}" Value="True">
@@ -139,7 +141,7 @@
                         </BeginStoryboard>
                     </DataTrigger.ExitActions>
                     <Setter Property="FontWeight" Value="Bold"/>
-                    <Setter Property="Foreground" Value="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"/>
+                    <Setter Property="Foreground" Value="{Binding ExpandedLyricHighlightBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -587,7 +589,9 @@
                                                 Words="{Binding DataContext.CurrentLyricWords, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 PositionSeconds="{Binding DataContext.KaraokePositionSeconds, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                HighlightBrush="White" BaseBrush="#80FFFFFF"
+                                                KaraokeSpeed="{Binding LyricKaraokeSpeed, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=1}"
+                                                HighlightBrush="{Binding CompactLyricHighlightBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                                BaseBrush="{Binding CompactLyricBaseBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#80FFFFFF}"
                                                 karaoke:Marquee.IsEnabled="{Binding MarqueeEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 FontSize="12.5" Margin="0,2,0,0" TextAlignment="Left" FontWeight="SemiBold" Opacity="0.95"/>
                                         </Grid>
@@ -626,7 +630,10 @@
                                             Words="{Binding DataContext.CurrentLyricWords, RelativeSource={RelativeSource AncestorType=Window}}"
                                             PositionSeconds="{Binding DataContext.KaraokePositionSeconds, RelativeSource={RelativeSource AncestorType=Window}}"
                                             IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            HighlightBrush="White" BaseBrush="#A0FFFFFF" FontSize="12" Margin="8,0,0,0"
+                                            KaraokeSpeed="{Binding LyricKaraokeSpeed, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=1}"
+                                            HighlightBrush="{Binding CompactLyricHighlightBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                            BaseBrush="{Binding CompactLyricBaseBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#A0FFFFFF}"
+                                            FontSize="12" Margin="8,0,0,0"
                                             TextAlignment="Left" FontWeight="SemiBold"
                                             karaoke:Marquee.IsEnabled="{Binding MarqueeEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
                                             VerticalAlignment="Center"/>
@@ -1098,9 +1105,10 @@
                                                 Words="{Binding Words}"
                                                 PositionSeconds="{Binding DataContext.KaraokePositionSeconds, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 IsPlaying="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=False}"
-                                                HighlightBrush="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
-                                                BaseBrush="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
-                                                Style="{StaticResource LyricLineText}"/>
+                                                KaraokeSpeed="{Binding LyricKaraokeSpeed, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=1}"
+                                                HighlightBrush="{Binding ExpandedLyricHighlightBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"
+                                                BaseBrush="{Binding ExpandedLyricBaseBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                                Style="{DynamicResource LyricLineText}"/>
                                             <!-- 翻译行：随「翻译开关」显隐 -->
                                             <TextBlock Text="{Binding Translation}" FontSize="10.5" Margin="0,1,0,0" Opacity="0.72" HorizontalAlignment="Center"
                                                        Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}">
@@ -1144,6 +1152,63 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                    </StackPanel>
+                    <!-- 通知历史：展开卡片底部列表（#10），记录系统事件通知；点击条目可重新弹出，右侧可清空 -->
+                    <StackPanel x:Name="NotificationHistoryPanel" Margin="0,6,0,2"
+                                Visibility="{Binding NotificationHistoryVisible, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                        <Grid Margin="0,2,0,4">
+                            <TextBlock Text="{Binding NotificationHistoryTitle, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"
+                                       HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <Button Click="ClearNotificationHistory_Click" Cursor="Hand" Background="Transparent" BorderThickness="0"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center" Padding="6,2">
+                                <TextBlock Text="{Binding NotificationHistoryClearText, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="11"
+                                           Foreground="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}"/>
+                            </Button>
+                        </Grid>
+                        <ScrollViewer MaxHeight="170" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding NotificationHistory}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Click="NotificationHistory_Click" Tag="{Binding}" Cursor="Hand" HorizontalAlignment="Stretch"
+                                                Margin="0,1" Background="Transparent" BorderThickness="0" Padding="6,4">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="bd" CornerRadius="8" Background="Transparent" Padding="8,6">
+                                                        <ContentPresenter/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="bd" Property="Background" Value="{Binding ButtonHoverBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#22FFFFFF}"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Width="28" Height="28" CornerRadius="8" Margin="0,0,8,0" ClipToBounds="True"
+                                                        Background="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=#6C5CE7}">
+                                                    <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="White"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                                               Foreground="{Binding TextPrimary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=White}"/>
+                                                    <TextBlock Text="{Binding Subtitle}" FontSize="10.5" Opacity="0.75" TextTrimming="CharacterEllipsis"
+                                                               Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding TimeText}" FontSize="10" Opacity="0.6" Margin="8,0,0,0"
+                                                           VerticalAlignment="Center" Foreground="{Binding TextSecondary, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Gray}"/>
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
                     </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
