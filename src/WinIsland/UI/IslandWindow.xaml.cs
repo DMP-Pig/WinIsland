@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -32,6 +32,27 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private double FontScale => Math.Clamp(_settings.Current.FontScale, 0.8, 1.4);
     private double ManualCompactW => Math.Clamp(_settings.Current.CompactWidth / FontScale, 240 / FontScale, 520 / FontScale);
     private double ManualCompactH => Math.Clamp(_settings.Current.CompactHeight / FontScale, 48 / FontScale, 140 / FontScale);
+    /// <summary>
+    /// 紧凑态最大视觉宽度（使用时除以 FontScale 得到逻辑上限）：
+    /// 无推送时保持 800 上限避免岛过宽；有上岛推送时放宽到所在显示器工作区宽度（留边距），
+    /// 保证长通知出现时右侧组件（媒体按钮/时钟等）不被 ClipToBounds 裁切、文字完整显示。
+    /// </summary>
+    private double MaxCompactVisualWidth
+    {
+        get
+        {
+            if (!_vm.HasActivePush) return 800;
+            try
+            {
+                var workW = ScreenHelper.DpiWorkArea(_screen).Width;
+                return Math.Max(800, workW - 48); // 左右各留 24 边距，避免贴到屏幕边缘
+            }
+            catch
+            {
+                return 800;
+            }
+        }
+    }
 
     /// <summary>
     /// 实测紧凑内容宽度（岛可见时精确贴合组件）。
@@ -46,7 +67,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             PillRow.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
             var w = PillRow.DesiredSize.Width;
             // 字号缩放：逻辑宽度按比例缩小，卡片渲染时再放大，最终视觉宽度不变
-            return w >= 20 ? Math.Clamp((w + 56) / FontScale, 240 / FontScale, 800 / FontScale) : fallback; // 总留白 56（左侧 22 + 右侧 24，右侧略多）
+            return w >= 20 ? Math.Clamp((w + 56) / FontScale, 240 / FontScale, MaxCompactVisualWidth / FontScale) : fallback; // 总留白 56（左侧 22 + 右侧 24，右侧略多）
         }
         catch
         {
@@ -58,29 +79,21 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private bool _noPushWValid;
 
     /// <summary>
-    /// 推送卡片在紧凑态所需宽度：按 标题/副标题/正文单行/按钮 中最宽者计算
-    /// （图标30 + 间距8 + 内边距24 + 右边距10 + 余量6），保证文字完整显示、不裁剪不溢出。
-    /// 正文过长限制单行 ≤ 460，允许换行（高度已按行数估算）。
+    /// 推送卡片在紧凑态所需宽度：单行显示（图标 30 + 间距 8 + 标题 + 单行摘要上限 190），
+    /// 摘要过长由 TextTrimming 省略，整体宽度紧凑、不大幅撑宽灵动岛。
     /// </summary>
     private double PushCardCompactWidth()
     {
         var p = _vm.ActivePush;
         if (p is null) return 0;
-        double need = 0;
-        need = Math.Max(need, TextW(p.Title, 13, 7));                        // 标题（SemiBold）
-        if (!string.IsNullOrEmpty(p.Subtitle))
-            need = Math.Max(need, TextW(p.Subtitle, 11.5, 6.2));             // 副标题（系统事件长文本常在此处）
-        if (!string.IsNullOrEmpty(p.Body))
-            need = Math.Max(need, Math.Min(TextW(p.Body, 12.5, 6.8), 460));  // 正文单行上限 460，超出换行
-        if (p.Buttons is { Count: > 0 })
+        double need = 38; // 图标 30 + 间距 8
+        need += Math.Min(TextW(p.Title, 13, 7), 240); // 标题（SemiBold），上限 240 与 XAML MaxWidth 一致
+        if (!string.IsNullOrEmpty(p.Subtitle) || !string.IsNullOrEmpty(p.Body))
         {
-            double btnW = 0;
-            foreach (var b in p.Buttons) btnW += TextW(b.Label ?? string.Empty, 12, 6.5) + 26;
-            btnW += (p.Buttons.Count - 1) * 8;
-            need = Math.Max(need, btnW);
+            var summary = !string.IsNullOrEmpty(p.Subtitle) ? p.Subtitle : p.Body;
+            need += 8 + Math.Min(TextW(summary, 11.5, 6.2), 200); // 摘要单行上限 200，超出省略（与 XAML MaxWidth 一致）
         }
-        // 内容宽度上限 540（逻辑像素），超长由 TextTrimming 省略兜底；正常事件文本均完整显示
-        return (Math.Min(need, 540) + 72) / FontScale;
+        return (Math.Min(need, 520) + 48) / FontScale; // +48：左右内边距(12+12) + 余量
     }
 
     /// <summary>估算多行文本的最宽单行宽度：中文/全角按 cjkPx，ASCII 按 asciiPx（换行符按行分离取最大值）。</summary>
@@ -112,7 +125,7 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
             {
                 var estBase = _noPushWValid ? _noPushCompactW : Math.Max(autoW, ManualCompactW);
                 var estimated = estBase + PushCardCompactWidth();
-                return Math.Clamp(Math.Max(autoW, estimated), 240 / FontScale, 800 / FontScale);
+                return Math.Clamp(Math.Max(autoW, estimated), 240 / FontScale, MaxCompactVisualWidth / FontScale);
             }
             _noPushCompactW = autoW;
             _noPushWValid = true;
@@ -122,14 +135,23 @@ public partial class IslandWindow : Window, INotifyPropertyChanged
     private double _noPushCompactH;   // 无上岛推送时的紧凑高度（缓存）
     private bool _noPushHValid;
 
-    /// <summary>紧凑高度：上岛推送不改变高度（与没上岛前一致），推送卡片在紧凑高度内自适应显示。</summary>
+    /// <summary>
+    /// 紧凑高度：有上岛推送时以推送内容高度为准（无推送基准高度 与「推送卡片高度 + 上下内边距(6+6)」取较大者），
+    /// 保证副标题/正文/进度/按钮完整显示，不再被 ClipToBounds 上下裁切、文字上移。
+    /// </summary>
     private double CompactHeight
     {
         get
         {
             if (!_settings.Current.CompactHeightAuto) return ManualCompactH; // 手动模式：高度恒定
             if (_vm.HasActivePush)
-                return _noPushHValid ? Math.Clamp(_noPushCompactH, 44 / FontScale, 160 / FontScale) : Math.Clamp(_vm.EstimatedCompactHeight / FontScale, 44 / FontScale, 160 / FontScale);
+            {
+                var pushVisualH = _vm.PushCompactHeight;                          // 推送卡片内容高度（视觉 DIP）
+                var baseVisualH = _noPushHValid ? _noPushCompactH * FontScale
+                                                : Math.Clamp(_vm.EstimatedCompactHeight, 48, 224);
+                var visual = Math.Clamp(Math.Max(baseVisualH, pushVisualH + 12), 48, 236); // +12 = ContentGrid 上下 Margin 6+6
+                return visual / FontScale;
+            }
             _noPushCompactH = _vm.EstimatedCompactHeight / FontScale;
             _noPushHValid = true;
             return _noPushCompactH;

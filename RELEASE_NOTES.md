@@ -14,6 +14,18 @@
 
 ## WinIsland 1.2.1（正式版 / Stable）
 
+## WinIsland 1.2.2（正式版 / Stable）
+
+一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新内容
+
+- **推送消息单行显示**：未展开时，上岛/消息提醒仅显示一行（图标 + 标题 + 单行摘要），超长自动省略，不再撑宽灵动岛；详情（正文/进度/按钮/输入框）在展开后完整展示
+
+- **修复未展开时推送文字显示不全 / 向上偏移 / 超出范围**：有推送时紧凑高度依内容自动伸缩，卡片顶部对齐，不再被上下对称裁切
+
+- **长通知自动调宽**：出现较长推送时，灵动岛自动调节横向长度，右侧的媒体控制、时钟等组件和全部文字完整显示在岛内，不再被边缘裁切
+
 一款现代化、多功能的 Windows 灵动岛组件。A modern, multi-functional Dynamic Island widget for Windows.
 
 ### 更新内容
@@ -413,6 +425,18 @@
 ## 繁體中文
 
 ## WinIsland 1.2.1（正式版 / Stable）
+
+## WinIsland 1.2.2（正式版 / Stable）
+
+一款現代化、多功能的 Windows 動態島元件。A modern, multi-functional Dynamic Island widget for Windows.
+
+### 更新內容
+
+- **推播訊息單行顯示**：未展開時，上島/訊息提醒僅顯示一行（圖示 + 標題 + 單行摘要），過長自動省略，不再撐寬動態島；詳情（正文/進度/按鈕/輸入框）在展開後完整展示
+
+- **修復未展開時推播文字顯示不全 / 向上偏移 / 超出範圍**：有推播時緊湊高度依內容自動伸縮，卡片頂部對齊，不再被上下對稱裁切
+
+- **長通知自動調寬**：出現較長推播時，動態島自動調整橫向長度，右側的媒體控制、時鐘等元件和全部文字完整顯示在島內，不再被邊緣裁切
 
 一款現代化、多功能的 Windows 動態島元件。A modern, multi-functional Dynamic Island widget for Windows.
 
@@ -814,6 +838,18 @@
 
 ## WinIsland 1.2.1 (Stable)
 
+## WinIsland 1.2.2 (Stable)
+
+A modern, multi-functional Dynamic Island widget for Windows.
+
+### What's New
+
+- **Single-line compact alerts**: while collapsed, push notifications and reminders show just one line (icon + title + one-line summary) and truncate when too long, so they no longer widen the island; full details (body/progress/buttons/input) appear when expanded
+
+- **Fixed truncated/shifted notification text when collapsed**: with an active push, the compact height grows with the content and the card aligns to the top — no more vertical clipping
+
+- **Auto-widen island for long notifications**: when a long notification arrives, the island auto-expands horizontally so media controls, the clock and all text stay fully inside the island instead of being clipped at the edge
+
 A modern, multi-functional Dynamic Island widget for Windows.
 
 ### What's New
@@ -1213,6 +1249,18 @@ A modern, multi-functional Dynamic Island widget for Windows.
 ## Español
 
 ## WinIsland 1.2.1 (Estable)
+
+## WinIsland 1.2.2 (Estable)
+
+Una moderna y multifuncional Dynamic Island para Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Novedades
+
+- **Alertas compactas de una sola línea**: plegadas, las notificaciones y recordatorios muestran una sola línea (icono + título + resumen de una línea) y se truncan si son muy largas, sin ensanchar la isla; los detalles completos aparecen al expandir
+
+- **Corregido el texto truncado/desplazado al estar plegado**: con una notificación activa, la altura compacta crece con el contenido y la tarjeta se alinea arriba — sin recortes verticales
+
+- **La isla se ensancha automáticamente con notificaciones largas**: al llegar una notificación larga, la isla expande su ancho para que los controles de medios, el reloj y todo el texto queden dentro, sin recortarse en el borde
 
 Una moderna y multifuncional Dynamic Island para Windows. A modern, multi-functional Dynamic Island widget for Windows.
 
@@ -1614,6 +1662,18 @@ Un widget Dynamic Island moderno y multifuncional para Windows.
 
 ## WinIsland 1.2.1 (Stable)
 
+## WinIsland 1.2.2 (Stable)
+
+Une Dynamic Island moderne et polyvalente pour Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Nouveautés
+
+- **Alertes compactes sur une seule ligne** : repliées, les notifications et rappels affichent une seule ligne (icône + titre + résumé sur une ligne) et sont tronquées si trop longues, sans élargir l'île ; les détails complets apparaissent au déploiement
+
+- **Correction du texte tronqué/décalé à l'état replié** : avec une notification active, la hauteur compacte s'adapte au contenu et la carte s'aligne en haut — plus de rognage vertical
+
+- **Élargissement automatique pour les longues notifications** : lorsqu'une longue notification arrive, l'île élargit automatiquement sa largeur afin que les contrôles média, l'horloge et tout le texte restent entièrement visibles, sans rognage au bord
+
 Une Dynamic Island moderne et polyvalente pour Windows. A modern, multi-functional Dynamic Island widget for Windows.
 
 ### Nouveautés
@@ -2013,6 +2073,18 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 ## العربية
 
 ## WinIsland 1.2.1 (مستقر)
+
+## WinIsland 1.2.2 (مستقر)
+
+جزيرة ديناميكية حديثة ومتعددة الوظائف لنظام ويندوز. A modern, multi-functional Dynamic Island widget for Windows.
+
+### ما الجديد
+
+- **تنبيهات مضغوطة بسطر واحد**: في الحالة المطوية، تعرض الإشعارات والتذكيرات سطرًا واحدًا (أيقونة + عنوان + ملخص سطر واحد) وتُقتطع تلقائيًا عند الطول، فلا توسّع الجزيرة؛ تظهر التفاصيل الكاملة عند التوسيع
+
+- **إصلاح نص الإشعار المقطوع/المنزاح في الحالة المطوية**: مع وجود إشعار نشط، ينمو الارتفاع المضغوط مع المحتوى وتُحاذى البطاقة للأعلى — بلا قصّ رأسي
+
+- **توسيع الجزيرة تلقائيًا للإشعارات الطويلة**: عند وصول إشعار طويل، توسّع الجزيرة عرضها تلقائيًا لتبقى عناصر التحكم بالوسائط والساعة وكل النص داخل الجزيرة كاملًا بدل قطعها عند الحافة
 
 جزيرة ديناميكية حديثة ومتعددة الوظائف لنظام ويندوز. A modern, multi-functional Dynamic Island widget for Windows.
 
@@ -2414,6 +2486,18 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 
 ## WinIsland 1.2.1 (Stable)
 
+## WinIsland 1.2.2 (Stable)
+
+Современный многофункциональный Dynamic Island для Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Что нового
+
+- **Компактные уведомления в одну строку**: в свёрнутом виде уведомления и напоминания показываются одной строкой (иконка + заголовок + однострочное резюме) и обрезаются при переизбытке длины, больше не расширяя остров; полные детали появляются при развёртывании
+
+- **Исправлен обрезанный/смещённый текст в свёрнутом виде**: при активном уведомлении компактная высота растёт вместе с содержимым, а карточка выравнивается сверху — без вертикальной обрезки
+
+- **Автоматическое расширение острова для длинных уведомлений**: при длинном уведомлении остров автоматически расширяется по горизонтали, чтобы элементы управления медиа, часы и весь текст полностью оставались внутри острова, а не обрезались у края
+
 Современный многофункциональный Dynamic Island для Windows. A modern, multi-functional Dynamic Island widget for Windows.
 
 ### Что нового
@@ -2813,6 +2897,18 @@ Un widget Dynamic Island moderne et multifonctionnel pour Windows.
 ## Português
 
 ## WinIsland 1.2.1 (Estável)
+
+## WinIsland 1.2.2 (Estável)
+
+Um Dynamic Island moderno e multifuncional para Windows. A modern, multi-functional Dynamic Island widget for Windows.
+
+### Novidades
+
+- **Alertas compactos em uma única linha**: recolhidas, as notificações e lembretes mostram uma única linha (ícone + título + resumo em uma linha) e são truncados quando longos, sem alargar a ilha; os detalhes completos aparecem ao expandir
+
+- **Corrigido texto truncado/deslocado no estado recolhido**: com uma notificação ativa, a altura compacta cresce com o conteúdo e a parte interna se alinha ao topo — sem cortes verticais
+
+- **Ilha se alarga automaticamente para notificações longas**: quando chega uma notificação longa, a ilha expande sua largura automaticamente para que os controles de mídia, o relógio e todo o texto fiquem totalmente dentro, sem cortes na borda
 
 Um Dynamic Island moderno e multifuncional para Windows. A modern, multi-functional Dynamic Island widget for Windows.
 
